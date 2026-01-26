@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec6a94a019048ca49bab2d7c4138c2a3, type: 3}
+  m_Name: GuanduDialogueData
+  m_EditorClassIdentifier: 
+  battleName: "\u5B98\u6E21\u4E4B\u6218"
+  dialogueNodes:
+  - nodeId: 1001
+    dialogueText: "\u8881\u7ECD\u521D\u6218\u5F97\u5229\uFF0C\u7B51\u571F\u5C71\u653E\u7BAD\uFF0C\u66F9\u519B\u538B\u529B\u5DE8\u5927\u3002\u6B64\u65F6\u5E94\u5F53\u5982\u4F55\u5E94\u5BF9\uFF1F"
+    backgroundImage: 
+    leftCharacter: 
+    rightCharacter: 
+    options:
+    - optionText: "\u8FDE\u591C\u8D76\u9020\u53D1\u77F3\u8F66\uFF0C\u4EE5\u7259\u8FD8\u7259"
+      nextNodeId: 1002
+      troopEffect: 1
+      foodEffect: 0
+      strategyEffect: 0
+      riskEffect: 0
+      miniGameType: puzzle
+      condition: 
+    - optionText: "\u4EE4\u5C06\u58EB\u6316\u6398\u5730\u9053\uFF0C\u5947\u88AD\u8881\u8425"
+      nextNodeId: 1003
+      troopEffect: 0
+      foodEffect: -1
+      strategyEffect: 0
+      riskEffect: 0
+      miniGameType: 
+      condition: 
+    - optionText: "\u4F6F\u88C5\u8D25\u9000\uFF0C\u8BBE\u4E0B\u57CB\u4F0F"
+      nextNodeId: 1004
+      troopEffect: 0
+      foodEffect: 0
+      strategyEffect: 0
+      riskEffect: 0
+      miniGameType: 
+      condition: 
