@@ -23,6 +23,13 @@ public class DialogueNodeData
     public string leftCharacter = "";
     public string rightCharacter = "";
     public List<DialogueOptionData> options = new List<DialogueOptionData>();
+    public int nextNodeId;
+    // ========== 新增：判断是否为纯文本节点 ==========
+    public bool IsPureTextNode
+    {
+        get { return options == null || options.Count == 0; }
+    }
+    // ================================================
 }
 
 [CreateAssetMenu(fileName = "NewDialogueData", menuName = "三国游戏/对话数据")]

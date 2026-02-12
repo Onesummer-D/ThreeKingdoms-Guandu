@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using UnityEngine;
 
 public class DataLoader : MonoBehaviour
@@ -17,6 +18,7 @@ public class DataLoader : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             LoadDialogueData();
+            Debug.Log("DataLoader单列初始化完成");
         }
         else
         {
