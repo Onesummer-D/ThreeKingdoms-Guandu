@@ -225,6 +225,10 @@ public class FinalUIManager : MonoBehaviour
 
     void OnOptionClicked(int optionIndex)
     {
+        // ===== 强行测试：不管什么情况都切换 =====
+        Debug.Log("=== 强行测试：尝试切换图片 ===");
+        FindObjectOfType<ImageSwitcher>()?.SwitchTo("造发石车");
+        // ======================================
         if (isInIfLine) return; // 如果在IF线结局中，禁用选项
 
         Debug.Log($"当前剧情点: {currentPlotPoint}, 选择选项: {optionIndex + 1}");
@@ -863,6 +867,8 @@ public class FinalUIManager : MonoBehaviour
     // 继续按钮被点击时调用
     public void OnContinueButtonClicked()
     {
+        Debug.Log("=== 继续按钮被点击，切换图片 ===");
+        FindObjectOfType<ImageSwitcher>()?.SwitchTo("荀彧来信");
         if (DialogueSystem.Instance == null || DialogueSystem.Instance.CurrentNode == null)
         {
             Debug.LogError("无法处理继续按钮：DialogueSystem未就绪");
@@ -992,15 +998,34 @@ public class FinalUIManager : MonoBehaviour
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
         if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
 
-        // 隐藏角色立绘
-        if (leftCharacterImage != null) leftCharacterImage.gameObject.SetActive(false);
-        if (rightCharacterImage != null) rightCharacterImage.gameObject.SetActive(false);
-
         // 隐藏返回按钮
         if (endingReturnButtonPrefab != null)
             endingReturnButtonPrefab.SetActive(false);
 
         isInIfLine = false;
+
+        // ===== 重置到初始状态 =====
+        // 关掉所有其他背景
+        GameObject[] allBgs = {
+        GameObject.Find("chaoting"),
+        GameObject.Find("战斗时背景图"),
+        GameObject.Find("失败场景背景"),
+        GameObject.Find("donghanm")
+    };
+        foreach (GameObject bg in allBgs)
+        {
+            if (bg != null) bg.SetActive(false);
+        }
+
+        // 打开战场背景
+        GameObject battleBg = GameObject.Find("zhanshibe");
+        if (battleBg != null) battleBg.SetActive(true);
+
+        // 隐藏人物
+        if (leftCharacterImage != null) leftCharacterImage.gameObject.SetActive(false);
+        if (rightCharacterImage != null) rightCharacterImage.gameObject.SetActive(false);
+        // ===========================
+
         Debug.Log("返回主菜单");
     }
 
@@ -1118,6 +1143,10 @@ public class FinalUIManager : MonoBehaviour
     // 当DialogueSystem显示节点时
     private void OnDialogueNodeShown(int nodeId)
     {
+        // ===== 新增：根据节点ID自动切换背景人物 =====
+        SwitchImageByNodeId(nodeId);
+        // ==========================================
+
         Debug.Log($"FinalUIManager: 显示节点 {nodeId}");
 
         if (gameInterfacePanel != null && !gameInterfacePanel.activeSelf)
@@ -1493,5 +1522,75 @@ public class FinalUIManager : MonoBehaviour
             Debug.Log($"围魏救赵判定：风险{risk}，兵力{troop}，粮草{food} → IF6惨败结局");
             DialogueSystem.Instance.ShowDialogueNode(500601);
         }
+    }// ========== 新增：根据节点ID切换背景人物 ==========
+    private void SwitchImageByNodeId(int nodeId)
+    {
+        ImageSwitcher switcher = FindObjectOfType<ImageSwitcher>();
+        if (switcher == null)
+        {
+            Debug.LogError("找不到 ImageSwitcher！");
+            return;
+        }
+
+        string sceneName = "";
+
+        // 根据节点ID判断应该显示什么场景
+        if (nodeId >= 1000 && nodeId < 2000)
+        {
+            // 剧情点1：初战受挫
+            if (nodeId == 1001 || nodeId == 1002 || nodeId == 1005 || nodeId == 1006)
+                sceneName = "造发石车";
+            else if (nodeId == 1003)
+                sceneName = "挖地道";
+            else if (nodeId == 1004)
+                sceneName = "佯装败退";
+            else
+                sceneName = "造发石车";
+        }
+        else if (nodeId >= 2000 && nodeId < 3000)
+        {
+            // 剧情点2：荀彧来信
+            if (nodeId == 200101 || nodeId == 200102 || nodeId == 2002 || nodeId == 2003)
+                sceneName = "荀彧来信";
+        }
+        else if (nodeId >= 3000 && nodeId < 4000)
+        {
+            // 剧情点3：许攸夜访
+            if (nodeId == 3001 || nodeId == 3002 || nodeId == 3003 || nodeId == 3004)
+                sceneName = "许攸夜访";
+        }
+        else if (nodeId >= 4000 && nodeId < 5000)
+        {
+            // 剧情点4：奇袭乌巢
+            if (nodeId == 4001 || nodeId == 4002 || nodeId == 4003 || nodeId == 4004)
+                sceneName = "奇袭乌巢";
+            else if (nodeId == 4005 || nodeId == 4006)
+                sceneName = "乌巢激战";
+        }
+        else if (nodeId >= 5000 && nodeId < 6000)
+        {
+            // 剧情点5：乌巢激战
+            if (nodeId == 5001 || nodeId == 5002 || nodeId == 5003 || nodeId == 5005)
+                sceneName = "乌巢激战";
+            else if (nodeId == 500201 || nodeId == 500202)
+                sceneName = "胜利结局";
+            else if (nodeId == 500301 || nodeId == 500401 || nodeId == 500601)
+                sceneName = "失败结局";
+        }
+        else if (nodeId >= 9000)
+        {
+            // IF线结局
+            if (nodeId == 9001 || nodeId == 9002 || nodeId == 900201)
+                sceneName = "半途而废";
+            else if (nodeId == 9003 || nodeId == 9004 || nodeId == 900403)
+                sceneName = "错失良机";
+        }
+
+        // 如果找到了场景名，就切换
+        if (!string.IsNullOrEmpty(sceneName))
+        {
+            switcher.SwitchTo(sceneName);
+        }
     }
+    // ================================================
 }

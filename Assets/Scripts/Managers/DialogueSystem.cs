@@ -887,6 +887,9 @@ public class DialogueSystem : MonoBehaviour
             return;
         }
         IsShowing = true;
+        // ===== 新增：触发事件 =====
+        OnDialogueNodeShown?.Invoke(nodeId);
+        // =========================
 
         // ========== 触发节点显示事件 ==========
         OnDialogueNodeShown?.Invoke(nodeId);
