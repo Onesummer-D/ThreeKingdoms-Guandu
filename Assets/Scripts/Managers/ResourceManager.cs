@@ -23,27 +23,25 @@ public class ResourceChangeEvent
 
 public class ResourceManager : MonoBehaviour
 {
-    // 单例模式
     public static ResourceManager Instance { get; private set; }
 
-    // 当前资源值
-    private float troopStrength = 10.0f;
-    private float foodSupply = 10.0f;
-    private float strategyChance = 5.0f;
-    private float riskLevel = 0.0f;
+    // ========== 修改：初始值 ==========
+    private float troopStrength = 50.0f;      // 兵力初始50
+    private float foodSupply = 40.0f;         // 粮草初始40
+    private float strategyChance = 50.0f;     // 计策成功率初始50
+    private float riskLevel = 50.0f;          // 风险初始50
 
-    // 资源上限
-    public const float MAX_TROOP = 20.0f;
-    public const float MAX_FOOD = 20.0f;
-    public const float MAX_STRATEGY = 10.0f;
-    public const float MAX_RISK = 10.0f;
+    // ========== 修改：上限为100 ==========
+    public const float MAX_TROOP = 100.0f;
+    public const float MAX_FOOD = 100.0f;
+    public const float MAX_STRATEGY = 100.0f;
+    public const float MAX_RISK = 100.0f;
 
-    // 事件系统：当资源变化时触发
+    // 事件系统
     public static event Action<ResourceChangeEvent> OnResourceChanged;
 
     void Awake()
     {
-        // 单例模式
         if (Instance == null)
         {
             Instance = this;
@@ -56,13 +54,13 @@ public class ResourceManager : MonoBehaviour
         }
     }
 
-    // === 获取资源值的方法 ===
+    // 获取资源值
     public float GetTroop() { return troopStrength; }
     public float GetFood() { return foodSupply; }
     public float GetStrategy() { return strategyChance; }
     public float GetRisk() { return riskLevel; }
 
-    // === 修改资源值的方法（核心） ===
+    // 修改资源值（核心）
     public void ModifyResource(ResourceType type, float amount)
     {
         float oldValue = 0;
@@ -95,7 +93,7 @@ public class ResourceManager : MonoBehaviour
                 break;
         }
 
-        // 触发资源变化事件
+        // 触发事件
         if (OnResourceChanged != null)
         {
             ResourceChangeEvent changeEvent = new ResourceChangeEvent
@@ -111,32 +109,32 @@ public class ResourceManager : MonoBehaviour
         Debug.Log($"{type} 变化: {amount:F1}, 当前: {newValue:F1}");
     }
 
-    // === 便捷方法 ===
+    // 便捷方法
     public void ModifyTroop(float amount) { ModifyResource(ResourceType.Troop, amount); }
     public void ModifyFood(float amount) { ModifyResource(ResourceType.Food, amount); }
     public void ModifyStrategy(float amount) { ModifyResource(ResourceType.Strategy, amount); }
     public void ModifyRisk(float amount) { ModifyResource(ResourceType.Risk, amount); }
 
-    // === 检查资源是否足够 ===
+    // 检查资源
     public bool HasEnoughTroop(float required) { return troopStrength >= required; }
     public bool HasEnoughFood(float required) { return foodSupply >= required; }
 
-    // === 获取资源状态文本 ===
+    // 获取资源状态文本
     public string GetResourcesText()
     {
-        return $"兵力: {troopStrength:F1}/{MAX_TROOP}\n" +
-               $"粮草: {foodSupply:F1}/{MAX_FOOD}\n" +
-               $"计策: {strategyChance:F1}/{MAX_STRATEGY}\n" +
-               $"风险: {riskLevel:F1}/{MAX_RISK}";
+        return $"兵力: {troopStrength:F0}/{MAX_TROOP:F0}\n" +
+               $"粮草: {foodSupply:F0}/{MAX_FOOD:F0}\n" +
+               $"计策: {strategyChance:F0}/{MAX_STRATEGY:F0}\n" +
+               $"风险: {riskLevel:F0}/{MAX_RISK:F0}";
     }
 
-    // === 重置所有资源 ===
+    // ========== 修改：重置方法 ==========
     public void ResetAllResources()
     {
-        troopStrength = 10.0f;
-        foodSupply = 10.0f;
-        strategyChance = 5.0f;
-        riskLevel = 0.0f;
-        Debug.Log("所有资源已重置");
+        troopStrength = 50.0f;
+        foodSupply = 40.0f;
+        strategyChance = 50.0f;
+        riskLevel = 50.0f;
+        Debug.Log("所有资源已重置为初始值");
     }
 }

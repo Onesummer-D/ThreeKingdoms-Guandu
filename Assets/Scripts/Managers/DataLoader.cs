@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 
 public class DataLoader : MonoBehaviour
@@ -9,7 +8,8 @@ public class DataLoader : MonoBehaviour
     [Header("数据文件引用")]
     public DialogueDataSO dialogueData;
 
-    private Dictionary<int, DialogueNodeData> nodeDictionary = new Dictionary<int, DialogueNodeData>();
+    // 改成 DialogueNode，不是 DialogueNodeData
+    private Dictionary<int, DialogueNode> nodeDictionary = new Dictionary<int, DialogueNode>();
 
     void Awake()
     {
@@ -18,7 +18,7 @@ public class DataLoader : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             LoadDialogueData();
-            Debug.Log("DataLoader单列初始化完成");
+            Debug.Log("DataLoader单例初始化完成");
         }
         else
         {
@@ -35,14 +35,16 @@ public class DataLoader : MonoBehaviour
         }
 
         nodeDictionary.Clear();
-        foreach (var node in dialogueData.dialogueNodes)
+        // 改成 dialogueData.nodes，不是 dialogueData.dialogueNodes
+        foreach (var node in dialogueData.nodes)
         {
             nodeDictionary[node.nodeId] = node;
         }
         Debug.Log($"DataLoader: 加载了 {nodeDictionary.Count} 个节点");
     }
 
-    public DialogueNodeData GetNodeById(int nodeId)
+    // 返回类型改成 DialogueNode
+    public DialogueNode GetNodeById(int nodeId)
     {
         if (nodeDictionary.ContainsKey(nodeId))
             return nodeDictionary[nodeId];

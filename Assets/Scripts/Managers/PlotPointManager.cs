@@ -26,63 +26,48 @@ public class PlotPointManager : MonoBehaviour
         Debug.Log("PlotPointManager开始工作！");
         TestFunction();
 
-        // ========== 新增：订阅GameCallbacks事件 ==========
+        // ========== 订阅GameCallbacks事件 ==========
         if (GameCallbacks.Instance != null)
         {
-            // 正确订阅事件（注意事件名称加了Event后缀）
             GameCallbacks.Instance.OnPuzzleGameCompletedEvent += OnPuzzleGameCompleted;
             GameCallbacks.Instance.OnValueInputConfirmedEvent += OnValueInputConfirmed;
+            GameCallbacks.Instance.OnGridGameCompletedEvent += OnGridGameCompleted;
             Debug.Log("PlotPointManager已订阅GameCallbacks事件");
         }
         // =============================================
     }
 
-    // ========== 新增：拼图游戏完成的事件处理方法 ==========
+    // ========== 拼图游戏完成的事件处理方法 ==========
     private void OnPuzzleGameCompleted(bool success)
     {
         Debug.Log($"PlotPointManager收到拼图游戏完成事件：{(success ? "成功" : "失败")}");
 
-        // 处理游戏逻辑
         if (success)
         {
+            // 兵力+1
             if (ResourceManager.Instance != null)
             {
                 ResourceManager.Instance.ModifyTroop(1.0f);
                 Debug.Log("拼图完成！兵力+1");
             }
 
+            // 触发拼图完成后的对话节点
             ShowPuzzleCompleteDialogue();
         }
     }
 
     private void ShowPuzzleCompleteDialogue()
     {
-        // 使用你已有的DialogueSystem显示对话
+
+        // 使用DialogueSystem显示对话（节点1002应该是"投石机制造完成"的反馈）
         if (DialogueSystem.Instance != null)
         {
-            // 假设你在GuanduDialogueData.asset中配置了节点1002
             DialogueSystem.Instance.ShowDialogueNode(1002);
             Debug.Log("触发拼图完成对话节点1002");
         }
         else
         {
-            // 备用方案：直接通知FinalUIManager继续
-            Debug.LogWarning("DialogueSystem未找到，使用备用方案");
-            StartCoroutine(FallbackToFinalUIManager());
-        }
-    }
-
-    private IEnumerator FallbackToFinalUIManager()
-    {
-        // 等待一小会儿，确保资源已更新
-        yield return new WaitForSeconds(0.5f);
-
-        // 查找FinalUIManager
-        FinalUIManager finalUI = FindObjectOfType<FinalUIManager>();
-        if (finalUI != null)
-        {
-            // 调用我们新增的继续方法
-            finalUI.ContinueToPlotPoint2();
+            Debug.LogError("DialogueSystem未找到，无法显示拼图完成对话");
         }
     }
 
@@ -100,92 +85,119 @@ public class PlotPointManager : MonoBehaviour
         }
     }
 
-    // === 剧情点1：初战受挫 ===
-    public void HandleOptionA_Puzzle()
+    // === 剧情点1：初战受挫 - 选项A：拼图游戏 ===
+    public void HandleOptionA_Puzzle(int nextNodeId = 1002)
     {
         Debug.Log("【剧情点1-选项A】玩家选择了拼图游戏");
-
-        // 这个方法现在只做简单记录，逻辑由事件处理
         Debug.Log("等待拼图游戏完成事件...");
-
-        // 启动协程
-        StartCoroutine(SimulatePuzzleGame());
+        // 实际拼图游戏启动由FinalUIManager处理
     }
 
-    // ========== 新增：数值输入的事件处理方法 ==========
+    // ========== 数值输入的事件处理方法 ==========
     private void OnValueInputConfirmed(float value)
     {
         Debug.Log($"PlotPointManager收到数值输入事件：{value}");
-
-        // 调用原有的埋伏处理方法
         HandleOptionC_Ambush(value);
+    }
+
+    private void OnGridGameCompleted(bool isWin)
+    {
+        Debug.Log($"PlotPointManager收到走格子游戏完成：{(isWin ? "胜利" : "失败")}");
+
+        if (isWin)
+        {
+            // 胜利：兵力+12，粮草+10，风险+10（根据数值设定）
+            if (ResourceManager.Instance != null)
+            {
+                ResourceManager.Instance.ModifyTroop(12f);
+                ResourceManager.Instance.ModifyFood(10f);
+                ResourceManager.Instance.ModifyRisk(10f);
+            }
+
+            // ✅ 修正：跳转到剧情点五第1页（500101），不是4005
+            if (DialogueSystem.Instance != null)
+            {
+                DialogueSystem.Instance.ShowDialogueNode(500101);
+            }
+        }
+        else
+        {
+            // 失败：触发IF线
+            Debug.Log("走格子失败，触发失败结局");
+            TriggerEnding("IF3");
+        }
     }
 
     // === 在OnDestroy()中取消订阅 ===
     void OnDestroy()
     {
-        // ========== 新增：取消订阅GameCallbacks事件 ==========
         if (GameCallbacks.Instance != null)
         {
             GameCallbacks.Instance.OnPuzzleGameCompletedEvent -= OnPuzzleGameCompleted;
             GameCallbacks.Instance.OnValueInputConfirmedEvent -= OnValueInputConfirmed;
-        }
-        // ====================================================
-    }
-
-    IEnumerator SimulatePuzzleGame()
-    {
-        Debug.Log("开始拼图游戏...（模拟）");
-
-        // 等待2秒，模拟游戏过程
-        yield return new WaitForSeconds(2.0f);
-
-        Debug.Log("拼图完成！兵力+1");
-
-        // 调用ResourceManager加兵力
-        if (ResourceManager.Instance != null)
-        {
-            ResourceManager.Instance.ModifyTroop(1.0f);
-            Debug.Log("当前兵力：" + ResourceManager.Instance.GetTroop());
+            GameCallbacks.Instance.OnGridGameCompletedEvent -= OnGridGameCompleted;
         }
     }
 
     public void HandleOptionB_DigTunnel()
     {
         Debug.Log("【剧情点1-选项B】玩家选择了挖掘地道");
-        Debug.Log("粮草-1");
 
         if (ResourceManager.Instance != null)
         {
             ResourceManager.Instance.ModifyFood(-1.0f);
-            Debug.Log("当前粮草：" + ResourceManager.Instance.GetFood());
+            Debug.Log("粮草-1，当前粮草：" + ResourceManager.Instance.GetFood());
+        }
+
+        // ✅ 关键修复：挖地道完成后跳转到剧情点二（200001）
+        if (DialogueSystem.Instance != null)
+        {
+            DialogueSystem.Instance.ShowDialogueNode(200001);
+            Debug.Log("挖地道完成，跳转到剧情点二：200001");
         }
     }
 
-    // 埋伏判定
+    // 找到这个方法，完全替换为：
     public void HandleOptionC_Ambush(float inputValue)
     {
         Debug.Log($"处理埋伏选项，输入值：{inputValue}");
 
-        // 判定逻辑：合理范围1.0-3.0
-        bool isSuccess = (inputValue >= 1.0f && inputValue <= 3.0f);
+        // 新数值判定：≤20为合理，>20为失败
+        bool isSuccess = inputValue <= 20f;
 
-        string resultText;
+        // 应用数值变化
+        if (ResourceManager.Instance != null)
+        {
+            // 兵力扣除（玩家设置的值）
+            ResourceManager.Instance.ModifyTroop(-inputValue);
+
+            if (isSuccess)
+            {
+                // 合理范围（≤20）：计策成功率+20，粮草-5
+                ResourceManager.Instance.ModifyStrategy(20f);
+                ResourceManager.Instance.ModifyFood(-5f);
+                Debug.Log($"埋伏成功：兵力-{inputValue}，计策成功率+20，粮草-5");
+            }
+            else
+            {
+                // 过高（>20）：计策成功率-20，粮草-10，风险+20
+                ResourceManager.Instance.ModifyStrategy(-20f);
+                ResourceManager.Instance.ModifyFood(-10f);
+                ResourceManager.Instance.ModifyRisk(20f);
+                Debug.Log($"埋伏失败：兵力-{inputValue}，计策成功率-20，粮草-10，风险+20");
+            }
+        }
+
+        // 触发事件通知FinalUIManager
+        OnAmbushResultProcessed?.Invoke(isSuccess, GetAmbushResultText(isSuccess), inputValue);
+    }
+
+    private string GetAmbushResultText(bool isSuccess)
+    {
         if (isSuccess)
-        {
-            resultText = "埋伏成功！袁军中计，损失惨重。";
-            if (ResourceManager.Instance != null)
-                ResourceManager.Instance.ModifyStrategy(1.0f);  // 计策+1
-        }
+            return "诱敌成功！袁军主力被吸引至埋伏圈，大挫敌军锐气。";
         else
-        {
-            resultText = "埋伏失败！袁军识破了计谋。";
-            if (ResourceManager.Instance != null)
-                ResourceManager.Instance.ModifyStrategy(-1.0f);  // 计策-1
-        }
-
-        // 触发事件通知UI
-        OnAmbushResultProcessed?.Invoke(isSuccess, resultText, inputValue);
+            return "诱敌失败！设置的诱敌兵力过多，反被袁军识破埋伏，遭到反包围。";
     }
 
     // === 结局触发方法 ===
@@ -205,21 +217,14 @@ public class PlotPointManager : MonoBehaviour
         }
     }
 
-    // ========== 新增：选项C的结果事件 ==========
-    // 这个事件用来通知UI“埋伏选项的处理结果”
-    // 参数1: bool - 是否成功 (true=成功, false=失败)
-    // 参数2: string - 要显示的结局文本
-    // 参数3: float - 玩家输入的具体值
+    // ========== 选项C的结果事件 ==========
     public static event System.Action<bool, string, float> OnAmbushResultProcessed;
-    // ===========================================
 
     // === 剧情点2：粮草将尽 ===
     public void HandlePlotPoint2_OptionA_Stay()
     {
         Debug.Log("【剧情点2-选项A】采纳文若之谏，坚守官渡");
         Debug.Log("→ 直接进入下一段剧情");
-        // 这里可以触发下一个对话节点
-        // DialogueSystem.Instance.ShowDialogueNode(下一个节点ID);
     }
 
     public void HandlePlotPoint2_OptionB_Retreat()
@@ -258,9 +263,6 @@ public class PlotPointManager : MonoBehaviour
             Debug.Log("计策成功率 +1.0");
             Debug.Log("当前计策：" + ResourceManager.Instance.GetStrategy());
         }
-
-        // 触发下一个对话节点
-        // DialogueSystem.Instance.ShowDialogueNode(下一个节点ID);
     }
 
     public void HandlePlotPoint3_OptionB_Lie()

@@ -1,40 +1,51 @@
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 [System.Serializable]
-public class DialogueOptionData
+public class DialogueOption
 {
-    [TextArea(1, 2)] public string optionText = "选项文本";
-    public int nextNodeId = 1001;
-    [Range(-5, 5)] public float troopEffect = 0;
-    [Range(-5, 5)] public float foodEffect = 0;
-    [Range(-5, 5)] public float strategyEffect = 0;
-    [Range(-5, 5)] public float riskEffect = 0;
-    public string miniGameType = "";
-    public string condition = "";
-}
-
-[System.Serializable]
-public class DialogueNodeData
-{
-    public int nodeId = 1001;
-    [TextArea(3, 5)] public string dialogueText = "对话内容...";
-    public string backgroundImage = "";
-    public string leftCharacter = "";
-    public string rightCharacter = "";
-    public List<DialogueOptionData> options = new List<DialogueOptionData>();
+    public string optionText;
     public int nextNodeId;
-    // ========== 新增：判断是否为纯文本节点 ==========
-    public bool IsPureTextNode
-    {
-        get { return options == null || options.Count == 0; }
-    }
-    // ================================================
+
+    // 资源效果
+    public float troopEffect = 0;
+    public float foodEffect = 0;
+    public float strategyEffect = 0;
+    public float riskEffect = 0;
+
+    // 小游戏类型
+    public string miniGameType = ""; // "puzzle", "slider", "grid", "digtunnel"
+
+    // ========== 新增：条件字段 ==========
+    public string condition = ""; // 条件表达式，如 "troop>5"
+    // ==================================
 }
 
-[CreateAssetMenu(fileName = "NewDialogueData", menuName = "三国游戏/对话数据")]
+[System.Serializable]
+public class DialogueNode
+{
+    public int nodeId;
+    [TextArea(3, 10)]
+    public string dialogueText;
+    public Sprite backgroundImage;
+    public bool isBackgroundIntro = false;
+
+    // 人物显示
+    public string avatarCharacter = "";     // 头像
+    public string leftCharacter = "";       // 左侧立绘
+    public string rightCharacter = "";      // 右侧立绘
+
+    public List<DialogueOption> options = new List<DialogueOption>();
+    public int nextNodeId;  // 无选项时的下一个节点
+}
+
+[CreateAssetMenu(fileName = "DialogueDataSO", menuName = "Game/Dialogue Data")]
 public class DialogueDataSO : ScriptableObject
 {
-    public string battleName = "官渡之战";
-    public List<DialogueNodeData> dialogueNodes = new List<DialogueNodeData>();
+    public List<DialogueNode> nodes = new List<DialogueNode>();
+
+    public DialogueNode GetNode(int nodeId)
+    {
+        return nodes.Find(n => n.nodeId == nodeId);
+    }
 }
