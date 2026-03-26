@@ -104,6 +104,10 @@ public class FinalUIManager : MonoBehaviour
             if (rightCharacterImage != null) rightCharRect = rightCharacterImage.rectTransform;
             if (avatarImage != null) avatarRect = avatarImage.rectTransform;
             if (backgroundImage != null) backgroundRectTransform = backgroundImage.rectTransform;
+
+            // ✅ 关键修复：强制保持人物图片比例，防止拉伸变形
+            if (leftCharacterImage != null) leftCharacterImage.preserveAspect = true;
+            if (rightCharacterImage != null) rightCharacterImage.preserveAspect = true;
         }
         else
         {
@@ -220,6 +224,72 @@ public class FinalUIManager : MonoBehaviour
         }
 
         DialogueNode node = DialogueSystem.Instance.CurrentNode;
+
+        // ===== 剧情点5 - 选项B判定（500308）=====
+        if (nodeId == 500308)
+        {
+            Debug.Log("<color=yellow>【判定节点】选项B - 检查是否满足IF线4条件...</color>");
+
+            float troop = ResourceManager.Instance?.GetTroop() ?? 0;
+            float food = ResourceManager.Instance?.GetFood() ?? 0;
+
+            Debug.Log($"当前资源 - 兵力:{troop}, 粮草:{food}");
+
+            int targetNodeId;
+
+            // IF线4条件：兵力>70 且 粮草>50
+            if (troop > 70 && food > 50)
+            {
+                targetNodeId = 500317; // 解锁IF线4：以退为进
+                Debug.Log("<color=green>【判定结果】满足条件（兵力>70且粮草>50）→ 进入IF线4：以退为进</color>");
+            }
+            else
+            {
+                targetNodeId = 500309; // 解锁IF线3：元气大伤
+                Debug.Log("<color=green>【判定结果】不满足条件 → 进入IF线3：元气大伤</color>");
+            }
+
+            DialogueSystem.Instance.ShowDialogueNode(targetNodeId);
+            return;
+        }
+        // ===== 选项B判定结束 =====
+
+        // ===== 剧情点5 - 选项C判定（500406）=====
+        if (nodeId == 500406)
+        {
+            Debug.Log("<color=yellow>【判定节点】选项C - 检查IF线5或IF线6条件...</color>");
+
+            float risk = ResourceManager.Instance?.GetRisk() ?? 0;
+            float troop = ResourceManager.Instance?.GetTroop() ?? 0;
+            float food = ResourceManager.Instance?.GetFood() ?? 0;
+
+            Debug.Log($"当前资源 - 风险:{risk}, 兵力:{troop}, 粮草:{food}");
+
+            int targetNodeId;
+
+            // IF线5条件：风险<70 且 兵力>70 且 粮草>50
+            if (risk < 70 && troop > 70 && food > 50)
+            {
+                targetNodeId = 500407; // 解锁IF线5：完美
+                Debug.Log("<color=green>【判定结果】满足IF线5条件（风险<70,兵力>70,粮草>50）→ 进入IF线5：完美</color>");
+            }
+            // IF线6条件：风险>70 且 兵力<70 且 粮草<50
+            else if (risk > 70 && troop < 70 && food < 50)
+            {
+                targetNodeId = 500414; // 解锁IF线6：惨败
+                Debug.Log("<color=green>【判定结果】满足IF线6条件（风险>70,兵力<70,粮草<50）→ 进入IF线6：惨败</color>");
+            }
+            else
+            {
+                // 中间状态：默认进入IF线5（或者你可以根据设计调整）
+                targetNodeId = 500407;
+                Debug.Log("<color=orange>【判定结果】处于中间状态，默认进入IF线5：完美</color>");
+            }
+
+            DialogueSystem.Instance.ShowDialogueNode(targetNodeId);
+            return;
+        }
+        // ===== 选项C判定结束 =====
 
         // 背景介绍节点处理
         if (node.isBackgroundIntro)
@@ -712,7 +782,15 @@ public class FinalUIManager : MonoBehaviour
 
             case "grid":
                 if (gridGameManager != null)
-                    gridGameManager.StartGridGame();
+                {
+                    // 传入回调，处理游戏结果
+                    gridGameManager.StartGridGame((success) => OnGridGameFinished(success, nextNodeId));
+                }
+                else
+                {
+                    Debug.LogWarning("GridGameManager未赋值，直接继续剧情");
+                    OnMiniGameFinished(true, nextNodeId);
+                }
                 break;
 
             case "digtunnel":
@@ -882,6 +960,40 @@ public class FinalUIManager : MonoBehaviour
             HideClickArea();
             SetOptionsActive(false);
         }
+    }
+
+    // 走格子游戏结束回调
+    void OnGridGameFinished(bool success, int nextNodeId)
+    {
+        if (!success)
+        {
+            // 被敌军发现，兵力-20
+            if (ResourceManager.Instance != null)
+            {
+                ResourceManager.Instance.ModifyTroop(-20);
+                Debug.Log("<color=red>【走格子失败】被敌军发现！兵力减少20！</color>");
+            }
+            else
+            {
+                Debug.LogWarning("ResourceManager未找到，无法扣除兵力");
+            }
+
+            // 可以在这里加一些失败提示UI，比如：
+            // ShowFailTip("被敌军发现！损失20兵力...");
+        }
+        else
+        {
+            Debug.Log("<color=green>【走格子胜利】成功避开敌军！</color>");
+        }
+
+        // 无论成功失败，都继续剧情点5（500101）
+        // 如果配置中的nextNodeId为0，默认使用500101
+        int targetNodeId = (nextNodeId > 0) ? nextNodeId : 500101;
+
+        Debug.Log($"<color=cyan>从走格子游戏返回，跳转到节点：{targetNodeId}</color>");
+
+        // 调用原有的MiniGame结束逻辑，显示游戏主界面并跳转
+        OnMiniGameFinished(true, targetNodeId);
     }
 
     bool IsEndingNode(int nodeId)

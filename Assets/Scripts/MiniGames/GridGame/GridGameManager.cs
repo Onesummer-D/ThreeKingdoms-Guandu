@@ -12,6 +12,7 @@ public class GridGameManager : MonoBehaviour
     public Image mapBase;
     public Text statusText;
     public Button confirmButton;
+    private System.Action<bool> onGameFinished; // ✅ 新增：游戏结束回调（true=胜利, false=失败）
 
     [Header("玩家")]
     public GridPlayer player;
@@ -100,8 +101,10 @@ public class GridGameManager : MonoBehaviour
     }
 
 
-    public void StartGridGame()
+    // ✅ 修改方法签名，接受回调参数（默认null兼容旧代码）
+    public void StartGridGame(System.Action<bool> callback = null)
     {
+        onGameFinished = callback; // 保存回调
         Debug.Log("[GridGameManager] 开始走格子游戏！");
 
         // ✅ 确保面板显示
@@ -127,11 +130,11 @@ public class GridGameManager : MonoBehaviour
             {
                 tile.EnableClick(true);
                 tile.SetHighlight(false);
-                tile.SetOccupied(false);  // 确保格子可见
+                tile.SetOccupied(false);
             }
         }
 
-        // 隐藏玩家标记（等待选择起点后再显示）
+        // 隐藏玩家标记
         if (player != null)
         {
             player.gameObject.SetActive(false);
@@ -272,6 +275,9 @@ public class GridGameManager : MonoBehaviour
             if (statusText != null)
                 statusText.text = "💀 失败！被敌军发现！";
         }
+
+        // ✅ 关键：调用回调通知 FinalUIManager（走格子失败处理）
+        onGameFinished?.Invoke(isWin);
 
         // 调用回调通知剧情系统
         if (GameCallbacks.Instance != null)
