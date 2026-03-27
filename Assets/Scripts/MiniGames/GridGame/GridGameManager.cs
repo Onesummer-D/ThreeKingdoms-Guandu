@@ -120,7 +120,7 @@ public class GridGameManager : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = "请选择第1列（最左列）的任意格子作为起点";
+            statusText.text = "请选择第1列的任意格作为起点";
         }
 
         // 重置所有格子状态
@@ -152,7 +152,7 @@ public class GridGameManager : MonoBehaviour
         if (tile.GridX != 0)
         {
             if (statusText != null)
-                statusText.text = "只能从第1列（最左列）开始！请选择左侧的格子";
+                statusText.text = "只能从第1列开始！请选择左侧的格子";
             return;
         }
 

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using TMPro;
 
 public class PuzzleGameManager : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class PuzzleGameManager : MonoBehaviour
     [Header("完成效果")]
     public Image completedCarImage;      // 图一：淡入的成品图
     public Image finalResultImage;       // 图三：最终成品展示（带背景板效果）
-    public Text successText;             // "发石车打造成功！"文字
+    public TMP_Text successText;
     public float fadeInDuration = 0.5f;
     public float successTextDuration = 1f;  // 文字显示时间
     public float finalResultDuration = 3f;  // 图三显示时间
