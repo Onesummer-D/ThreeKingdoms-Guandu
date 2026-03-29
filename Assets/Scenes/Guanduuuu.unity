@@ -9567,7 +9567,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 120, y: 430}
+  m_AnchoredPosition: {x: 160, y: 390}
   m_SizeDelta: {x: 800, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1467649593
@@ -11848,7 +11848,7 @@ MonoBehaviour:
   foodChangeText: {fileID: 203669036}
   strategyChangeText: {fileID: 410924642}
   riskChangeText: {fileID: 1563785237}
-  changeTextDuration: 3
+  changeTextDuration: 1.5
   catapultImage: {fileID: 53284873}
 --- !u!4 &1868680268
 Transform:

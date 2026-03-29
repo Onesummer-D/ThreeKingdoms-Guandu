@@ -27,8 +27,8 @@ public class GridGameManager : MonoBehaviour
     private bool isStartPositionSelected = false;
 
     // 地图尺寸
-    private const int COLUMNS = 4; 
-    private const int ROWS = 5;  
+    private const int COLUMNS = 5; 
+    private const int ROWS = 4;  
 
     void Awake()
     {
@@ -73,30 +73,16 @@ public class GridGameManager : MonoBehaviour
         {
             if (tile == null) continue;
 
-            int x = tile.GridX;
-            int y = tile.GridY;
+            // 你的Tile里：GridX=行号，GridY=列号
+            int col = tile.GridY;  // 列（0-4）
+            int row = tile.GridX;  // 行（0-3）
 
-            if (x >= 0 && x < COLUMNS && y >= 0 && y < ROWS)
+            if (col >= 0 && col < COLUMNS && row >= 0 && row < ROWS)
             {
-                gridTiles[x, y] = tile;
+                gridTiles[col, row] = tile;  // [列,行]
                 tile.SetManager(this);
-                Debug.Log($"[GridGameManager] 注册格子: ({x}, {y})");
+                Debug.Log($"注册格子: 第{row + 1}行, 第{col + 1}列");
             }
-            else
-            {
-                Debug.LogWarning($"[GridGameManager] 格子坐标越界: ({x}, {y})");
-            }
-        }
-
-        // 检查缺失的格子
-        int missingCount = 0;
-        for (int x = 0; x < COLUMNS; x++)
-            for (int y = 0; y < ROWS; y++)
-                if (gridTiles[x, y] == null) missingCount++;
-
-        if (missingCount > 0)
-        {
-            Debug.LogWarning($"[GridGameManager] 还有 {missingCount} 个格子未放置！");
         }
     }
 
@@ -120,7 +106,7 @@ public class GridGameManager : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = "请选择第1列的任意格作为起点";
+            statusText.text = "请选择第1行的任意格作为起点";
         }
 
         // 重置所有格子状态
@@ -148,11 +134,10 @@ public class GridGameManager : MonoBehaviour
     {
         if (!isGameActive || isStartPositionSelected) return;
 
-        // 只允许选择第1列（x=0）
         if (tile.GridX != 0)
         {
             if (statusText != null)
-                statusText.text = "只能从第1列开始！请选择左侧的格子";
+                statusText.text = "只能从第1行开始！";
             return;
         }
 
@@ -166,7 +151,9 @@ public class GridGameManager : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.text = $"已选择起点: 第{tile.GridY + 1}行，点击确认开始";
+            // ✅ 修复：不用$插值，改用+拼接，避免Text组件解析错误
+            int colNumber = tile.GridY + 1;
+            statusText.text = "已选起点:第1行第" + colNumber + "列";
         }
 
         if (confirmButton != null)
@@ -174,7 +161,7 @@ public class GridGameManager : MonoBehaviour
             confirmButton.gameObject.SetActive(true);
         }
 
-        Debug.Log($"[GridGameManager] 选中起点: ({tile.GridX}, {tile.GridY})");
+        Debug.Log($"[GridGameManager] 选中起点: 第{tile.GridX + 1}行, 第{tile.GridY + 1}列");
     }
 
     void OnConfirmStartPosition()
@@ -218,18 +205,16 @@ public class GridGameManager : MonoBehaviour
         Debug.Log($"[GridGameManager] 游戏开始！玩家位置: ({selectedTile.GridX}, {selectedTile.GridY})");
     }
 
-    public GridTile GetTileAt(int x, int y)
+    public GridTile GetTileAt(int row, int col)
     {
-        if (x < 0 || x >= COLUMNS || y < 0 || y >= ROWS) return null;
-        return gridTiles[x, y];
+        if (col < 0 || col >= COLUMNS || row < 0 || row >= ROWS) return null;
+        return gridTiles[col, row];  // 数组是[列,行]
     }
 
-    public void OnPlayerMove(int x, int y)
+    public void OnPlayerMove(int row, int col)  // 传入行和列
     {
-        GridTile tile = GetTileAt(x, y);
+        GridTile tile = GetTileAt(row, col);
         if (tile == null) return;
-
-        Debug.Log($"[GridGameManager] 玩家移动到: ({x}, {y})，敌人: {tile.IsEnemy}，终点: {tile.IsEndPoint}");
 
         // 检查是否是敌人
         if (tile.IsEnemy)
@@ -245,15 +230,16 @@ public class GridGameManager : MonoBehaviour
             return;
         }
 
-        // 检查是否到达第3列非敌人格（显示提示）
-        if (x == 2 && !tile.IsEnemy)
-        {
-            if (statusText != null)
-            {
-                statusText.text = "已到达第3列！再按一次W键就胜利！";
-            }
-        }
+        // 检查是否到达第3列（col == 2）且非敌人
+        //if (col == 2 && !tile.IsEnemy)
+        //{
+           // if (statusText != null)
+            //{
+               // statusText.text = "已到达第3列！再按一次W就胜利！";
+            //}
+        //}
     }
+
 
     public void OnPlayerReachEnd()
     {
