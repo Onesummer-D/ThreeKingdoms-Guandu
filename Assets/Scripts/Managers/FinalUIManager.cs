@@ -102,7 +102,6 @@ public class FinalUIManager : MonoBehaviour
     public float fadeDuration = 0.5f;
     private bool isPlayingFireAnimation = false;
 
-    // 🏆 彩蛋称号显示字段
     [Header("彩蛋称号显示")]
     public GameObject achievementPanel;
     public Image achievementImage;
@@ -113,16 +112,14 @@ public class FinalUIManager : MonoBehaviour
     public TMP_Text foodChangeText;
     public TMP_Text strategyChangeText;
     public TMP_Text riskChangeText;
-    public float changeTextDuration = 1.5f; // 飘字显示时间
+    public float changeTextDuration = 1.5f;
 
-    // 🔥 发石车显示字段（剧情点一选项A）
     [Header("发石车显示")]
-    public Image catapultImage;  // 拖入发石车Image
+    public Image catapultImage;
 
-    // 只有这些节点才播放彩蛋弹性动画（白名单）
     private HashSet<int> achievementAnimationNodes = new HashSet<int>
     {
-        500215,  // 收服许攸后显示"政治家的胸怀"
+        500215,
     };
 
     public static FinalUIManager Instance { get; private set; }
@@ -150,6 +147,38 @@ public class FinalUIManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    // ✅ 新增：Start方法 - 首页启动播放BGM
+    void Start()
+    {
+        Debug.Log("🎮 FinalUIManager 启动");
+
+        // ✅ 首页启动即播放战争背景音
+        if (AudioManager.Instance != null && AudioManager.Instance.warBackgroundBGM != null)
+        {
+            // 检查当前是否还没开始对话（避免重复播放）
+            if (DialogueSystem.Instance == null || !DialogueSystem.Instance.IsShowing)
+            {
+                AudioManager.Instance.PlayBGM(
+                    AudioManager.Instance.warBackgroundBGM,
+                    loop: true,
+                    stopPrevious: false
+                );
+                Debug.Log("<color=magenta>首页启动，播放战争背景音</color>");
+            }
+        }
+
+        if (startMenuPanel != null) startMenuPanel.SetActive(true);
+        if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
+        if (backgroundIntroPanel != null) backgroundIntroPanel.SetActive(false);
+        if (endingReturnButton != null) endingReturnButton.SetActive(false);
+        if (achievementPanel != null) achievementPanel.SetActive(false);
+        if (fireAnimationPanel != null) fireAnimationPanel.SetActive(false);
+        if (catapultImage != null) catapultImage.gameObject.SetActive(false);
+
+        HideAllCharacters();
+        SetupButtonEvents();
     }
 
     void OnEnable()
@@ -189,20 +218,60 @@ public class FinalUIManager : MonoBehaviour
         }
     }
 
-    void Start()
+    // ✅ 只有一个StartMiniGame方法（保留正确的版本）
+    void StartMiniGame(string gameType, int nextNodeId)
     {
-        Debug.Log("🎮 FinalUIManager 启动");
+        Debug.Log($"启动小游戏: {gameType}");
 
-        if (startMenuPanel != null) startMenuPanel.SetActive(true);
-        if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
-        if (backgroundIntroPanel != null) backgroundIntroPanel.SetActive(false);
-        if (endingReturnButton != null) endingReturnButton.SetActive(false);
-        if (achievementPanel != null) achievementPanel.SetActive(false);
-        if (fireAnimationPanel != null) fireAnimationPanel.SetActive(false);
-        if (catapultImage != null) catapultImage.gameObject.SetActive(false); // 初始隐藏发石车
+        // ✅ 修改：降低BGM音量到20%，而不是暂停
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.ReduceBGMVolume(0.2f);
+        }
 
-        HideAllCharacters();
-        SetupButtonEvents();
+        if (gameInterfacePanel != null)
+            gameInterfacePanel.SetActive(false);
+
+        switch (gameType.ToLower())
+        {
+            case "puzzle":
+                if (puzzleGameManager != null)
+                    puzzleGameManager.StartPuzzleGame((success) => OnMiniGameFinished(success, nextNodeId), nextNodeId);
+                break;
+
+            case "grid":
+                if (gridGameManager != null)
+                {
+                    gridGameManager.StartGridGame((success) => OnGridGameFinished(success, nextNodeId));
+                }
+                else
+                {
+                    Debug.LogWarning("GridGameManager未赋值，直接继续剧情");
+                    OnMiniGameFinished(true, nextNodeId);
+                }
+                break;
+
+            case "digtunnel":
+                if (digTunnelPanel != null)
+                {
+                    digTunnelPanel.SetActive(true);
+                    StartCoroutine(DigTunnelCoroutine(nextNodeId));
+                }
+                else
+                {
+                    Debug.LogWarning("DigTunnelPanel未赋值，直接跳转");
+                    OnMiniGameFinished(true, nextNodeId);
+                }
+                break;
+
+            case "slider":
+                StartSliderGame(nextNodeId);
+                break;
+
+            default:
+                OnMiniGameFinished(true, nextNodeId);
+                break;
+        }
     }
 
     void SetupButtonEvents()
@@ -257,29 +326,24 @@ public class FinalUIManager : MonoBehaviour
         Image currentImg = fireAnimationImage;
         Image nextImg = fireAnimationImage2;
 
-        // 初始化：第一张显示，第二张透明
         currentImg.sprite = fireSprites[0];
         currentImg.color = Color.white;
         nextImg.color = new Color(1, 1, 1, 0);
 
         for (int i = 0; i < fireSprites.Length; i++)
         {
-            // 设置当前图片
             currentImg.sprite = fireSprites[i];
             currentImg.color = Color.white;
 
-            // 预加载下一张到备用Image（透明状态）
             if (i < fireSprites.Length - 1)
             {
                 nextImg.sprite = fireSprites[i + 1];
                 nextImg.color = new Color(1, 1, 1, 0);
             }
 
-            // 停留显示时间
             float stayTime = (i == fireSprites.Length - 1) ? frameDuration + 1.0f : frameDuration - fadeDuration;
             yield return new WaitForSeconds(stayTime);
 
-            // 如果不是最后一张，交叉淡化
             if (i < fireSprites.Length - 1)
             {
                 float timer = 0;
@@ -287,23 +351,19 @@ public class FinalUIManager : MonoBehaviour
                 {
                     timer += Time.deltaTime;
                     float t = timer / fadeDuration;
-                    // 当前淡出，下一张淡入
                     currentImg.color = new Color(1, 1, 1, 1 - t);
                     nextImg.color = new Color(1, 1, 1, t);
                     yield return null;
                 }
-                // 确保状态
                 currentImg.color = new Color(1, 1, 1, 0);
                 nextImg.color = Color.white;
 
-                // 交换引用，下一张变成当前
                 Image temp = currentImg;
                 currentImg = nextImg;
                 nextImg = temp;
             }
             else
             {
-                // 最后一张只淡出
                 float timer = 0;
                 while (timer < fadeDuration)
                 {
@@ -316,14 +376,12 @@ public class FinalUIManager : MonoBehaviour
             }
         }
 
-        // 恢复游戏
         if (fireAnimationPanel != null) fireAnimationPanel.SetActive(false);
         if (gameInterfacePanel != null) gameInterfacePanel.SetActive(true);
         isPlayingFireAnimation = false;
         DialogueSystem.Instance.ShowDialogueNode(nextNodeId);
     }
 
-    // 🏆 彩蛋称号显示（白名单控制）
     private void HandleAchievementDisplay(DialogueNode node)
     {
         if (node.achievementSprite == null)
@@ -340,7 +398,6 @@ public class FinalUIManager : MonoBehaviour
 
             Debug.Log($"<color=yellow>显示彩蛋称号：节点{node.nodeId}</color>");
 
-            // 只有白名单里的节点才播放弹性动画
             if (achievementAnimationNodes.Contains(node.nodeId))
             {
                 StopCoroutine("AchievementPopAnim");
@@ -349,15 +406,11 @@ public class FinalUIManager : MonoBehaviour
         }
     }
 
-    // 🔥 发石车显示控制（100203-100207显示）
     private void HandleCatapultDisplay(int nodeId)
     {
         bool shouldShowCatapult = (nodeId >= 100203 && nodeId <= 100207);
-
         if (catapultImage != null)
-        {
             catapultImage.gameObject.SetActive(shouldShowCatapult);
-        }
     }
 
     private IEnumerator AchievementPopAnim(float finalScale)
@@ -398,20 +451,15 @@ public class FinalUIManager : MonoBehaviour
 
         DialogueNode node = DialogueSystem.Instance.CurrentNode;
 
-        // 🏆 处理彩蛋
         HandleAchievementDisplay(node);
-
-        // 🔥 处理发石车显示
         HandleCatapultDisplay(nodeId);
 
-        // 检查是否是"解锁结局"前置节点
         if (unlockEndingNodes.ContainsKey(nodeId))
         {
             ShowUnlockEndingUI(node);
             return;
         }
 
-        // 判定节点处理
         if (nodeId == 500308)
         {
             HandleNode500308();
@@ -423,10 +471,9 @@ public class FinalUIManager : MonoBehaviour
             return;
         }
 
-        // 背景介绍节点处理
         if (node.isBackgroundIntro)
         {
-            if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false); // 确保游戏界面隐藏
+            if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
             ShowBackgroundIntro(node);
             return;
         }
@@ -669,19 +716,13 @@ public class FinalUIManager : MonoBehaviour
         yield return null;
 
         if (!string.IsNullOrEmpty(node.avatarCharacter))
-        {
             ShowAvatar(node.avatarCharacter);
-        }
 
         if (!string.IsNullOrEmpty(node.leftCharacter))
-        {
             ShowLeftCharacter(node.leftCharacter);
-        }
 
         if (!string.IsNullOrEmpty(node.rightCharacter))
-        {
             ShowRightCharacter(node.rightCharacter);
-        }
     }
 
     void HideAllCharacters()
@@ -868,13 +909,13 @@ public class FinalUIManager : MonoBehaviour
 
         StartCoroutine(ClearSelection());
     }
+
     IEnumerator ClearSelection()
     {
-        yield return new WaitForSeconds(0.05f); // 等待按钮完全显示
+        yield return new WaitForSeconds(0.05f);
         if (UnityEngine.EventSystems.EventSystem.current != null)
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
 
-        // 额外保险：强制按钮颜色恢复
         if (optionButton1 != null) optionButton1.OnDeselect(null);
         if (optionButton2 != null) optionButton2.OnDeselect(null);
         if (optionButton3 != null) optionButton3.OnDeselect(null);
@@ -927,7 +968,6 @@ public class FinalUIManager : MonoBehaviour
 
         bool hasResourceChange = ShowResourceChanges(option);
 
-        // 如果有数值变化，等待飘字完成再跳转；如果没有，立即跳转
         if (hasResourceChange)
         {
             StartCoroutine(DelayedAction(() => ExecuteOptionAction(option), changeTextDuration));
@@ -938,54 +978,7 @@ public class FinalUIManager : MonoBehaviour
         }
     }
 
-    void StartMiniGame(string gameType, int nextNodeId)
-    {
-        Debug.Log($"启动小游戏: {gameType}");
-
-        if (gameInterfacePanel != null)
-            gameInterfacePanel.SetActive(false);
-
-        switch (gameType.ToLower())
-        {
-            case "puzzle":
-                if (puzzleGameManager != null)
-                    puzzleGameManager.StartPuzzleGame((success) => OnMiniGameFinished(success, nextNodeId), nextNodeId);
-                break;
-
-            case "grid":
-                if (gridGameManager != null)
-                {
-                    gridGameManager.StartGridGame((success) => OnGridGameFinished(success, nextNodeId));
-                }
-                else
-                {
-                    Debug.LogWarning("GridGameManager未赋值，直接继续剧情");
-                    OnMiniGameFinished(true, nextNodeId);
-                }
-                break;
-
-            case "digtunnel":
-                if (digTunnelPanel != null)
-                {
-                    digTunnelPanel.SetActive(true);
-                    StartCoroutine(DigTunnelCoroutine(nextNodeId));
-                }
-                else
-                {
-                    Debug.LogWarning("DigTunnelPanel未赋值，直接跳转");
-                    OnMiniGameFinished(true, nextNodeId);
-                }
-                break;
-
-            case "slider":
-                StartSliderGame(nextNodeId);
-                break;
-
-            default:
-                OnMiniGameFinished(true, nextNodeId);
-                break;
-        }
-    }
+    // ✅ 删除重复的StartMiniGame方法（之前这里有一个旧的，现在只保留一个）
 
     IEnumerator DigTunnelCoroutine(int nextNodeId)
     {
@@ -995,7 +988,6 @@ public class FinalUIManager : MonoBehaviour
         digAfterImage.gameObject.SetActive(false);
         digTunnelClicked = false;
 
-        // 🔥 初始化提示文字
         if (digHintText != null)
         {
             digHintText.text = "点击地道，进行挖掘";
@@ -1016,12 +1008,12 @@ public class FinalUIManager : MonoBehaviour
 
         Debug.Log("玩家点击了挖掘，切换图片");
 
-        // 🔥 点击成功后修改文字！
         if (digHintText != null)
         {
             digHintText.text = "恭喜！地道挖掘成功！";
         }
-
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayDigSuccess();
 
         digBeforeImage.gameObject.SetActive(false);
         digAfterImage.gameObject.SetActive(true);
@@ -1073,7 +1065,6 @@ public class FinalUIManager : MonoBehaviour
     {
         if (sliderValueText != null)
         {
-            // 获取当前总兵力，计算剩余
             float currentTroop = ResourceManager.Instance?.GetTroop() ?? 50;
             float remaining = currentTroop - value;
             sliderValueText.text = $"剩余兵力：{remaining}";
@@ -1087,7 +1078,6 @@ public class FinalUIManager : MonoBehaviour
             float selectedValue = valueSlider.value;
             Debug.Log($"玩家选择舍弃兵力: {selectedValue}");
 
-            // 🔥 关键：扣除选择的兵力！
             if (ResourceManager.Instance != null)
             {
                 ResourceManager.Instance.ModifyTroop(-selectedValue);
@@ -1104,6 +1094,12 @@ public class FinalUIManager : MonoBehaviour
 
     public void OnMiniGameFinished(bool success, int nextNodeId)
     {
+        // ✅ 修改：恢复BGM音量
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.RestoreBGMVolume();
+        }
+
         if (gameInterfacePanel != null)
             gameInterfacePanel.SetActive(true);
 
@@ -1153,14 +1149,16 @@ public class FinalUIManager : MonoBehaviour
                 ResourceManager.Instance.ModifyTroop(-20);
                 Debug.Log("<color=red>【走格子失败】被敌军发现！兵力减少20！</color>");
             }
-            else
-            {
-                Debug.LogWarning("ResourceManager未找到，无法扣除兵力");
-            }
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayAlert();
         }
         else
         {
             Debug.Log("<color=green>【走格子胜利】成功避开敌军！</color>");
+            // ✅ 新增：胜利播放达成成就音效
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayAchievement();
         }
 
         int targetNodeId = (nextNodeId > 0) ? nextNodeId : 500101;
@@ -1223,11 +1221,9 @@ public class FinalUIManager : MonoBehaviour
         if (viewEndingButton != null)
             viewEndingButton.gameObject.SetActive(false);
 
-        // 🏆 隐藏彩蛋面板
         if (achievementPanel != null)
             achievementPanel.SetActive(false);
 
-        // 🔥 隐藏发石车
         if (catapultImage != null)
             catapultImage.gameObject.SetActive(false);
 
@@ -1257,7 +1253,6 @@ public class FinalUIManager : MonoBehaviour
             riskText.text = $"{ResourceManager.Instance.GetRisk():F0}";
     }
 
-    // 显示资源变化飘字，返回是否有变化
     private bool ShowResourceChanges(DialogueOption option)
     {
         bool hasChange = false;
@@ -1286,7 +1281,6 @@ public class FinalUIManager : MonoBehaviour
         return hasChange;
     }
 
-    // 显示单个飘字
     private void ShowFloatingText(TMP_Text textComponent, string resourceName, float value, Color color)
     {
         if (textComponent == null) return;
@@ -1295,38 +1289,34 @@ public class FinalUIManager : MonoBehaviour
         textComponent.text = $"{resourceName}{sign}{value}";
         textComponent.color = color;
 
-        // 🔥 阶梯式：左高右低，避免重叠和碰UI
         float xOffset = 0;
-        float yOffset = 350; // 基础高度
+        float yOffset = 350;
 
         switch (resourceName)
         {
             case "兵力":
-                xOffset = -200;  // 最左
-                yOffset = 510;   // 最高（远离左上角头像，但比资源条低）
+                xOffset = -200;
+                yOffset = 510;
                 break;
             case "粮草":
-                xOffset = -80;   // 左中
-                yOffset = 420;   // 次高
+                xOffset = -80;
+                yOffset = 420;
                 break;
             case "计策":
-                xOffset = 80;    // 右中
-                yOffset = 330;   // 较低
+                xOffset = 80;
+                yOffset = 330;
                 break;
             case "风险":
-                xOffset = 200;   // 最右（远离右上角资源图标）
-                yOffset = 270;   // 最低（但仍在选项上方，选项在Y=220以下）
+                xOffset = 200;
+                yOffset = 270;
                 break;
         }
 
-        // 重置位置
         textComponent.rectTransform.anchoredPosition = new Vector2(xOffset, yOffset);
 
         StartCoroutine(FloatingTextAnimation(textComponent));
-
     }
 
-    // 飘字动画（向上飘+淡出）
     private IEnumerator FloatingTextAnimation(TMP_Text text)
     {
         text.gameObject.SetActive(true);
@@ -1338,10 +1328,8 @@ public class FinalUIManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / changeTextDuration;
 
-            // 向上移动
             text.rectTransform.anchoredPosition = startPos + new Vector3(0, t * 50, 0);
 
-            // 淡出
             Color c = text.color;
             c.a = 1 - t;
             text.color = c;
@@ -1351,25 +1339,28 @@ public class FinalUIManager : MonoBehaviour
 
         text.gameObject.SetActive(false);
         text.rectTransform.anchoredPosition = startPos;
-        // 重置alpha
         Color resetColor = text.color;
         resetColor.a = 1;
         text.color = resetColor;
     }
 
-    // 延迟执行协程
     private IEnumerator DelayedAction(System.Action action, float delay)
     {
         yield return new WaitForSeconds(delay);
         action?.Invoke();
     }
 
-    // 实际执行选项跳转（把原来的逻辑抽出来）
     private void ExecuteOptionAction(DialogueOption option)
     {
         // 剧情点5选项A：全力攻占乌巢（火烧动画）
         if (option.nextNodeId == 500201)
         {
+            // ✅ 不停止BGM，播放火烧音效
+            if (AudioManager.Instance != null && AudioManager.Instance.fireWuchaoSFX != null)
+            {
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.fireWuchaoSFX);
+            }
+
             PlayFireAnimation(500201);
             return;
         }
@@ -1388,6 +1379,10 @@ public class FinalUIManager : MonoBehaviour
     {
         Debug.Log("点击了挖掘图片！");
         digTunnelClicked = true;
+
+        // ✅ 确保调用挖掘音效（园艺-用铲子）
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayDigging();
 
         if (ResourceManager.Instance != null)
         {

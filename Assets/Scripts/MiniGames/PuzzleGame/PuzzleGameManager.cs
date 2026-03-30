@@ -125,6 +125,11 @@ public class PuzzleGameManager : MonoBehaviour
         placedPieceCount++;
         Debug.Log($"碎片放置进度: {placedPieceCount}/{puzzlePieces.Count}");
 
+        // ========== 新增：播放拼图正确音效（每一块放对时）==========
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayPuzzleCorrect();
+        // =======================================================
+
         if (placedPieceCount >= puzzlePieces.Count && !isCompleted)
         {
             isCompleted = true;
@@ -175,6 +180,10 @@ public class PuzzleGameManager : MonoBehaviour
         // 显示文字
         successText.gameObject.SetActive(true);
         successText.text = "发石车打造成功！";
+
+        // ✅ 修正：调用打造成功音效（使用AudioManager中的方法）
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayCraftSuccess();
 
         // 淡入文字
         Color textColor = successText.color;

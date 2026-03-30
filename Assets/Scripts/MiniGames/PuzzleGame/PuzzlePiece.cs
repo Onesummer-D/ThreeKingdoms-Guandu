@@ -101,6 +101,11 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
             // 关键：吸附后锁定位置，防止后续拖拽
             rectTransform.anchoredPosition = correctPosition;
 
+            // ========== 新增：播放拼图正确音 ==========
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayPuzzleCorrect();
+            // =======================================
+
             OnPiecePlaced?.Invoke();
             Debug.Log($"碎片 {gameObject.name} 已放置到正确位置！");
         }

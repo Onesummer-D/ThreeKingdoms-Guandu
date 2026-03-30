@@ -138,6 +138,12 @@ public class GridGameManager : MonoBehaviour
         {
             if (statusText != null)
                 statusText.text = "只能从第1行开始！";
+
+            // ========== 新增：选错起点播放错误音 ==========
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayError();
+            // 
+
             return;
         }
 
@@ -202,6 +208,11 @@ public class GridGameManager : MonoBehaviour
             statusText.text = "使用WASD移动，注意避开敌方！";
         }
 
+        // ========== 新增：播放移动音效（开始游戏）==========
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayPuzzleMove();  // 用移动音作为开始音
+                                                     // ===============================================
+
         Debug.Log($"[GridGameManager] 游戏开始！玩家位置: ({selectedTile.GridX}, {selectedTile.GridY})");
     }
 
@@ -213,12 +224,23 @@ public class GridGameManager : MonoBehaviour
 
     public void OnPlayerMove(int row, int col)  // 传入行和列
     {
+        // ========== 新增：播放移动音效 ==========
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayPuzzleMove();
+        // ======================================
+
         GridTile tile = GetTileAt(row, col);
         if (tile == null) return;
 
         // 检查是否是敌人
         if (tile.IsEnemy)
         {
+
+            // ========== 新增：播放警报音 ==========
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayAlert();
+            // ====================================
+
             GameOver(false);
             return;
         }

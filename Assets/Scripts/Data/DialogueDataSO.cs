@@ -30,27 +30,36 @@ public class DialogueNode
     public Sprite backgroundImage;
     public bool isBackgroundIntro = false;
 
-    // 人物显示
+    // 人物显示（严格按你之前的规则！）
     public string avatarCharacter = "";     // 头像
-    public string leftCharacter = "";       // 左侧立绘
-    public string rightCharacter = "";      // 右侧立绘
+    public string leftCharacter = "";       // 左侧立绘（袁绍/许攸等）
+    public string rightCharacter = "";      // 右侧立绘（曹操固定站这里！）
 
     public List<DialogueOption> options = new List<DialogueOption>();
     public int nextNodeId;  // 无选项时的下一个节点
 
-    // 🏆 新增：彩蛋称号设置（可选，默认为空不显示）
+    // 🏆 彩蛋称号设置（你原有的）
     [Header("彩蛋称号设置")]
-    [Tooltip("称号图片，如'政治家的胸怀'徽章，留空则不显示")]
-    public Sprite achievementSprite;           // 称号图片
+    public Sprite achievementSprite;
+    public Vector2 achievementPosition = new Vector2(0, 300);
+    public float achievementScale = 1f;
+    public bool playPopAnimation = true;
 
-    [Tooltip("图片相对于屏幕中心的位置偏移（X,Y）")]
-    public Vector2 achievementPosition = new Vector2(0, 300);  // 默认在屏幕上方300像素
+    // ========== 新增：音频配置（关键！）==========
+    [Header("音频 - BGM（背景音乐）")]
+    [Tooltip("剧情点BGM，1-3分钟的长音乐，不填则不换BGM")]
+    public AudioClip bgmClip;
 
-    [Tooltip("图片缩放比例（1为原始大小，0.5为一半，2为两倍）")]
-    public float achievementScale = 1f;        // 默认1倍大小
+    [Tooltip("是否循环播放（铺垫剧情true，特殊动画false）")]
+    public bool loopBGM = true;
 
-    [Tooltip("是否播放弹性弹出动画")]
-    public bool playPopAnimation = true;       // 默认播放动画
+    [Tooltip("是否停止之前的BGM（一般勾上）")]
+    public bool stopPreviousBGM = true;
+
+    [Header("音频 - 进入音效（SFX）")]
+    [Tooltip("进入节点时播放的音效，如500215称号音、500201火烧音")]
+    public AudioClip sfxOnEnter;
+    // ============================================
 }
 
 [CreateAssetMenu(fileName = "DialogueDataSO", menuName = "Game/Dialogue Data")]

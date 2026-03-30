@@ -65,6 +65,11 @@ public class GridPlayer : MonoBehaviour
         }
 
         if (!hasInput) return;
+        // ========== 新增：走格子移动音效 ==========
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayPuzzleMove();
+        // =====================================
+
 
         // 检查边界：4行5列
         if (newRow < 0 || newRow >= 4 || newCol < 0 || newCol >= 5)
