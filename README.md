@@ -111,7 +111,7 @@ DialogueDataSO
  │    ├── DialogueOption
  │    ├── ResourceEffect
  │    └── Condition
-
+```
 
 每个剧情节点包含：
 
