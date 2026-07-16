@@ -101,7 +101,7 @@
 
 # 技术架构
 
-<img src="./README_Assets/architecture1.png" width="850">
+<img src="./README_Assets/techarchi.png" width="850">
 
 ## 1. 数据驱动剧情系统
 
