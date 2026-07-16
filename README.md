@@ -36,6 +36,34 @@
 
 ---
 
+# 游戏展示
+
+<img src="./README_Assets/Homepage.png" width="850">
+
+## 剧情交互界面
+
+<img src="./README_Assets/dialogue.png" width="850">
+
+<img src="./README_Assets/dialogue1.png" width="850">
+
+<img src="./README_Assets/dialogue2.png" width="850">
+
+<img src="./README_Assets/dialogue3.png" width="850">
+
+<img src="./README_Assets/dialogue4.png" width="850">
+
+
+## 资源决策系统
+
+<img src="./README_Assets/resource.png" width="850">
+
+
+## 多结局展示
+
+<img src="./README_Assets/endings.png" width="850">
+
+---
+
 # 游戏特性
 
 ## 非线性剧情系统
@@ -67,23 +95,7 @@
 
 通过资源组合动态决定事件结果，实现：
 
-玩家决策
-
-↓
-
-资源变化
-
-↓
-
-条件判断
-
-↓
-
-剧情分支
-
-↓
-
-结局反馈
+<img src="./README_Assets/architecture.png" width="850">
 
 ---
 
@@ -156,13 +168,9 @@ else
 
 采用配置化条件规则：
 
-资源状态+事件条件+历史选择
+资源状态+事件条件+历史选择 -> 动态剧情结果
 
-↓
-
-动态剧情结果
-
-
+同时通过配置化规则替代了传统硬编码分支逻辑，使剧情扩展不依赖代码修改。
 ---
 
 # 核心模块
@@ -175,7 +183,6 @@ else
 - 剧情节点跳转；
 - 玩家选项处理；
 - 条件判断与分支触发。
-
 
 ---
 
