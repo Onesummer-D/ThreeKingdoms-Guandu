@@ -164,7 +164,8 @@ public class DataValidator : MonoBehaviour
         }
     }
 
-    // === 测试函数 ===
+    #if UNITY_EDITOR
+    // === 编辑器测试函数 ===
     public void RunAllTests()
     {
         Debug.Log("=== 数据验证系统测试 ===");
@@ -218,4 +219,5 @@ public class DataValidator : MonoBehaviour
             ValidateCondition("IF2_unlocked");
         }
     }
+    #endif
 }

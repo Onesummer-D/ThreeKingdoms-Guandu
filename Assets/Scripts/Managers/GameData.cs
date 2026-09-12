@@ -94,4 +94,21 @@ public class GameData : MonoBehaviour
     {
         return unlockedIfLines.Contains(ifLineId);
     }
+
+    public void ResetRunState()
+    {
+        currentDialogueNodeId = 100001;
+        isGameRunning = true;
+        unlockedIfLines.Clear();
+    }
+
+    public void RestoreRunState(int nodeId, bool running, IEnumerable<string> unlockedLines)
+    {
+        currentDialogueNodeId = nodeId;
+        isGameRunning = running;
+        unlockedIfLines.Clear();
+        if (unlockedLines == null) return;
+        foreach (string line in unlockedLines)
+            if (!string.IsNullOrEmpty(line) && !unlockedIfLines.Contains(line)) unlockedIfLines.Add(line);
+    }
 }

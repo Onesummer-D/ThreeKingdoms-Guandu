@@ -11,7 +11,7 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     private CanvasGroup canvasGroup;
     private PuzzleGameManager manager;
     private bool isPlaced = false;
-    private Canvas parentCanvas;  // ĞÂÔö£ºÓÃÓÚ¼ÆËãËõ·Å
+    private Canvas parentCanvas;  // æ–°å¢ï¼šç”¨äºè®¡ç®—ç¼©æ”¾
 
     public System.Action OnPiecePlaced;
 
@@ -23,18 +23,18 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
-        // ĞÂÔö£º»ñÈ¡¸¸¼¶ Canvas
+        // æ–°å¢ï¼šè·å–çˆ¶çº§ Canvas
         parentCanvas = GetComponentInParent<Canvas>();
     }
 
-    // ĞÂÔö£ºÌæ´úÔ­À´µÄ Initialize£¬Ö»ÉèÖÃ manager£¬²»¸²¸Ç correctPosition
+    // æ–°å¢ï¼šæ›¿ä»£åŸæ¥çš„ Initializeï¼Œåªè®¾ç½® managerï¼Œä¸è¦†ç›– correctPosition
     public void SetManager(PuzzleGameManager mgr)
     {
         manager = mgr;
     }
 
-    // ±£Áô Initialize ·½·¨µ«±ê¼ÇÎª¹ıÊ±£¬·ÀÖ¹ÆäËû´úÂëµ÷ÓÃ
-    [System.Obsolete("Ê¹ÓÃ SetManager ´úÌæ£¬correctPosition ÓÉ Manager Ö±½ÓÉèÖÃ")]
+    // ä¿ç•™ Initialize æ–¹æ³•ä½†æ ‡è®°ä¸ºè¿‡æ—¶ï¼Œé˜²æ­¢å…¶ä»–ä»£ç è°ƒç”¨
+    [System.Obsolete("ä½¿ç”¨ SetManager ä»£æ›¿ï¼ŒcorrectPosition ç”± Manager ç›´æ¥è®¾ç½®")]
     public void Initialize(PuzzleGameManager mgr)
     {
         SetManager(mgr);
@@ -55,7 +55,7 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     {
         if (isPlaced) return;
 
-        // ĞÂÔö£º½«ËéÆ¬ÒÆµ½×îÇ°Ãæ£¬±ÜÃâ±»ÕÚµ²
+        // æ–°å¢ï¼šå°†ç¢ç‰‡ç§»åˆ°æœ€å‰é¢ï¼Œé¿å…è¢«é®æŒ¡
         transform.SetAsLastSibling();
 
         if (canvasGroup != null)
@@ -69,10 +69,10 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     {
         if (isPlaced) return;
 
-        // ¹Ø¼üĞŞ¸´£º¿¼ÂÇ Canvas Ëõ·Å£¬ÈÃÍÏ×§¸ü¸úÊÖ
+        // å…³é”®ä¿®å¤ï¼šè€ƒè™‘ Canvas ç¼©æ”¾ï¼Œè®©æ‹–æ‹½æ›´è·Ÿæ‰‹
         if (parentCanvas != null)
         {
-            // Screen Space - Overlay Ä£Ê½ÏÂ£¬delta ĞèÒª³ıÒÔ scaleFactor
+            // Screen Space - Overlay æ¨¡å¼ä¸‹ï¼Œdelta éœ€è¦é™¤ä»¥ scaleFactor
             rectTransform.anchoredPosition += eventData.delta / parentCanvas.scaleFactor;
         }
         else
@@ -85,29 +85,24 @@ public class PuzzlePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     {
         if (isPlaced) return;
 
-        // ĞÂÔöµ÷ÊÔ£º²é¿´µ±Ç°Î»ÖÃºÍÄ¿±êÎ»ÖÃ
-        Debug.Log($"[{gameObject.name}] µ±Ç°: {rectTransform.anchoredPosition}, Ä¿±ê: {correctPosition}, ¾àÀë: {Vector2.Distance(rectTransform.anchoredPosition, correctPosition)}");
+        // æ–°å¢è°ƒè¯•ï¼šæŸ¥çœ‹å½“å‰ä½ç½®å’Œç›®æ ‡ä½ç½®
+        Debug.Log($"[{gameObject.name}] å½“å‰: {rectTransform.anchoredPosition}, ç›®æ ‡: {correctPosition}, è·ç¦»: {Vector2.Distance(rectTransform.anchoredPosition, correctPosition)}");
 
         if (canvasGroup != null)
             canvasGroup.alpha = 1f;
 
-        // ³¢ÊÔÎü¸½
+        // å°è¯•å¸é™„
         if (manager != null && manager.TrySnapPiece(this))
         {
             isPlaced = true;
             if (canvasGroup != null)
                 canvasGroup.blocksRaycasts = false;
 
-            // ¹Ø¼ü£ºÎü¸½ºóËø¶¨Î»ÖÃ£¬·ÀÖ¹ºóĞøÍÏ×§
+            // å…³é”®ï¼šå¸é™„åé”å®šä½ç½®ï¼Œé˜²æ­¢åç»­æ‹–æ‹½
             rectTransform.anchoredPosition = correctPosition;
 
-            // ========== ĞÂÔö£º²¥·ÅÆ´Í¼ÕıÈ·Òô ==========
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayPuzzleCorrect();
-            // =======================================
-
             OnPiecePlaced?.Invoke();
-            Debug.Log($"ËéÆ¬ {gameObject.name} ÒÑ·ÅÖÃµ½ÕıÈ·Î»ÖÃ£¡");
+            Debug.Log($"ç¢ç‰‡ {gameObject.name} å·²æ”¾ç½®åˆ°æ­£ç¡®ä½ç½®ï¼");
         }
         else
         {

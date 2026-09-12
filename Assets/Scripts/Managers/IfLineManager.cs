@@ -89,7 +89,36 @@ public class IfLineManager : MonoBehaviour
         }
     }
 
-    // 测试函数
+    public void ResetRunState()
+    {
+        unlockedIfLines.Clear();
+    }
+
+    public void RestoreUnlockedIfLines(IEnumerable<string> savedLines)
+    {
+        unlockedIfLines.Clear();
+        if (savedLines == null) return;
+        foreach (string value in savedLines)
+        {
+            IfLineType parsed;
+            switch ((value ?? string.Empty).ToUpperInvariant())
+            {
+                case "IF1": parsed = IfLineType.IF1_半途而废; break;
+                case "IF2": parsed = IfLineType.IF2_错失良机; break;
+                case "IF3": parsed = IfLineType.IF3_元气大伤; break;
+                case "IF4": parsed = IfLineType.IF4_以退为进; break;
+                case "IF5": parsed = IfLineType.IF5_完美结局; break;
+                case "IF6": parsed = IfLineType.IF6_惨败结局; break;
+                default:
+                    if (!System.Enum.TryParse(value, true, out parsed)) parsed = IfLineType.None;
+                    break;
+            }
+            if (parsed != IfLineType.None && !unlockedIfLines.Contains(parsed)) unlockedIfLines.Add(parsed);
+        }
+    }
+
+    #if UNITY_EDITOR
+    // 编辑器测试函数
     public void TestAllIfLines()
     {
         Debug.Log("=== 测试所有IF线 ===");
@@ -105,4 +134,5 @@ public class IfLineManager : MonoBehaviour
             Debug.Log($" - {line}");
         }
     }
+    #endif
 }

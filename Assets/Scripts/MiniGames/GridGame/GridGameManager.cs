@@ -224,11 +224,6 @@ public class GridGameManager : MonoBehaviour
 
     public void OnPlayerMove(int row, int col)  // 传入行和列
     {
-        // ========== 新增：播放移动音效 ==========
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlayPuzzleMove();
-        // ======================================
-
         GridTile tile = GetTileAt(row, col);
         if (tile == null) return;
 
@@ -271,6 +266,7 @@ public class GridGameManager : MonoBehaviour
 
     void GameOver(bool isWin)
     {
+        if (!isGameActive) return;
         isGameActive = false;
 
         if (isWin)
@@ -282,15 +278,6 @@ public class GridGameManager : MonoBehaviour
         {
             if (statusText != null)
                 statusText.text = "💀 失败！被敌军发现！";
-        }
-
-        // ✅ 关键：调用回调通知 FinalUIManager（走格子失败处理）
-        onGameFinished?.Invoke(isWin);
-
-        // 调用回调通知剧情系统
-        if (GameCallbacks.Instance != null)
-        {
-            GameCallbacks.Instance.OnGridGameCompleted(isWin);
         }
 
         StartCoroutine(ReturnToPlot(isWin));
@@ -306,19 +293,18 @@ public class GridGameManager : MonoBehaviour
         if (gridGamePanel != null)
             gridGamePanel.SetActive(false);
 
-        // 2. 调用FinalUIManager恢复UI
-        if (FinalUIManager.Instance != null)
-        {
-            FinalUIManager.Instance.ReturnFromMiniGame();
-        }
-
-        // 3. 重置玩家状态
+        // 2. 重置玩家状态
         if (player != null)
         {
             player.gameObject.SetActive(false);
             // 重置位置到屏幕外或初始位置
             player.transform.position = new Vector3(-1000, -1000, 0);
         }
+
+        // 3. 只通过启动小游戏时传入的回调返回剧情，避免重复结算。
+        var callback = onGameFinished;
+        onGameFinished = null;
+        callback?.Invoke(isWin);
     }
 
     public bool IsGameActive => isGameActive;

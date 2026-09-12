@@ -1,7 +1,7 @@
 # 三国·官渡之战 | Three Kingdoms: Battle of Guandu
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Unity-2022.3.6f1-blue?style=for-the-badge&logo=unity&logoColor=white" />
+  <img src="https://img.shields.io/badge/Unity-2022.3.62f3c1-blue?style=for-the-badge&logo=unity&logoColor=white" />
   <img src="https://img.shields.io/badge/C%23-61.8%25-green?style=for-the-badge&logo=csharp&logoColor=white" />
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" />
   <img src="https://img.shields.io/badge/Architecture-Data--Driven-orange?style=for-the-badge" />
@@ -65,6 +65,19 @@
 ---
 
 # 游戏特性
+
+## 当前版本新增
+
+- 本地手动存档、自动检查点与通关记录
+- 五幕剧情回顾、终局复盘与七结局评价
+- 决策/资源运行日志、战绩报告与本地 PNG 海报
+- 首页存档、关于、设置和局内退出流程
+- 五个关键决策点的本机参谋邀约、建议审核与“共谋回声”
+- 资源变化的动态视觉反馈与历史文化说明
+
+参谋邀约当前为离线同机接力演示，不依赖账号、后端或网络服务；建议不会自动推进剧情，最终选择仍由主玩家完成。
+
+完整验收记录、素材授权状态与阶段计划见 [`Documentation`](./Documentation/) 和 [`.planning`](./.planning/)。
 
 ## 非线性剧情系统
 
@@ -241,7 +254,7 @@ else
 
 | 类别 | 技术 |
 |---------|------|
-| 游戏引擎 | Unity 2022.3.6f1 LTS |
+| 游戏引擎 | Unity 2022.3.62f3c1 LTS |
 | 语言 | C# |
 | 架构 | Data-driven Architecture |
 | 数据系统 | ScriptableObject |
@@ -252,12 +265,13 @@ else
 
 # 快速开始
 
+```bash
 git clone https://github.com/Onesummer-D/ThreeKingdoms-Guandu.git
+```
 
-使用 Unity Hub 打开项目：
+使用 Unity Hub 以 **Unity 2022.3.62f3c1 LTS** 打开仓库，等待资源导入完成后运行 `Assets/Scenes/Guanduuuu.unity`。
 
-Unity Version:
-2022.3.6f1 LTS
+Windows 10/11 64 位为当前主要运行平台。公开投稿或发布前，请先核对 [`Documentation/素材授权台账.md`](./Documentation/素材授权台账.md)，并使用有效 Unity 许可证重新构建。
 
 ---
 

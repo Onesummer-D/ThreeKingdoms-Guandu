@@ -158,7 +158,8 @@ public class ScoringSystem : MonoBehaviour
         Debug.Log("═══════════════════════════════════");
     }
 
-    // === 测试函数 ===
+    #if UNITY_EDITOR
+    // === 编辑器测试函数 ===
     public void TestScoring()
     {
         Debug.Log("=== 评分系统测试 ===");
@@ -181,4 +182,5 @@ public class ScoringSystem : MonoBehaviour
         // 测试评分
         ShowScoreReport("IF5");
     }
+    #endif
 }

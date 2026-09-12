@@ -8873,7 +8873,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -18.999939, y: -25.999878}
+  m_AnchoredPosition: {x: -19, y: -26.000183}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1343759321
@@ -9918,11 +9918,11 @@ MonoBehaviour:
   bgmPlot2: {fileID: 8300000, guid: b25998fa79d1eb141b4f2f2a726c4b21, type: 3}
   bgmPlot3: {fileID: 8300000, guid: 685f5fcea717d0a44b18c13ff2082745, type: 3}
   bgmPlot4Normal: {fileID: 8300000, guid: 1a153dccf345f4c4dbdd0623916229e7, type: 3}
-  bgmPlot4Battle: {fileID: 8300000, guid: 1a153dccf345f4c4dbdd0623916229e7, type: 3}
-  bgmPlot5Battle: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
-  bgmPlot5Victory: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
+  bgmPlot4Battle: {fileID: 8300000, guid: 3317869dd8e98744cb5938889c62718d, type: 3}
+  bgmPlot5Battle: {fileID: 8300000, guid: 6195a28354f845546a329e895a37c05c, type: 3}
+  bgmPlot5Victory: {fileID: 8300000, guid: f15d611a03def00439cfb6c02bd11933, type: 3}
   bgmIfFailure: {fileID: 8300000, guid: 0659fa3472f02d346801134744180a41, type: 3}
-  bgmIfVictory: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
+  bgmIfVictory: {fileID: 8300000, guid: a4171a22cadbf7042991971a46f3738f, type: 3}
   bgmFireWuchao: {fileID: 8300000, guid: 34a7a3c5b65b26b489743e59b4cf9fb1, type: 3}
   defaultButtonClick: {fileID: 8300000, guid: d45e0599b659c4049be06436adf8c72c, type: 3}
   valueChangeUpSFX: {fileID: 8300000, guid: 478fcf313ea169448b45e44952bdd384, type: 3}
@@ -10527,7 +10527,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1544351433}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b90a283accfc8134189e9cf87376efb9, type: 3}
   m_Name: 
@@ -10549,7 +10549,8 @@ Transform:
   m_LocalPosition: {x: 347.9466, y: 296.13196, z: 0.12231764}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1776999678}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1563785235
@@ -10832,12 +10833,12 @@ MonoBehaviour:
   bgmPlot2: {fileID: 8300000, guid: b25998fa79d1eb141b4f2f2a726c4b21, type: 3}
   bgmPlot3: {fileID: 8300000, guid: 685f5fcea717d0a44b18c13ff2082745, type: 3}
   bgmPlot4Normal: {fileID: 8300000, guid: 1a153dccf345f4c4dbdd0623916229e7, type: 3}
-  bgmPlot4Battle: {fileID: 8300000, guid: 1a153dccf345f4c4dbdd0623916229e7, type: 3}
-  bgmPlot5Battle: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
-  bgmPlot5Victory: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
+  bgmPlot4Battle: {fileID: 8300000, guid: 3317869dd8e98744cb5938889c62718d, type: 3}
+  bgmPlot5Battle: {fileID: 8300000, guid: 6195a28354f845546a329e895a37c05c, type: 3}
+  bgmPlot5Victory: {fileID: 8300000, guid: f15d611a03def00439cfb6c02bd11933, type: 3}
   bgmIfFailure: {fileID: 8300000, guid: 0659fa3472f02d346801134744180a41, type: 3}
-  bgmIfVictory: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
-  bgmIfFinalVictory: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
+  bgmIfVictory: {fileID: 8300000, guid: a4171a22cadbf7042991971a46f3738f, type: 3}
+  bgmIfFinalVictory: {fileID: 8300000, guid: a4171a22cadbf7042991971a46f3738f, type: 3}
   bgmWarBackground: {fileID: 8300000, guid: c6a68633bb3ced744b4f268d7674471e, type: 3}
 --- !u!4 &1578838189
 Transform:
@@ -11093,8 +11094,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -11866,6 +11867,107 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1773334698}
   m_CullTransparentMesh: 1
+--- !u!1 &1776999677
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1776999678}
+  - component: {fileID: 1776999681}
+  - component: {fileID: 1776999680}
+  - component: {fileID: 1776999679}
+  m_Layer: 5
+  m_Name: Canvas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1776999678
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1776999677}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1544351435}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0}
+--- !u!114 &1776999679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1776999677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &1776999680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1776999677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
+--- !u!223 &1776999681
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1776999677}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
 --- !u!1 &1784816834
 GameObject:
   m_ObjectHideFlags: 0
@@ -12520,7 +12622,7 @@ GameObject:
   - component: {fileID: 1883389925}
   - component: {fileID: 1883389924}
   - component: {fileID: 1883389923}
-  - component: {fileID: 1883389926}
+  - component: {fileID: 1883389927}
   m_Layer: 5
   m_Name: StartButton
   m_TagString: Untagged
@@ -12642,7 +12744,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1883389921}
   m_CullTransparentMesh: 1
---- !u!114 &1883389926
+--- !u!114 &1883389927
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12651,15 +12753,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1883389921}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aaa1975c55d8bbf4bb7dae2a646ae0af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  buttonImage: {fileID: 1883389924}
-  normalSprite: {fileID: 21300000, guid: 3d67949ef9e35c6499999eb6617ae26e, type: 3}
-  highlightedSprite: {fileID: 21300000, guid: f5f98fae884d6ac4d9c535b1b9b7353a, type: 3}
-  buttonText: {fileID: 1655160250}
-  normalColor: {r: 0, g: 0, b: 0, a: 1}
-  highlightedColor: {r: 1, g: 1, b: 1, a: 1}
+  m_Script: {fileID: 11500000, guid: f1c9d8e7a6b54c3d9e8f7a6b5c4d3e2f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1 &1884196181
 GameObject:
   m_ObjectHideFlags: 0

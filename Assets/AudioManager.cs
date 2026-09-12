@@ -45,6 +45,7 @@ public class AudioManager : MonoBehaviour
 
     private float originalBGMVolume = 1f;
     private float currentBGMVolume = 1f;
+    private float currentEffectsVolume = 0.6f;
     private Coroutine currentBGMCoroutine;
 
     void Awake()
@@ -63,9 +64,9 @@ public class AudioManager : MonoBehaviour
             sfxSource.playOnAwake = false;
             uiSource.playOnAwake = false;
 
-            // ✅ 音效默认音量调低（走格子保持1.0，其他0.6）
-            sfxSource.volume = 0.6f;
-            uiSource.volume = 0.5f;
+            currentEffectsVolume = PlayerPrefs.GetFloat("EffectsVolume", 0.6f);
+            sfxSource.volume = currentEffectsVolume;
+            uiSource.volume = currentEffectsVolume;
 
             // ✅ 强制清空缓存
             if (bgmSource != null)
@@ -76,7 +77,6 @@ public class AudioManager : MonoBehaviour
 
             // 加载保存的音量（如果没有保存过则默认为1）
             currentBGMVolume = PlayerPrefs.GetFloat("BGMVolume", 1f);
-            if (currentBGMVolume <= 0.01f) currentBGMVolume = 1f;
             originalBGMVolume = currentBGMVolume;
             bgmVolume = currentBGMVolume;
 
@@ -205,6 +205,24 @@ public class AudioManager : MonoBehaviour
 
         PlayerPrefs.SetFloat("BGMVolume", currentBGMVolume);
         bgmVolume = currentBGMVolume;
+    }
+
+    public float GetBGMVolume()
+    {
+        return currentBGMVolume;
+    }
+
+    public void SetEffectsVolume(float volume)
+    {
+        currentEffectsVolume = Mathf.Clamp01(volume);
+        if (sfxSource != null) sfxSource.volume = currentEffectsVolume;
+        if (uiSource != null) uiSource.volume = currentEffectsVolume;
+        PlayerPrefs.SetFloat("EffectsVolume", currentEffectsVolume);
+    }
+
+    public float GetEffectsVolume()
+    {
+        return currentEffectsVolume;
     }
 
     private IEnumerator FadeVolume(float from, float to, float duration)

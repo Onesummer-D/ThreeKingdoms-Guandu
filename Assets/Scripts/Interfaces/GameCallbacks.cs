@@ -17,6 +17,10 @@ public class GameCallbacks : MonoBehaviour
             DontDestroyOnLoad(gameObject);
             Debug.Log("GameCallbacks初始化");
         }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     // 拼图游戏完成
@@ -40,7 +44,8 @@ public class GameCallbacks : MonoBehaviour
         OnValueInputConfirmedEvent?.Invoke(value);
     }
 
-    // 测试接口
+    #if UNITY_EDITOR
+    // 编辑器诊断接口，不进入参赛构建。
     public void TestAllCallbacks()
     {
         Debug.Log("=== 测试所有回调接口 ===");
@@ -48,4 +53,5 @@ public class GameCallbacks : MonoBehaviour
         OnGridGameCompleted(true);
         OnValueInputConfirmed(2.5f);
     }
+    #endif
 }

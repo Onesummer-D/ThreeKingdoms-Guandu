@@ -11,7 +11,7 @@ public class ImageSwitcher : MonoBehaviour
     }
 
     [SerializeField] private Image targetImage;
-    [SerializeField] private NamedImage[] images;
+    [SerializeField] private NamedImage[] images = new NamedImage[0];
 
     private void Awake()
     {

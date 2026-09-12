@@ -3082,7 +3082,7 @@ MonoBehaviour:
     sfxOnEnter: {fileID: 8300000, guid: 25018c098746e914cb3d7f0a48679765, type: 3}
   - nodeId: 500217
     dialogueText: 
-    backgroundImage: {fileID: 21300000, guid: 83966c69bf324184385a7d0198eee2de, type: 3}
+    backgroundImage: {fileID: 21300000, guid: ec79f2165fa1c734f8385115ed90fcf1, type: 3}
     isBackgroundIntro: 0
     avatarCharacter: 
     leftCharacter: 

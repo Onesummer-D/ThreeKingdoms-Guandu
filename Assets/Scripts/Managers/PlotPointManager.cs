@@ -24,14 +24,12 @@ public class PlotPointManager : MonoBehaviour
     void Start()
     {
         Debug.Log("PlotPointManager开始工作！");
-        TestFunction();
 
         // ========== 订阅GameCallbacks事件 ==========
         if (GameCallbacks.Instance != null)
         {
             GameCallbacks.Instance.OnPuzzleGameCompletedEvent += OnPuzzleGameCompleted;
             GameCallbacks.Instance.OnValueInputConfirmedEvent += OnValueInputConfirmed;
-            GameCallbacks.Instance.OnGridGameCompletedEvent += OnGridGameCompleted;
             Debug.Log("PlotPointManager已订阅GameCallbacks事件");
         }
         // =============================================
@@ -71,20 +69,6 @@ public class PlotPointManager : MonoBehaviour
         }
     }
 
-    // 测试函数
-    void TestFunction()
-    {
-        Debug.Log("=== 测试PlotPointManager ===");
-        Debug.Log("如果你的控制台显示这行，说明脚本运行正常！");
-
-        // 测试调用其他管理器
-        if (ResourceManager.Instance != null)
-        {
-            Debug.Log("找到了ResourceManager！");
-            Debug.Log("当前兵力：" + ResourceManager.Instance.GetTroop());
-        }
-    }
-
     // === 剧情点1：初战受挫 - 选项A：拼图游戏 ===
     public void HandleOptionA_Puzzle(int nextNodeId = 1002)
     {
@@ -100,34 +84,6 @@ public class PlotPointManager : MonoBehaviour
         HandleOptionC_Ambush(value);
     }
 
-    private void OnGridGameCompleted(bool isWin)
-    {
-        Debug.Log($"PlotPointManager收到走格子游戏完成：{(isWin ? "胜利" : "失败")}");
-
-        if (isWin)
-        {
-            // 胜利：兵力+12，粮草+10，风险+10（根据数值设定）
-            if (ResourceManager.Instance != null)
-            {
-                ResourceManager.Instance.ModifyTroop(12f);
-                ResourceManager.Instance.ModifyFood(10f);
-                ResourceManager.Instance.ModifyRisk(10f);
-            }
-
-            // ✅ 修正：跳转到剧情点五第1页（500101），不是4005
-            if (DialogueSystem.Instance != null)
-            {
-                DialogueSystem.Instance.ShowDialogueNode(500101);
-            }
-        }
-        else
-        {
-            // 失败：触发IF线
-            Debug.Log("走格子失败，触发失败结局");
-            TriggerEnding("IF3");
-        }
-    }
-
     // === 在OnDestroy()中取消订阅 ===
     void OnDestroy()
     {
@@ -135,7 +91,6 @@ public class PlotPointManager : MonoBehaviour
         {
             GameCallbacks.Instance.OnPuzzleGameCompletedEvent -= OnPuzzleGameCompleted;
             GameCallbacks.Instance.OnValueInputConfirmedEvent -= OnValueInputConfirmed;
-            GameCallbacks.Instance.OnGridGameCompletedEvent -= OnGridGameCompleted;
         }
     }
 

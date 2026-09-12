@@ -94,11 +94,17 @@ public class EndingManager : MonoBehaviour
             case EndingType.错失良机:
                 description = "你怀疑许攸的诚意，错失了关键情报，最终因粮草耗尽而兵败。";
                 break;
+            case EndingType.元气大伤:
+                description = "你分兵回援，却使乌巢与本营两线皆弱。曹军虽勉强脱身，主力元气大伤，再无力扭转河北战局。";
+                break;
+            case EndingType.以退为进:
+                description = "你审时度势保存主力，以暂退换取重整之机。官渡未能一战定局，但曹军仍保有再争北方的筹码。";
+                break;
             case EndingType.完美结局:
                 description = "完美的战略部署！曹操提前数年统一北方，加速了天下统一的进程。";
                 break;
-            default:
-                description = $"结局：{ending}。具体的剧情描述需要文案同学补充。";
+            case EndingType.惨败结局:
+                description = "你在兵粮不足时孤注一掷，奇袭暴露后全军陷入包围。官渡防线崩溃，曹操统一北方的道路就此中断。";
                 break;
         }
 
@@ -135,7 +141,32 @@ public class EndingManager : MonoBehaviour
         }
     }
 
-    // 测试函数
+    public void ResetRunState()
+    {
+        CancelInvoke();
+        triggeredEndings.Clear();
+    }
+
+    public void RestoreEndingState(string endingId)
+    {
+        triggeredEndings.Clear();
+        EndingType ending;
+        switch ((endingId ?? string.Empty).ToUpperInvariant())
+        {
+            case "HISTORICAL": ending = EndingType.史实胜利; break;
+            case "IF1": ending = EndingType.半途而废; break;
+            case "IF2": ending = EndingType.错失良机; break;
+            case "IF3": ending = EndingType.元气大伤; break;
+            case "IF4": ending = EndingType.以退为进; break;
+            case "IF5": ending = EndingType.完美结局; break;
+            case "IF6": ending = EndingType.惨败结局; break;
+            default: return;
+        }
+        triggeredEndings.Add(ending);
+    }
+
+    #if UNITY_EDITOR
+    // 编辑器测试函数
     public void TestAllEndings()
     {
         Debug.Log("=== 测试所有结局 ===");
@@ -156,4 +187,5 @@ public class EndingManager : MonoBehaviour
     {
         TriggerEnding(EndingType.完美结局);
     }
+    #endif
 }

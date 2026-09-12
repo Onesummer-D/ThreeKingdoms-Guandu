@@ -3,41 +3,41 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// ×ÊÔ´ÀàĞÍÃ¶¾Ù
+// èµ„æºç±»å‹æšä¸¾
 public enum ResourceType
 {
-    Troop,      // ±øÁ¦
-    Food,       // Á¸²İ
-    Strategy,   // ¼Æ²ß³É¹¦ÂÊ
-    Risk        // ·çÏÕ
+    Troop,      // å…µåŠ›
+    Food,       // ç²®è‰
+    Strategy,   // è®¡ç­–æˆåŠŸç‡
+    Risk        // é£é™©
 }
 
-// ×ÊÔ´±ä»¯ÊÂ¼şµÄÊı¾İ
+// èµ„æºå˜åŒ–äº‹ä»¶çš„æ•°æ®
 public class ResourceChangeEvent
 {
-    public ResourceType resourceType;  // ÄÄÖÖ×ÊÔ´
-    public float oldValue;             // ¾ÉÖµ
-    public float newValue;             // ĞÂÖµ
-    public float changeAmount;         // ±ä»¯Á¿
+    public ResourceType resourceType;  // å“ªç§èµ„æº
+    public float oldValue;             // æ—§å€¼
+    public float newValue;             // æ–°å€¼
+    public float changeAmount;         // å˜åŒ–é‡
 }
 
 public class ResourceManager : MonoBehaviour
 {
     public static ResourceManager Instance { get; private set; }
 
-    // ========== ĞŞ¸Ä£º³õÊ¼Öµ ==========
-    private float troopStrength = 50.0f;      // ±øÁ¦³õÊ¼50
-    private float foodSupply = 40.0f;         // Á¸²İ³õÊ¼40
-    private float strategyChance = 50.0f;     // ¼Æ²ß³É¹¦ÂÊ³õÊ¼50
-    private float riskLevel = 50.0f;          // ·çÏÕ³õÊ¼50
+    // ========== ä¿®æ”¹ï¼šåˆå§‹å€¼ ==========
+    private float troopStrength = 50.0f;      // å…µåŠ›åˆå§‹50
+    private float foodSupply = 40.0f;         // ç²®è‰åˆå§‹40
+    private float strategyChance = 50.0f;     // è®¡ç­–æˆåŠŸç‡åˆå§‹50
+    private float riskLevel = 50.0f;          // é£é™©åˆå§‹50
 
-    // ========== ĞŞ¸Ä£ºÉÏÏŞÎª100 ==========
+    // ========== ä¿®æ”¹ï¼šä¸Šé™ä¸º100 ==========
     public const float MAX_TROOP = 100.0f;
     public const float MAX_FOOD = 100.0f;
     public const float MAX_STRATEGY = 100.0f;
     public const float MAX_RISK = 100.0f;
 
-    // ÊÂ¼şÏµÍ³
+    // äº‹ä»¶ç³»ç»Ÿ
     public static event Action<ResourceChangeEvent> OnResourceChanged;
 
     void Awake()
@@ -46,7 +46,7 @@ public class ResourceManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            Debug.Log("ResourceManager³õÊ¼»¯Íê³É");
+            Debug.Log("ResourceManageråˆå§‹åŒ–å®Œæˆ");
         }
         else
         {
@@ -54,13 +54,13 @@ public class ResourceManager : MonoBehaviour
         }
     }
 
-    // »ñÈ¡×ÊÔ´Öµ
+    // è·å–èµ„æºå€¼
     public float GetTroop() { return troopStrength; }
     public float GetFood() { return foodSupply; }
     public float GetStrategy() { return strategyChance; }
     public float GetRisk() { return riskLevel; }
 
-    // ĞŞ¸Ä×ÊÔ´Öµ£¨ºËĞÄ£©
+    // ä¿®æ”¹èµ„æºå€¼ï¼ˆæ ¸å¿ƒï¼‰
     public void ModifyResource(ResourceType type, float amount)
     {
         float oldValue = 0;
@@ -93,7 +93,7 @@ public class ResourceManager : MonoBehaviour
                 break;
         }
 
-        // ´¥·¢ÊÂ¼ş
+        // è§¦å‘äº‹ä»¶
         if (OnResourceChanged != null)
         {
             ResourceChangeEvent changeEvent = new ResourceChangeEvent
@@ -106,35 +106,49 @@ public class ResourceManager : MonoBehaviour
             OnResourceChanged.Invoke(changeEvent);
         }
 
-        Debug.Log($"{type} ±ä»¯: {amount:F1}, µ±Ç°: {newValue:F1}");
+        Debug.Log($"{type} å˜åŒ–: {amount:F1}, å½“å‰: {newValue:F1}");
     }
 
-    // ±ã½İ·½·¨
+    // ä¾¿æ·æ–¹æ³•
     public void ModifyTroop(float amount) { ModifyResource(ResourceType.Troop, amount); }
     public void ModifyFood(float amount) { ModifyResource(ResourceType.Food, amount); }
     public void ModifyStrategy(float amount) { ModifyResource(ResourceType.Strategy, amount); }
     public void ModifyRisk(float amount) { ModifyResource(ResourceType.Risk, amount); }
 
-    // ¼ì²é×ÊÔ´
+    /// <summary>
+    /// Replaces the complete resource state during load. No change events are
+    /// emitted here, so loading does not masquerade as four new gameplay
+    /// resource changes; the restored dialogue event refreshes the UI once.
+    /// </summary>
+    public void RestoreSnapshot(float troop, float food, float strategy, float risk)
+    {
+        troopStrength = Mathf.Clamp(troop, 0, MAX_TROOP);
+        foodSupply = Mathf.Clamp(food, 0, MAX_FOOD);
+        strategyChance = Mathf.Clamp(strategy, 0, MAX_STRATEGY);
+        riskLevel = Mathf.Clamp(risk, 0, MAX_RISK);
+        Debug.Log("èµ„æºå·²ç”±å­˜æ¡£æ¢å¤");
+    }
+
+    // æ£€æŸ¥èµ„æº
     public bool HasEnoughTroop(float required) { return troopStrength >= required; }
     public bool HasEnoughFood(float required) { return foodSupply >= required; }
 
-    // »ñÈ¡×ÊÔ´×´Ì¬ÎÄ±¾
+    // è·å–èµ„æºçŠ¶æ€æ–‡æœ¬
     public string GetResourcesText()
     {
-        return $"±øÁ¦: {troopStrength:F0}/{MAX_TROOP:F0}\n" +
-               $"Á¸²İ: {foodSupply:F0}/{MAX_FOOD:F0}\n" +
-               $"¼Æ²ß: {strategyChance:F0}/{MAX_STRATEGY:F0}\n" +
-               $"·çÏÕ: {riskLevel:F0}/{MAX_RISK:F0}";
+        return $"å…µåŠ›: {troopStrength:F0}/{MAX_TROOP:F0}\n" +
+               $"ç²®è‰: {foodSupply:F0}/{MAX_FOOD:F0}\n" +
+               $"è®¡ç­–: {strategyChance:F0}/{MAX_STRATEGY:F0}\n" +
+               $"é£é™©: {riskLevel:F0}/{MAX_RISK:F0}";
     }
 
-    // ========== ĞŞ¸Ä£ºÖØÖÃ·½·¨ ==========
+    // ========== ä¿®æ”¹ï¼šé‡ç½®æ–¹æ³• ==========
     public void ResetAllResources()
     {
-        troopStrength = 50.0f;
-        foodSupply = 40.0f;
-        strategyChance = 50.0f;
-        riskLevel = 50.0f;
-        Debug.Log("ËùÓĞ×ÊÔ´ÒÑÖØÖÃÎª³õÊ¼Öµ");
+        ModifyResource(ResourceType.Troop, 50.0f - troopStrength);
+        ModifyResource(ResourceType.Food, 40.0f - foodSupply);
+        ModifyResource(ResourceType.Strategy, 50.0f - strategyChance);
+        ModifyResource(ResourceType.Risk, 50.0f - riskLevel);
+        Debug.Log("æ‰€æœ‰èµ„æºå·²é‡ç½®ä¸ºåˆå§‹å€¼");
     }
 }

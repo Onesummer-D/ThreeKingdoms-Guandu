@@ -11,12 +11,15 @@ public class DialogueSystem : MonoBehaviour
 
     public event Action<int, DialogueOption> OnOptionSelected;
     public event Action<int> OnDialogueNodeShown;
+    public event Action<int, int> OnNodeTransition;
 
     public DialogueNode CurrentNode { get { return currentNode; } }
     public bool IsShowing { get; private set; }
 
     private DialogueNode currentNode;
     private bool isDataLoaded = false;
+    public HashSet<int> visitedNodeIds = new HashSet<int>(); // 已访问节点记录（供节点地图读取）
+    public List<int> visitedNodeOrder = new List<int>(); // 保留本局实际进入顺序，供路径可视化读取
     private Dictionary<int, DialogueNode> loadedNodes = new Dictionary<int, DialogueNode>();
 
     [Header("BGM自动配置（按节点ID范围）")]
@@ -163,6 +166,7 @@ public class DialogueSystem : MonoBehaviour
     {
         Debug.Log($"<color=cyan>DialogueSystem: 请求显示节点 {nodeId}</color>");
 
+        int previousNodeId = currentNode != null ? currentNode.nodeId : 0;
         currentNode = FindNodeById(nodeId);
 
         if (currentNode == null)
@@ -170,6 +174,11 @@ public class DialogueSystem : MonoBehaviour
             Debug.LogError($"无法显示节点：{nodeId}");
             return;
         }
+
+        visitedNodeIds.Add(nodeId);
+        visitedNodeOrder.Add(nodeId);
+        if (previousNodeId > 0 && previousNodeId != nodeId)
+            OnNodeTransition?.Invoke(previousNodeId, nodeId);
 
         IsShowing = true;
 
@@ -182,33 +191,22 @@ public class DialogueSystem : MonoBehaviour
             targetBGM = GetAutoBGM(nodeId);
         }
 
-        if (currentNode.sfxOnEnter != null && AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySFX(currentNode.sfxOnEnter);
-        }
+        bool isMiniGameNode = IsMiniGameNode(nodeId);
 
-        // 播放BGM（小游戏节点不播放）
-        if (targetBGM != null && AudioManager.Instance != null && !IsMiniGameNode(nodeId))
-        {
-            AudioManager.Instance.PlayBGM(targetBGM, currentNode.loopBGM, currentNode.stopPreviousBGM);
-            Debug.Log($"<color=magenta>播放BGM: {targetBGM.name}</color>");
-        }
-        else if (IsMiniGameNode(nodeId) && AudioManager.Instance != null)
+        if (isMiniGameNode && AudioManager.Instance != null)
         {
             // 小游戏节点：停止BGM（让小游戏用自己的音效）
             AudioManager.Instance.PauseBGM();
             Debug.Log("<color=magenta>进入小游戏，暂停BGM</color>");
         }
-
-        // 如果是勋章/称号节点，不切换BGM（保持当前）
-        if (nodeId == 500215) // 假设勋章节点是500215
+        else if (nodeId == 500215)
         {
             Debug.Log("<color=magenta>勋章节点，保持当前BGM</color>");
-            // 不调用PlayBGM，保持现状
         }
-        else if (targetBGM != null && AudioManager.Instance != null && !IsMiniGameNode(nodeId))
+        else if (targetBGM != null && AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayBGM(targetBGM, currentNode.loopBGM, currentNode.stopPreviousBGM);
+            Debug.Log($"<color=magenta>播放BGM: {targetBGM.name}</color>");
         }
 
         // 播放进入音效（500201火烧、500215称号等）
@@ -228,12 +226,12 @@ public class DialogueSystem : MonoBehaviour
         return false;
     }
 
-    public void HandleOptionSelected(int optionIndex)
+    public bool HandleOptionSelected(int optionIndex)
     {
         if (currentNode == null || currentNode.options == null || optionIndex >= currentNode.options.Count)
         {
             Debug.LogWarning($"无效选项索引: {optionIndex}");
-            return;
+            return false;
         }
 
         DialogueOption selectedOption = currentNode.options[optionIndex];
@@ -248,7 +246,7 @@ public class DialogueSystem : MonoBehaviour
         if (!string.IsNullOrEmpty(selectedOption.condition) && !CheckCondition(selectedOption.condition))
         {
             Debug.Log($"条件不满足: {selectedOption.condition}");
-            return;
+            return false;
         }
 
         ApplyResourceEffects(selectedOption);
@@ -265,6 +263,75 @@ public class DialogueSystem : MonoBehaviour
         }
 
         OnOptionSelected?.Invoke(optionIndex, selectedOption);
+        return true;
+    }
+
+    public List<int> ExportVisitedNodeOrder()
+    {
+        return new List<int>(visitedNodeOrder);
+    }
+
+    public bool HasLoadedNode(int nodeId)
+    {
+        if ((!isDataLoaded || loadedNodes.Count == 0) && DataLoader.Instance != null)
+            LoadAllDialogueData();
+        return loadedNodes.ContainsKey(nodeId);
+    }
+
+    /// <summary>
+    /// Restores an already-resolved run without replaying any choices or
+    /// resource effects. A single node-shown event lets the existing UI redraw
+    /// itself from the restored current node.
+    /// </summary>
+    public bool RestoreRunState(int currentNodeId, IList<int> savedVisitOrder)
+    {
+        if ((!isDataLoaded || loadedNodes.Count == 0) && DataLoader.Instance != null)
+            LoadAllDialogueData();
+
+        DialogueNode restoredNode;
+        if (!loadedNodes.TryGetValue(currentNodeId, out restoredNode) || restoredNode == null)
+        {
+            Debug.LogError("读档失败，找不到剧情节点：" + currentNodeId);
+            return false;
+        }
+
+        currentNode = restoredNode;
+        visitedNodeIds.Clear();
+        visitedNodeOrder.Clear();
+        if (savedVisitOrder != null)
+        {
+            for (int i = 0; i < savedVisitOrder.Count; i++)
+            {
+                int nodeId = savedVisitOrder[i];
+                if (!loadedNodes.ContainsKey(nodeId)) continue;
+                visitedNodeOrder.Add(nodeId);
+                visitedNodeIds.Add(nodeId);
+            }
+        }
+        if (!visitedNodeIds.Contains(currentNodeId))
+        {
+            visitedNodeOrder.Add(currentNodeId);
+            visitedNodeIds.Add(currentNodeId);
+        }
+
+        IsShowing = true;
+        AudioClip targetBGM = currentNode.bgmClip;
+        if (targetBGM == null && !IsMiniGameNode(currentNodeId))
+            targetBGM = GetAutoBGM(currentNodeId);
+        if (targetBGM != null && AudioManager.Instance != null)
+            AudioManager.Instance.PlayBGM(targetBGM, currentNode.loopBGM, currentNode.stopPreviousBGM);
+
+        OnDialogueNodeShown?.Invoke(currentNodeId);
+        Debug.Log("已从存档恢复剧情节点：" + currentNodeId);
+        return true;
+    }
+
+    public void ResetRunState()
+    {
+        currentNode = null;
+        IsShowing = false;
+        visitedNodeIds.Clear();
+        visitedNodeOrder.Clear();
     }
 
     bool CheckCondition(string condition)

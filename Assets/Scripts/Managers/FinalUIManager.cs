@@ -52,6 +52,18 @@ public class FinalUIManager : MonoBehaviour
     [Header("游戏界面 - 结局返回按钮")]
     public GameObject endingReturnButton;
 
+    [Header("结局复盘")]
+    private GameObject endingReviewButton;
+    private GameObject battleReportButton;
+    private CampaignMapUI campaignMapUI;
+    private InviteCoCreationUI inviteCoCreationUI;
+    private LocalSaveManager localSaveManager;
+    private SaveArchiveUI saveArchiveUI;
+    private HomeHubUI homeHubUI;
+    private GameplayExitUI gameplayExitUI;
+    private RunHistoryTracker runHistoryTracker;
+    private BattleReportUI battleReportUI;
+
     [Header("解锁结局按钮")]
     public Button viewEndingButton;
     public TMP_Text viewEndingButtonText;
@@ -124,6 +136,7 @@ public class FinalUIManager : MonoBehaviour
 
     public static FinalUIManager Instance { get; private set; }
     private bool waitingForContinue = false;
+    private bool optionTransitionInProgress = false;
     private int currentNextNodeId = 0;
     private string currentLeftChar = "";
     private string currentRightChar = "";
@@ -154,20 +167,8 @@ public class FinalUIManager : MonoBehaviour
     {
         Debug.Log("🎮 FinalUIManager 启动");
 
-        // ✅ 首页启动即播放战争背景音
-        if (AudioManager.Instance != null && AudioManager.Instance.warBackgroundBGM != null)
-        {
-            // 检查当前是否还没开始对话（避免重复播放）
-            if (DialogueSystem.Instance == null || !DialogueSystem.Instance.IsShowing)
-            {
-                AudioManager.Instance.PlayBGM(
-                    AudioManager.Instance.warBackgroundBGM,
-                    loop: true,
-                    stopPrevious: false
-                );
-                Debug.Log("<color=magenta>首页启动，播放战争背景音</color>");
-            }
-        }
+
+        // ✅ 移除BGM播放逻辑，改由AudioManager.Awake()处理
 
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
         if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
@@ -177,8 +178,63 @@ public class FinalUIManager : MonoBehaviour
         if (fireAnimationPanel != null) fireAnimationPanel.SetActive(false);
         if (catapultImage != null) catapultImage.gameObject.SetActive(false);
 
+        HideLegacyVolumeSlider();
+
         HideAllCharacters();
         SetupButtonEvents();
+
+        CampaignMapUI mapUI = GetComponent<CampaignMapUI>();
+        if (mapUI == null) mapUI = gameObject.AddComponent<CampaignMapUI>();
+        campaignMapUI = mapUI;
+        mapUI.Initialize(gameInterfacePanel);
+        mapUI.OnClosed -= HandleRecapClosed;
+        mapUI.OnClosed += HandleRecapClosed;
+        CreateEndingReviewButton();
+        CreateBattleReportButton();
+
+        inviteCoCreationUI = GetComponent<InviteCoCreationUI>();
+        if (inviteCoCreationUI == null) inviteCoCreationUI = gameObject.AddComponent<InviteCoCreationUI>();
+        if (gameInterfacePanel != null)
+            inviteCoCreationUI.Initialize(mapUI, gameInterfacePanel.transform.root,
+                gameInterfacePanel.transform);
+
+        runHistoryTracker = GetComponent<RunHistoryTracker>();
+        if (runHistoryTracker == null) runHistoryTracker = gameObject.AddComponent<RunHistoryTracker>();
+        runHistoryTracker.Initialize();
+
+        battleReportUI = GetComponent<BattleReportUI>();
+        if (battleReportUI == null) battleReportUI = gameObject.AddComponent<BattleReportUI>();
+        Sprite endingButtonSprite = endingReturnButton != null && endingReturnButton.GetComponent<Image>() != null
+            ? endingReturnButton.GetComponent<Image>().sprite
+            : null;
+        if (gameInterfacePanel != null)
+            battleReportUI.Initialize(mapUI, runHistoryTracker, gameInterfacePanel.transform.root,
+                endingButtonSprite, caocaoAvatar);
+        battleReportUI.OnClosed -= HandleBattleReportClosed;
+        battleReportUI.OnClosed += HandleBattleReportClosed;
+
+        localSaveManager = GetComponent<LocalSaveManager>();
+        if (localSaveManager == null) localSaveManager = gameObject.AddComponent<LocalSaveManager>();
+        localSaveManager.Initialize(mapUI);
+
+        saveArchiveUI = GetComponent<SaveArchiveUI>();
+        if (saveArchiveUI == null) saveArchiveUI = gameObject.AddComponent<SaveArchiveUI>();
+        saveArchiveUI.Initialize(this, localSaveManager, startMenuPanel, gameInterfacePanel);
+
+        homeHubUI = GetComponent<HomeHubUI>();
+        if (homeHubUI == null) homeHubUI = gameObject.AddComponent<HomeHubUI>();
+        if (startMenuPanel != null && gameInterfacePanel != null)
+            homeHubUI.Initialize(this, startMenuPanel, gameInterfacePanel.transform.root,
+                caocaoLeft, xuyouLeft, yuanshaoLeft);
+
+        gameplayExitUI = GetComponent<GameplayExitUI>();
+        if (gameplayExitUI == null) gameplayExitUI = gameObject.AddComponent<GameplayExitUI>();
+        if (gameInterfacePanel != null)
+            gameplayExitUI.Initialize(this, gameInterfacePanel.transform.root, endingButtonSprite);
+
+        VisualDirector visualDirector = GetComponent<VisualDirector>();
+        if (visualDirector == null) visualDirector = gameObject.AddComponent<VisualDirector>();
+        visualDirector.Initialize(this);
     }
 
     void OnEnable()
@@ -295,13 +351,85 @@ public class FinalUIManager : MonoBehaviour
 
     public void StartGame()
     {
+        if (inviteCoCreationUI != null && inviteCoCreationUI.ShowPlayerBrief(BeginNewRun)) return;
+        BeginNewRun();
+    }
+
+    /// <summary>
+    /// Start a fresh run directly from an ending screen. The initial identity
+    /// brief is useful from the home page, but replay must not leave a second
+    /// modal layer above the restored gameplay input stack.
+    /// </summary>
+    public void StartReplay()
+    {
+        BeginNewRun();
+    }
+
+    private void BeginNewRun()
+    {
         Debug.Log("开始游戏");
 
+        ResetRunState();
+        localSaveManager?.BeginNewRun();
+        runHistoryTracker?.BeginNewRun();
+        CampaignMapUI.Instance?.SetMapButtonVisible(true);
+        RestoreGameplayPanelsForNewRun();
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
-
-        if (ResourceManager.Instance != null) ResourceManager.Instance.ResetAllResources();
+        gameplayExitUI?.SetEndingMode(false);
+        gameplayExitUI?.SetVisible(true);
         UpdateResourceDisplay();
         StartCoroutine(DelayedStartDialogue());
+    }
+
+    /// <summary>
+    /// ShowEndingUI hides the normal dialogue/resource children so the ending
+    /// page can stand alone. A replay starts without returning through the
+    /// main menu, so those children must be restored before the intro chain
+    /// reaches its first character/dialogue node.
+    /// </summary>
+    private void RestoreGameplayPanelsForNewRun()
+    {
+        if (gameInterfacePanel != null) gameInterfacePanel.SetActive(true);
+
+        Transform dialoguePanel = gameInterfacePanel != null
+            ? gameInterfacePanel.transform.Find("DialoguePanel") : null;
+        if (dialoguePanel != null) dialoguePanel.gameObject.SetActive(true);
+
+        Transform sidebar = gameInterfacePanel != null
+            ? gameInterfacePanel.transform.Find("Sidebar") : null;
+        if (sidebar != null) sidebar.gameObject.SetActive(true);
+
+        Transform resourcePanel = gameInterfacePanel != null
+            ? gameInterfacePanel.transform.Find("ResourcePanel") : null;
+        if (resourcePanel != null) resourcePanel.gameObject.SetActive(true);
+
+        if (dialogueText != null) dialogueText.gameObject.SetActive(true);
+        HideAllCharacters();
+        if (backgroundIntroPanel != null) backgroundIntroPanel.SetActive(false);
+        if (viewEndingButton != null) viewEndingButton.gameObject.SetActive(false);
+
+        // Re-arm the two full-area input buttons after an ending has hidden
+        // the gameplay children. This is idempotent and keeps replay safe if
+        // a previous route or modal changed the runtime listener list.
+        if (clickAreaButton != null)
+        {
+            clickAreaButton.onClick.RemoveListener(OnClickAreaClicked);
+            clickAreaButton.onClick.AddListener(OnClickAreaClicked);
+            clickAreaButton.interactable = true;
+            clickAreaButton.transform.SetAsLastSibling();
+        }
+        if (backgroundIntroClickArea != null)
+        {
+            backgroundIntroClickArea.onClick.RemoveListener(OnBackgroundIntroClicked);
+            backgroundIntroClickArea.onClick.AddListener(OnBackgroundIntroClicked);
+            backgroundIntroClickArea.interactable = true;
+            backgroundIntroClickArea.transform.SetAsLastSibling();
+        }
+        HideClickArea();
+        SetOptionsActive(false);
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+        Canvas.ForceUpdateCanvases();
     }
 
     IEnumerator DelayedStartDialogue()
@@ -441,6 +569,8 @@ public class FinalUIManager : MonoBehaviour
 
     private void OnDialogueNodeShown(int nodeId)
     {
+        optionTransitionInProgress = false;
+        SetOptionButtonsInteractable(true);
         Debug.Log($"<color=cyan>FinalUIManager: 显示节点 {nodeId}</color>");
 
         if (DialogueSystem.Instance?.CurrentNode == null)
@@ -450,6 +580,14 @@ public class FinalUIManager : MonoBehaviour
         }
 
         DialogueNode node = DialogueSystem.Instance.CurrentNode;
+
+        // The title and home controls live in a scene panel that can be
+        // re-enabled by Unity UI navigation. Force it off whenever a story
+        // node is shown so it cannot leak behind gameplay or the ending.
+        if (startMenuPanel != null) startMenuPanel.SetActive(false);
+
+        if (localSaveManager != null)
+            StartCoroutine(SaveCheckpointWhenStable(nodeId));
 
         HandleAchievementDisplay(node);
         HandleCatapultDisplay(nodeId);
@@ -485,6 +623,11 @@ public class FinalUIManager : MonoBehaviour
         if (gameInterfacePanel != null && !gameInterfacePanel.activeSelf)
             gameInterfacePanel.SetActive(true);
 
+        // The click-through layer must be above the dialogue graphics so the
+        // first character/voiceover node remains advanceable after replay.
+        if (clickAreaButton != null)
+            clickAreaButton.transform.SetAsLastSibling();
+
         UpdateBackground(node.backgroundImage);
         UpdateDialogueText(node.dialogueText);
         UpdateResourceDisplay();
@@ -511,6 +654,51 @@ public class FinalUIManager : MonoBehaviour
         }
 
         StartCoroutine(ForceCanvasRefresh());
+    }
+
+    private IEnumerator SaveCheckpointWhenStable(int nodeId)
+    {
+        yield return new WaitForEndOfFrame();
+        if (localSaveManager == null || DialogueSystem.Instance == null ||
+            DialogueSystem.Instance.CurrentNode == null ||
+            DialogueSystem.Instance.CurrentNode.nodeId != nodeId)
+            yield break;
+
+        string ignoredMessage;
+        localSaveManager.SaveAutoCheckpoint(nodeId, out ignoredMessage);
+    }
+
+    public bool SaveCurrentRunToSlot(int slotIndex, out string message)
+    {
+        if (localSaveManager == null)
+        {
+            message = "存档系统尚未准备完成。";
+            return false;
+        }
+        return localSaveManager.SaveManualSlot(slotIndex, out message);
+    }
+
+    public bool LoadRunFromSlot(string slotId, out string message)
+    {
+        if (localSaveManager == null)
+        {
+            message = "存档系统尚未准备完成。";
+            return false;
+        }
+
+        RunSaveData data;
+        if (!localSaveManager.TryLoadSlot(slotId, out data, out message)) return false;
+        if (!localSaveManager.TryRestore(data, out message)) return false;
+
+        inviteCoCreationUI?.ResetSession();
+        CampaignMapUI.Instance?.CloseMap();
+        if (startMenuPanel != null) startMenuPanel.SetActive(false);
+        gameplayExitUI?.SetEndingMode(false);
+        gameplayExitUI?.SetVisible(true);
+        CampaignMapUI.Instance?.SetMapButtonVisible(!data.isCompleted);
+        optionTransitionInProgress = false;
+        SetOptionButtonsInteractable(true);
+        return true;
     }
 
     void HandleNode500308()
@@ -590,6 +778,8 @@ public class FinalUIManager : MonoBehaviour
     {
         Debug.Log("<color=red>显示结局UI - 清理所有非必要元素</color>");
 
+        if (startMenuPanel != null) startMenuPanel.SetActive(false);
+
         HideAllCharacters();
 
         if (avatarFrameImage != null)
@@ -612,16 +802,26 @@ public class FinalUIManager : MonoBehaviour
 
         SetOptionsActive(false);
         HideClickArea();
+        CampaignMapUI.Instance?.SetMapButtonVisible(false);
 
-        if (endingReturnButton != null)
+        if (endingReturnButton != null) endingReturnButton.SetActive(false);
+        // Completed runs retain the same exit entry point. GameplayExitUI
+        // changes its primary action to “再玩一局” for this state.
+        gameplayExitUI?.SetEndingMode(true);
+        gameplayExitUI?.SetVisible(true);
+
+        if (endingReviewButton != null)
         {
-            endingReturnButton.SetActive(true);
-            endingReturnButton.transform.SetAsLastSibling();
-            Debug.Log("<color=green>显示返回主菜单按钮</color>");
+            endingReviewButton.SetActive(true);
+            endingReviewButton.transform.SetAsLastSibling();
+            Debug.Log("<color=green>显示本局复盘按钮</color>");
         }
-        else
+
+        if (battleReportButton != null)
         {
-            Debug.LogError("endingReturnButton未赋值！请在Inspector中设置");
+            battleReportButton.SetActive(true);
+            battleReportButton.transform.SetAsLastSibling();
+            Debug.Log("<color=green>显示战绩报告按钮</color>");
         }
 
         if (backgroundImage != null)
@@ -635,6 +835,112 @@ public class FinalUIManager : MonoBehaviour
     {
         if (endingReturnButton != null)
             endingReturnButton.SetActive(false);
+        if (endingReviewButton != null)
+            endingReviewButton.SetActive(false);
+        if (battleReportButton != null)
+            battleReportButton.SetActive(false);
+    }
+
+    private void CreateEndingReviewButton()
+    {
+        if (endingReviewButton != null || endingReturnButton == null || endingReturnButton.transform.parent == null)
+            return;
+
+        endingReviewButton = CreateEndingActionButton("EndingReviewButton", "本局复盘",
+            new Vector2(-250f, -218f), new Color(.42f, .31f, .20f, .96f));
+        endingReviewButton.GetComponent<Button>().onClick.AddListener(OpenEndingReview);
+
+        endingReviewButton.SetActive(false);
+    }
+
+    private void CreateBattleReportButton()
+    {
+        if (battleReportButton != null || endingReturnButton == null || endingReturnButton.transform.parent == null)
+            return;
+
+        battleReportButton = CreateEndingActionButton("BattleReportButton", "战绩报告",
+            new Vector2(250f, -218f), new Color(.18f, .32f, .34f, .96f));
+        battleReportButton.GetComponent<Button>().onClick.AddListener(OpenBattleReport);
+        battleReportButton.SetActive(false);
+    }
+
+    private GameObject CreateEndingActionButton(string objectName, string label,
+        Vector2 position, Color tint)
+    {
+        GameObject obj = new GameObject(objectName, typeof(RectTransform));
+        obj.transform.SetParent(endingReturnButton.transform.parent, false);
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = new Vector2(300f, 80f);
+        Image image = obj.AddComponent<Image>();
+        Image source = endingReturnButton.GetComponent<Image>();
+        if (source != null) image.sprite = source.sprite;
+        image.type = Image.Type.Simple;
+        image.color = tint;
+        Button button = obj.AddComponent<Button>();
+        button.targetGraphic = image;
+        GameObject textObject = new GameObject("Text", typeof(RectTransform));
+        textObject.transform.SetParent(obj.transform, false);
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = textRect.offsetMax = Vector2.zero;
+        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Fonts & Materials/SC-Regular SDF");
+        if (font != null) text.font = font;
+        text.text = label;
+        text.fontSize = 42f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = new Color(.96f, .94f, .87f, 1f);
+        text.raycastTarget = false;
+        return obj;
+    }
+
+    private void OpenEndingReview()
+    {
+        if (endingReviewButton != null)
+            endingReviewButton.SetActive(false);
+        gameplayExitUI?.SetVisible(false);
+        campaignMapUI?.OpenEndingReview();
+    }
+
+    private void OpenBattleReport()
+    {
+        if (endingReturnButton != null) endingReturnButton.SetActive(false);
+        if (endingReviewButton != null) endingReviewButton.SetActive(false);
+        if (battleReportButton != null) battleReportButton.SetActive(false);
+        gameplayExitUI?.SetVisible(false);
+        battleReportUI?.Open();
+    }
+
+    private void HandleBattleReportClosed()
+    {
+        if (DialogueSystem.Instance?.CurrentNode == null || !IsEndingNode(DialogueSystem.Instance.CurrentNode.nodeId))
+            return;
+        if (endingReturnButton != null) endingReturnButton.SetActive(false);
+        if (endingReviewButton != null) endingReviewButton.SetActive(true);
+        if (battleReportButton != null) battleReportButton.SetActive(true);
+        gameplayExitUI?.SetEndingMode(true);
+        gameplayExitUI?.SetVisible(true);
+    }
+
+    private void HandleRecapClosed()
+    {
+        // CloseMap restores the normal gameplay entry by design. On an ending
+        // screen the dedicated review/report buttons and global exit entry are
+        // restored together; the normal in-game recap entry stays hidden.
+        if (DialogueSystem.Instance?.CurrentNode != null &&
+            IsEndingNode(DialogueSystem.Instance.CurrentNode.nodeId))
+        {
+            CampaignMapUI.Instance?.SetMapButtonVisible(false);
+            if (endingReviewButton != null)
+                endingReviewButton.SetActive(true);
+            if (battleReportButton != null)
+                battleReportButton.SetActive(true);
+            gameplayExitUI?.SetEndingMode(true);
+            gameplayExitUI?.SetVisible(true);
+        }
     }
 
     IEnumerator ForceCanvasRefresh()
@@ -679,8 +985,7 @@ public class FinalUIManager : MonoBehaviour
 
         HideClickArea();
         SetOptionsActive(false);
-        if (endingReturnButton != null)
-            endingReturnButton.SetActive(false);
+        HideEndingReturnButton();
     }
 
     void HideBackgroundIntro()
@@ -951,14 +1256,28 @@ public class FinalUIManager : MonoBehaviour
         if (optionButton3 != null) optionButton3.gameObject.SetActive(active);
     }
 
+    void SetOptionButtonsInteractable(bool interactable)
+    {
+        if (optionButton1 != null) optionButton1.interactable = interactable;
+        if (optionButton2 != null) optionButton2.interactable = interactable;
+        if (optionButton3 != null) optionButton3.interactable = interactable;
+    }
+
     void OnOptionClicked(int optionIndex)
     {
-        if (DialogueSystem.Instance?.CurrentNode == null) return;
+        if (optionTransitionInProgress || DialogueSystem.Instance?.CurrentNode == null) return;
 
         var options = DialogueSystem.Instance.CurrentNode.options;
         if (optionIndex < options.Count)
         {
-            DialogueSystem.Instance.HandleOptionSelected(optionIndex);
+            optionTransitionInProgress = true;
+            SetOptionButtonsInteractable(false);
+
+            if (!DialogueSystem.Instance.HandleOptionSelected(optionIndex))
+            {
+                optionTransitionInProgress = false;
+                SetOptionButtonsInteractable(true);
+            }
         }
     }
 
@@ -1161,11 +1480,13 @@ public class FinalUIManager : MonoBehaviour
                 AudioManager.Instance.PlayAchievement();
         }
 
-        int targetNodeId = (nextNodeId > 0) ? nextNodeId : 500101;
+        int targetNodeId = success
+            ? ((nextNodeId > 0) ? nextNodeId : 500101)
+            : 500309;
 
         Debug.Log($"<color=cyan>从走格子游戏返回，跳转到节点：{targetNodeId}</color>");
 
-        OnMiniGameFinished(true, targetNodeId);
+        OnMiniGameFinished(success, targetNodeId);
     }
 
     bool IsEndingNode(int nodeId)
@@ -1196,6 +1517,11 @@ public class FinalUIManager : MonoBehaviour
     {
         Debug.Log("返回主菜单");
 
+        inviteCoCreationUI?.ResetSession();
+        CampaignMapUI.Instance?.CloseMap();
+        CampaignMapUI.Instance?.SetMapButtonVisible(false);
+        gameplayExitUI?.SetEndingMode(false);
+
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
         if (gameInterfacePanel != null) gameInterfacePanel.SetActive(true);
 
@@ -1217,6 +1543,10 @@ public class FinalUIManager : MonoBehaviour
 
         if (endingReturnButton != null)
             endingReturnButton.SetActive(false);
+        if (endingReviewButton != null)
+            endingReviewButton.SetActive(false);
+        if (battleReportButton != null)
+            battleReportButton.SetActive(false);
 
         if (viewEndingButton != null)
             viewEndingButton.gameObject.SetActive(false);
@@ -1230,8 +1560,84 @@ public class FinalUIManager : MonoBehaviour
         if (ResourceManager.Instance != null)
             ResourceManager.Instance.ResetAllResources();
 
+        optionTransitionInProgress = false;
+        SetOptionButtonsInteractable(true);
+
         if (gameInterfacePanel != null)
             gameInterfacePanel.SetActive(false);
+        gameplayExitUI?.SetVisible(false);
+
+        // Keep this explicit after the panel transition as well. The recap
+        // entry is runtime-created and CloseMap restores it for gameplay.
+        CampaignMapUI.Instance?.SetMapButtonVisible(false);
+    }
+
+    public bool SaveAndReturnToMainMenu(out string message)
+    {
+        if (localSaveManager == null || DialogueSystem.Instance?.CurrentNode == null)
+        {
+            message = "当前没有可保存的剧情进度。";
+            return false;
+        }
+        if (!localSaveManager.SaveAutoCheckpoint(DialogueSystem.Instance.CurrentNode.nodeId, out message))
+            return false;
+        ReturnToMainMenu();
+        return true;
+    }
+
+    public bool SaveCurrentProgress(out string message)
+    {
+        if (localSaveManager == null || DialogueSystem.Instance?.CurrentNode == null)
+        {
+            message = "当前没有可保存的剧情进度。";
+            return false;
+        }
+
+        // The exit dialog saves the current safe checkpoint but deliberately
+        // stays in the run. Only the separate “直接退出” action returns home.
+        return localSaveManager.SaveAutoCheckpoint(DialogueSystem.Instance.CurrentNode.nodeId, out message);
+    }
+
+    public void ExitToMainMenuWithoutSaving()
+    {
+        ReturnToMainMenu();
+    }
+
+    private static void HideLegacyVolumeSlider()
+    {
+        Slider[] sliders = FindObjectsOfType<Slider>(true);
+        for (int i = 0; i < sliders.Length; i++)
+        {
+            if (sliders[i] != null && sliders[i].gameObject.name == "BGMVolumeSlider")
+                sliders[i].gameObject.SetActive(false);
+        }
+    }
+
+    void ResetRunState()
+    {
+        StopAllCoroutines();
+        inviteCoCreationUI?.ResetSession();
+        runHistoryTracker?.ResetRunState();
+        CampaignMapUI.Instance?.CloseMap();
+        if (endingReturnButton != null)
+            endingReturnButton.SetActive(false);
+        if (endingReviewButton != null)
+            endingReviewButton.SetActive(false);
+        if (battleReportButton != null)
+            battleReportButton.SetActive(false);
+        optionTransitionInProgress = false;
+        waitingForContinue = false;
+        currentNextNodeId = 0;
+        isPlayingFireAnimation = false;
+        digTunnelClicked = false;
+
+        DialogueSystem.Instance?.ResetRunState();
+        GameData.Instance?.ResetRunState();
+        EndingManager.Instance?.ResetRunState();
+        IfLineManager.Instance?.ResetRunState();
+        ResourceManager.Instance?.ResetAllResources();
+        GetComponent<VisualDirector>()?.ResetVisualState();
+        SetOptionButtonsInteractable(true);
     }
 
     void OnResourceChanged(ResourceChangeEvent changeEvent)
@@ -1355,10 +1761,10 @@ public class FinalUIManager : MonoBehaviour
         // 剧情点5选项A：全力攻占乌巢（火烧动画）
         if (option.nextNodeId == 500201)
         {
-            // ✅ 不停止BGM，播放火烧音效
-            if (AudioManager.Instance != null && AudioManager.Instance.fireWuchaoSFX != null)
+            // 动画期间使用专属配乐；进入下一节点时由剧情节点的 BGM 正常接管。
+            if (AudioManager.Instance != null && AudioManager.Instance.bgmFireWuchao != null)
             {
-                AudioManager.Instance.PlaySFX(AudioManager.Instance.fireWuchaoSFX);
+                AudioManager.Instance.PlayBGM(AudioManager.Instance.bgmFireWuchao, false, true);
             }
 
             PlayFireAnimation(500201);
@@ -1372,6 +1778,12 @@ public class FinalUIManager : MonoBehaviour
         else if (option.nextNodeId > 0)
         {
             DialogueSystem.Instance.ShowDialogueNode(option.nextNodeId);
+        }
+        else
+        {
+            Debug.LogWarning("选项没有小游戏或有效的后续节点，已恢复输入。请检查剧情数据。");
+            optionTransitionInProgress = false;
+            SetOptionButtonsInteractable(true);
         }
     }
 
