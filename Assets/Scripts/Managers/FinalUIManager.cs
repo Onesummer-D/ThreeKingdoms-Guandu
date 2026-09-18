@@ -105,6 +105,13 @@ public class FinalUIManager : MonoBehaviour
     public Sprite yuanshaoAvatar;
     public Sprite xuyouAvatar;
 
+    [Header("战绩报告卡片左侧标题图")]
+    public Sprite reportStatsBadge;
+    public Sprite reportTendencyBadge;
+    public Sprite reportResourceTrendBadge;
+    public Sprite reportCultureBadge;
+    public Sprite reportAdvisorEchoBadge;
+
     [Header("火烧乌巢动画")]
     public GameObject fireAnimationPanel;
     public Image fireAnimationImage;
@@ -204,6 +211,11 @@ public class FinalUIManager : MonoBehaviour
 
         battleReportUI = GetComponent<BattleReportUI>();
         if (battleReportUI == null) battleReportUI = gameObject.AddComponent<BattleReportUI>();
+        battleReportUI.statsCardBadge = reportStatsBadge;
+        battleReportUI.tendencyCardBadge = reportTendencyBadge;
+        battleReportUI.resourceTrendCardBadge = reportResourceTrendBadge;
+        battleReportUI.cultureCardBadge = reportCultureBadge;
+        battleReportUI.advisorEchoCardBadge = reportAdvisorEchoBadge;
         Sprite endingButtonSprite = endingReturnButton != null && endingReturnButton.GetComponent<Image>() != null
             ? endingReturnButton.GetComponent<Image>().sprite
             : null;

@@ -410,7 +410,10 @@ public sealed class CampaignMapUI : MonoBehaviour
             resources != null ? Mathf.RoundToInt(resources.GetRisk()) : 0);
         DialogueNode current = DialogueSystem.Instance.CurrentNode;
         snapshot.DecisionContext = "当前在剧情推进或结局回顾中，没有待选择的军议。可以邀请朋友讨论已走过的路线。";
-        if (current != null && current.nodeId == chapter.anchorNodeId && current.options != null)
+        // The live invite entry is available on every selectable node, not
+        // only the five chapter anchors. Keep the invitation context useful
+        // for follow-up decision nodes such as 1004/400204/400306/500214.
+        if (current != null && HasUsableOptions(current))
         {
             List<string> options = new List<string>();
             bool alreadyChosen = false;
@@ -426,6 +429,17 @@ public sealed class CampaignMapUI : MonoBehaviour
         }
         snapshot.StoryRecap = BuildInviteStoryRecap(visited);
         return true;
+    }
+
+    private static bool HasUsableOptions(DialogueNode node)
+    {
+        if (node == null || node.isBackgroundIntro || node.options == null) return false;
+        for (int i = 0; i < node.options.Count; i++)
+        {
+            DialogueOption option = node.options[i];
+            if (option != null && !string.IsNullOrWhiteSpace(option.optionText)) return true;
+        }
+        return false;
     }
 
     public void InvokeInviteAction() { inviteAction?.Invoke(); }
@@ -832,10 +846,16 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         Image cardImage = card.AddComponent<Image>();
         cardImage.color = new Color(0.095f, 0.145f, 0.18f, 0.98f);
-        Sprite recapSprite = ResolveRecapSprite(beat.nodeId, displayIndex - 1, null);
+        // The egg's authored achievement is the visual proof of the unlock.
+        // Use it in the recap card instead of repeating the scene backdrop;
+        // ordinary beats keep the existing route-backdrop rotation.
+        Sprite recapSprite = beat.nodeId == 500215 && beat.achievementSprite != null
+            ? beat.achievementSprite
+            : ResolveRecapSprite(beat.nodeId, displayIndex - 1, null);
         if (recapSprite != null)
         {
-            GameObject imageObject = CreateUIObject("BeatImage", card.transform);
+            GameObject imageObject = CreateUIObject(
+                beat.nodeId == 500215 ? "AchievementBadge" : "BeatImage", card.transform);
             SetAnchored(imageObject.GetComponent<RectTransform>(), new Vector2(0.02f, 0.12f), new Vector2(0.205f, 0.88f));
             Image image = imageObject.AddComponent<Image>();
             image.sprite = recapSprite;

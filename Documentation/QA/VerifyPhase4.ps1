@@ -27,6 +27,7 @@ try {
         'Assets/Scripts/UI/CampaignChapterResolver.cs',
         'Assets/Scripts/UI/BattleReportAnalyzer.cs',
         'Assets/Scripts/UI/ResourceTrendGraphic.cs',
+        'Assets/Scripts/UI/ResourceTrendPlotUI.cs',
         'Assets/Scripts/UI/BattleReportUI.cs',
         'Assets/Scripts/UI/CampaignMapUI.cs',
         'Assets/Scripts/UI/InviteSessionState.cs',

@@ -1,7 +1,7 @@
 # 4C 参谋建议闭环
 
-Status: awaiting_visual_verification
-Active Task: 05-regression-qa
+Status: in_progress
+Active Task: 06-user-feedback-regression
 
 ## 目标
 
@@ -21,6 +21,7 @@ Active Task: 05-regression-qa
 - [x] 03-host-review：增加主将查看建议、采纳/拒绝/撤销，并防止重复操作。
 - [x] 04-echo-history：把采纳结果写入回顾/战绩报告，不影响实际决策。
 - [ ] 05-regression-qa：静态契约、编译、Unity 关键路径与各剧情线回归。
+- [ ] 06-user-feedback-regression：处理 2026-09-13 用户反馈的多次邀约、节点入口、彩蛋回顾、趋势图、长文案和报告卡片版式。
 
 ## 验收标准
 
@@ -44,6 +45,22 @@ Active Task: 05-regression-qa
 - [x] Unity Game 视图完成“邀约 → 应邀填写 → 主将审核 → 关闭回到决策”的烟测（Play Mode：输入“测试参谋”、不填理由提交、采纳后关闭，决策选项/军议邀约/剧情回顾仍可用）。
 - [ ] 五个锚点与终局复盘完整回归。
 
+## 2026-09-13 Scope Change / 新增执行项
+
+用户明确要求将以下行为加入本轮验收，均属于现有军议邀约、剧情回顾和战绩报告范围，不新增网络、账号或主线规则：
+
+1. 同一决策节点在上一位参谋被采纳或拒绝后，可以再次发起并提交下一位参谋的完整建议；旧回声保留，输入和状态隔离。
+2. 所有有实际选项的剧情节点均显示军议邀约，纯叙事节点不显示。
+3. 彩蛋回顾卡左侧显示“政治家的胸怀”勋章 UI。
+4. 战绩报告资源区使用日志中的多个节点/决策前后快照绘制真实趋势。
+5. 史实结局等长文案自动换行并完整显示。
+6. 报告每张卡预留左侧图片位，文字在右侧多行排版。
+7. 趋势资源卡采用 Compact/Detail 双模式：卡片内保留可读预览，详情弹层补齐真实节点标签、纵轴刻度、风险提示、重合标记和终点变化量。
+8. 在 FR-087 基础上继续做第二轮趋势图精修：Detail 优先图表与终点摘要、Compact 收窄左侧图片位并重排信息、节点名改为无省略号短标签，风险线/marker 进一步区分。
+9. 在 FR-088 基础上完成视觉尺度收口：合并图例与终点值、删除重复说明、显著放大剩余文字与有效绘图区，并确认趋势文字使用 TMP 且没有通过父级缩放压缩。
+
+对应规格：FR-081–FR-089。
+
 ## Spec Compliance
 
 | Req ID | Status | Evidence |
@@ -55,6 +72,15 @@ Active Task: 05-regression-qa
 | FR-045 | partial | 身份、快照和离线提示沿用现有官渡 UI；视觉待验 |
 | FR-046/NFR-034 | pending | 等 Unity Play Mode 烟测 |
 | NFR-035/036 | met/partial | 运行时状态与报告记录不触碰对白/资源/ScriptableObject；终局复用待回归 |
+| FR-081 | ✓ met | 同节点采纳/拒绝后创建清洁 attempt，状态检查覆盖二次提交；待 Unity 视觉烟测 |
+| FR-082 | ✓ met | 9 个选项节点盘点、通用入口判定和 1/2/3 项定位契约通过 |
+| FR-083 | partial | 500215 已接入 achievementSprite/AchievementBadge，待 Game 视图确认 |
+| FR-084 | partial | 报告已改为 resourceTimeline 多点折线并合并资源摘要，待 Game 视图确认 |
+| FR-085 | partial | 史官简注卡已改为自动换行/Overflow/增高，待 Game 视图确认 |
+| FR-086 | partial | 各报告卡已有 CardBadgeSlot，且 FinalUIManager 可透传五个可选 Sprite，待 Game 视图确认 |
+| FR-087 | partial | Compact/Detail、节点标签、刻度、差值、风险序列和重合 marker 已接入并通过静态检查；待 Game 视图确认不同分辨率下实际排版 |
+| FR-088 | partial | 第二轮层级、Compact 横向空间、Detail 终点摘要、短标签和风险线区分已纳入当前子任务；待静态检查与 Unity Game 视图确认 |
+| FR-089 | partial | 第三轮视觉尺度收口已纳入当前子任务；待生产改动、静态检查与 Unity Game 视图确认 |
 
 ## Errors
 
@@ -62,3 +88,4 @@ Active Task: 05-regression-qa
 |---|---|---|
 | 1 | Windows PowerShell 环境无法启动临时设置的 `GIT_EDITOR=true`，导致变基提交未继续 | 改用 Windows 可执行的无交互编辑器命令继续变基；已解决的 README 内容保持暂存 |
 | 2 | `cmd /c exit 0` 未报错但没有让 Git 完成变基提交 | 直接复用原提交元数据创建已解决冲突的提交，再让 rebase 收尾，避免继续依赖外部编辑器 |
+| 3 | 初次 2026-09-13 规划补丁未匹配现有变更日志上下文，未产生文件改动 | 重新读取实际行内容后按稳定标题/版本行分段应用；未重试原补丁 |

@@ -78,21 +78,15 @@ public sealed class RunHistoryTracker : MonoBehaviour
     }
 
     /// <summary>
-    /// Records an advisor contribution without touching the authoritative
-    /// dialogue/resource path. The same suggestion/status is ignored when a
-    /// UI redraw tries to submit it twice.
+    /// Records one completed advisor attempt without touching the authoritative
+    /// dialogue/resource path. Every accepted or declined attempt is kept,
+    /// including two advisors who happen to choose the same option; the UI
+    /// disables the completed attempt's buttons so a redraw cannot duplicate it.
     /// </summary>
     public void RecordAdvisorEcho(int nodeId, int chapterIndex, int optionIndex,
         string guestLabel, string optionText, string reason, bool accepted, string summary)
     {
         if (current.advisorEchoes == null) current.advisorEchoes = new List<AdvisorEchoData>();
-        for (int i = 0; i < current.advisorEchoes.Count; i++)
-        {
-            AdvisorEchoData existing = current.advisorEchoes[i];
-            if (existing != null && existing.nodeId == nodeId && existing.optionIndex == optionIndex &&
-                existing.accepted == accepted && string.Equals(existing.guestLabel, guestLabel)) return;
-        }
-
         current.advisorEchoes.Add(new AdvisorEchoData
         {
             sequence = current.advisorEchoes.Count + 1,

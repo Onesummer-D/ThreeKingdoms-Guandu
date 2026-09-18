@@ -81,7 +81,12 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (!initialized || campaignMapUI == null || inviteOverlay == null) return;
 
         if (!campaignMapUI.TryBuildInviteSnapshot(out snapshot)) return;
-        if (!inviteSession.Matches(snapshot) || inviteSession.Status == InviteSessionStatus.Declined)
+        // Accepted and declined sessions are completed attempts. A new click
+        // on the decision-node invite button must start a clean handoff so a
+        // second advisor never inherits the previous advisor's input/status.
+        if (!inviteSession.Matches(snapshot) ||
+            inviteSession.Status == InviteSessionStatus.Accepted ||
+            inviteSession.Status == InviteSessionStatus.Declined)
         {
             inviteSession.Begin(snapshot, GetCurrentOptionTexts());
         }
@@ -127,10 +132,19 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private void RefreshDecisionInviteButton()
     {
         DialogueNode node = DialogueSystem.Instance != null ? DialogueSystem.Instance.CurrentNode : null;
-        bool decision = node != null && node.options != null && node.options.Count > 0 &&
-            (node.nodeId == 1001 || node.nodeId == 2001 || node.nodeId == 3001 ||
-             node.nodeId == 4001 || node.nodeId == 5001);
+        bool decision = HasUsableOptions(node);
         SetDecisionInviteVisible(decision && (inviteOverlay == null || !inviteOverlay.activeSelf));
+    }
+
+    private static bool HasUsableOptions(DialogueNode node)
+    {
+        if (node == null || node.isBackgroundIntro || node.options == null) return false;
+        for (int i = 0; i < node.options.Count; i++)
+        {
+            DialogueOption option = node.options[i];
+            if (option != null && !string.IsNullOrWhiteSpace(option.optionText)) return true;
+        }
+        return false;
     }
 
     private void SetDecisionInviteVisible(bool visible)
@@ -573,24 +587,47 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private void AlignDecisionInviteButton(Transform parent)
     {
         if (decisionInviteButton == null || parent == null) return;
-        RectTransform option2 = FindDecisionOption(parent, "OptionButton2");
-        RectTransform option3 = FindDecisionOption(parent, "OptionButton3");
-        if (option2 == null || option3 == null) return;
+        List<RectTransform> options = new List<RectTransform>();
+        for (int i = 1; i <= 3; i++)
+        {
+            RectTransform option = FindDecisionOption(parent, "OptionButton" + i);
+            if (option != null && option.gameObject.activeInHierarchy) options.Add(option);
+        }
+        if (options.Count == 0) return;
 
         Canvas.ForceUpdateCanvases();
-        Vector3 option2Center = GetRectWorldCenter(option2);
-        Vector3 option3Center = GetRectWorldCenter(option3);
-        float optionSpacing = Mathf.Abs(option2Center.y - option3Center.y);
-        if (optionSpacing < 1f) return;
+        Vector3 lowestCenter = GetRectWorldCenter(options[0]);
+        float optionSpacing = float.MaxValue;
+        float optionHeight = GetRectWorldHeight(options[0]);
+        for (int i = 0; i < options.Count; i++)
+        {
+            Vector3 center = GetRectWorldCenter(options[i]);
+            if (center.y < lowestCenter.y) lowestCenter = center;
+            optionHeight = Mathf.Max(optionHeight, GetRectWorldHeight(options[i]));
+            for (int j = i + 1; j < options.Count; j++)
+            {
+                float distance = Mathf.Abs(center.y - GetRectWorldCenter(options[j]).y);
+                if (distance > 1f) optionSpacing = Mathf.Min(optionSpacing, distance);
+            }
+        }
 
         RectTransform inviteRect = decisionInviteButton.GetComponent<RectTransform>();
         inviteRect.anchorMin = new Vector2(.5f, .5f);
         inviteRect.anchorMax = new Vector2(.5f, .5f);
         inviteRect.pivot = new Vector2(.5f, .5f);
+        if (float.IsPositiveInfinity(optionSpacing) || optionSpacing == float.MaxValue)
+        {
+            // A one-option node has no inter-option rhythm to copy. Keep a
+            // small visual gap below the option instead of leaving the button
+            // at its generic fallback anchor.
+            float gap = Mathf.Max(12f, optionHeight * .12f);
+            optionSpacing = optionHeight + gap + GetRectWorldHeight(inviteRect);
+        }
         // UI Y grows upward, so subtract one option spacing to place the
-        // invite immediately below option 3 with the same gap as options 2/3.
-        inviteRect.position = new Vector3(option3Center.x,
-            option3Center.y - optionSpacing, option3Center.z);
+        // invite immediately below the lowest visible option. This works for
+        // one-, two- and three-option nodes alike.
+        inviteRect.position = new Vector3(lowestCenter.x,
+            lowestCenter.y - optionSpacing, lowestCenter.z);
     }
 
     private static RectTransform FindDecisionOption(Transform root, string objectName)
@@ -608,6 +645,13 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         Vector3[] corners = new Vector3[4];
         rect.GetWorldCorners(corners);
         return (corners[0] + corners[2]) * .5f;
+    }
+
+    private static float GetRectWorldHeight(RectTransform rect)
+    {
+        Vector3[] corners = new Vector3[4];
+        rect.GetWorldCorners(corners);
+        return Mathf.Abs(corners[1].y - corners[0].y);
     }
 
     private void Update()

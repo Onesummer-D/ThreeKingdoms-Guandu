@@ -24,6 +24,15 @@ public sealed class BattleReportUI : MonoBehaviour
         new Color(.35f, .78f, .68f, 1f),
         new Color(.64f, .48f, .84f, 1f)
     };
+    private const float CardBadgeRight = .16f;
+    private const float CardTextLeft = .18f;
+
+    [Header("战绩报告卡片左侧标题图（可选）")]
+    public Sprite statsCardBadge;
+    public Sprite tendencyCardBadge;
+    public Sprite resourceTrendCardBadge;
+    public Sprite cultureCardBadge;
+    public Sprite advisorEchoCardBadge;
 
     private CampaignMapUI campaignMap;
     private RunHistoryTracker historyTracker;
@@ -34,6 +43,9 @@ public sealed class BattleReportUI : MonoBehaviour
     private Sprite buttonSprite;
     private Sprite portraitSprite;
     private GameObject exportOverlay;
+    private GameObject trendDetailOverlay;
+    private ResourceTrendPlotUI trendDetailPlot;
+    private readonly TMP_Text[] trendDetailSummaryValues = new TMP_Text[4];
     private string lastPosterPath;
     private bool capturing;
 
@@ -63,6 +75,7 @@ public sealed class BattleReportUI : MonoBehaviour
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
+        if (trendDetailOverlay != null) trendDetailOverlay.SetActive(false);
     }
 
     public void Close()
@@ -107,6 +120,7 @@ public sealed class BattleReportUI : MonoBehaviour
             22f, TextAlignmentOptions.Center, TextMuted, false);
         SetAnchored(disclaimer.rectTransform, new Vector2(.24f, .105f), new Vector2(.76f, .13f));
         CreateExportOverlay(panel.transform);
+        CreateTrendDetailOverlay(overlay.transform);
         overlay.SetActive(false);
     }
 
@@ -173,7 +187,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateHeroCard(float y)
     {
-        GameObject card = CreateCard("Ending", y, 170f);
+        GameObject card = CreateCard("Ending", y, 170f, false);
         Sprite sprite = portraitSprite != null ? portraitSprite : campaignMap.GetReachedEndingSprite();
         if (sprite != null)
         {
@@ -208,12 +222,9 @@ public sealed class BattleReportUI : MonoBehaviour
         summary.enableAutoSizing = true;
         summary.fontSizeMin = 24f;
         summary.fontSizeMax = 34f;
-        // Center the ending sentence against the entire card, matching the
-        // tendency summary below. The portrait is a visual accent and must
-        // not shift the sentence's perceived center to the right.
-        // Use the same horizontal bounds as the tendency sentence below so
-        // both lines share one unmistakable visual center across the card.
-        SetAnchored(summary.rectTransform, new Vector2(.08f, .10f), new Vector2(.92f, .62f));
+        // Center the ending sentence inside the right-hand text column, while
+        // keeping the portrait in the reserved left-hand visual column.
+        SetAnchored(summary.rectTransform, new Vector2(.23f, .10f), new Vector2(.96f, .62f));
         summary.rectTransform.pivot = new Vector2(.5f, .5f);
         summary.alignment = TextAlignmentOptions.Center;
         return y + 182f;
@@ -221,7 +232,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateStatsCard(float y, RunHistoryData history)
     {
-        GameObject card = CreateCard("Stats", y, 104f);
+        GameObject card = CreateCard("Stats", y, 130f);
         ResourceSnapshotData final = GetFinalSnapshot(history);
         string duration = FormatDuration(history != null ? history.activeSeconds : 0f);
         string values = final == null
@@ -229,9 +240,9 @@ public sealed class BattleReportUI : MonoBehaviour
             : "兵力 " + Round(final.troop) + "　粮草 " + Round(final.food) + "　计策 " + Round(final.strategy) + "　风险 " + Round(final.risk);
         TMP_Text text = CreateText(card.transform,
             "有效游玩 " + duration + "　｜　实际决策 " + GetDecisionCount(history) + " 次\n" + values,
-            34f, TextAlignmentOptions.Center, TextPrimary, true);
-        Stretch(text.rectTransform);
-        return y + 116f;
+            30f, TextAlignmentOptions.Center, TextPrimary, true);
+        SetAnchored(text.rectTransform, new Vector2(CardTextLeft, .12f), new Vector2(.96f, .88f));
+        return y + 142f;
     }
 
     private float CreateTendencyCard(float y, DecisionTendencyResult tendency)
@@ -239,78 +250,158 @@ public sealed class BattleReportUI : MonoBehaviour
         GameObject card = CreateCard("Tendency", y, 160f);
         TMP_Text label = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.TopLeft, AccentColor, false);
-        SetAnchored(label.rectTransform, new Vector2(.025f, .70f), new Vector2(.97f, .94f));
+        SetAnchored(label.rectTransform, new Vector2(CardTextLeft, .70f), new Vector2(.97f, .94f));
         TMP_Text body = CreateText(card.transform, tendency.summary, 34f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(body.rectTransform, new Vector2(.08f, .18f), new Vector2(.92f, .68f));
+        SetAnchored(body.rectTransform, new Vector2(CardTextLeft, .18f), new Vector2(.96f, .68f));
         return y + 172f;
     }
 
     private float CreateTrendCard(float y, RunHistoryData history)
     {
-        GameObject card = CreateCard("ResourceTrend", y, 410f);
-        TMP_Text title = CreateText(card.transform, "四项资源趋势 · 真实节点记录（0—100）", 38f,
+        GameObject card = CreateCard("ResourceTrend", y, 560f);
+        TMP_Text title = CreateText(card.transform, "四项资源趋势 · 真实节点记录", 40f,
             TextAlignmentOptions.TopLeft, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(.025f, .87f), new Vector2(.52f, .97f));
-        CreateLegend(card.transform, "兵力", ResourceColors[0], .60f, .88f);
-        CreateLegend(card.transform, "粮草", ResourceColors[1], .78f, .88f);
-        CreateLegend(card.transform, "计策", ResourceColors[2], .60f, .76f);
-        CreateLegend(card.transform, "风险", ResourceColors[3], .78f, .76f);
+        title.enableAutoSizing = true;
+        title.fontSizeMin = 32f;
+        title.fontSizeMax = 40f;
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .925f), new Vector2(.97f, .985f));
+
+        List<ResourceSnapshotData> timeline = BuildTrendTimeline(history);
+        ResourceSnapshotData start = timeline.Count > 0 ? timeline[0] : null;
+        ResourceSnapshotData final = timeline.Count > 0 ? timeline[timeline.Count - 1] : GetFinalSnapshot(history);
+        CreateResourceSummary(card.transform, start, final, true, null);
 
         GameObject chartObject = CreateUIObject("TrendLines", card.transform);
-        SetAnchored(chartObject.GetComponent<RectTransform>(), new Vector2(.035f, .08f), new Vector2(.965f, .68f));
-        ResourceTrendGraphic chart = chartObject.AddComponent<ResourceTrendGraphic>();
-        chart.raycastTarget = false;
-        List<ResourceSnapshotData> timeline = BuildTrendTimeline(history);
-        chart.SetData(timeline);
-        CreateResourceBarChart(card.transform,
-            timeline.Count > 0 ? timeline[timeline.Count - 1] : GetFinalSnapshot(history));
-        return y + 422f;
+        SetAnchored(chartObject.GetComponent<RectTransform>(), new Vector2(CardTextLeft, .12f), new Vector2(.975f, .70f));
+        ResourceTrendPlotUI chart = chartObject.AddComponent<ResourceTrendPlotUI>();
+        chart.SetData(timeline, ResourceTrendViewMode.Compact);
+        Button detail = CreateButton(card.transform, "查看详情", 28f);
+        SetAnchored(detail.GetComponent<RectTransform>(), new Vector2(.80f, .045f), new Vector2(.975f, .115f));
+        detail.onClick.AddListener(() => OpenTrendDetail(timeline));
+        return y + 572f;
     }
 
-    private void CreateResourceBarChart(Transform parent, ResourceSnapshotData snapshot)
+    private void CreateTrendDetailOverlay(Transform parent)
+    {
+        trendDetailOverlay = CreateUIObject("TrendDetailOverlay", parent);
+        Stretch(trendDetailOverlay.GetComponent<RectTransform>());
+        trendDetailOverlay.AddComponent<Image>().color = new Color(.008f, .014f, .022f, .94f);
+
+        GameObject panel = CreateUIObject("TrendDetailPanel", trendDetailOverlay.transform);
+        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .10f), new Vector2(.88f, .90f));
+        Image panelImage = panel.AddComponent<Image>();
+        panelImage.color = PanelColor;
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = AccentColor;
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        TMP_Text title = CreateText(panel.transform, "资源趋势详情 · 决策前后节点", 46f,
+            TextAlignmentOptions.Left, TextPrimary, false);
+        title.enableAutoSizing = true;
+        title.fontSizeMin = 36f;
+        title.fontSizeMax = 46f;
+        SetAnchored(title.rectTransform, new Vector2(.07f, .90f), new Vector2(.52f, .98f));
+
+        Button close = CreateButton(panel.transform, "关闭", 32f);
+        SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.80f, .90f), new Vector2(.94f, .98f));
+        close.onClick.AddListener(CloseTrendDetail);
+
+        CreateResourceSummary(panel.transform, null, null, false, trendDetailSummaryValues);
+        GameObject plotObject = CreateUIObject("TrendDetailPlot", panel.transform);
+        SetAnchored(plotObject.GetComponent<RectTransform>(), new Vector2(.07f, .07f), new Vector2(.94f, .72f));
+        trendDetailPlot = plotObject.AddComponent<ResourceTrendPlotUI>();
+        trendDetailOverlay.SetActive(false);
+    }
+
+    private void OpenTrendDetail(IList<ResourceSnapshotData> timeline)
+    {
+        if (trendDetailOverlay == null || trendDetailPlot == null) return;
+        trendDetailPlot.SetData(timeline, ResourceTrendViewMode.Detail);
+        ResourceSnapshotData start = timeline != null && timeline.Count > 0 ? timeline[0] : null;
+        ResourceSnapshotData final = timeline != null && timeline.Count > 0
+            ? timeline[timeline.Count - 1]
+            : null;
+        UpdateResourceSummary(trendDetailSummaryValues, start, final);
+        trendDetailOverlay.SetActive(true);
+        trendDetailOverlay.transform.SetAsLastSibling();
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private void CloseTrendDetail()
+    {
+        if (trendDetailOverlay != null) trendDetailOverlay.SetActive(false);
+    }
+
+    private void CreateResourceSummary(Transform parent, ResourceSnapshotData start,
+        ResourceSnapshotData final, bool compact, TMP_Text[] valueTargets)
     {
         string[] labels = { "兵力", "粮草", "计策", "风险" };
-        float[] values = snapshot == null
-            ? new float[4]
-            : new[] { snapshot.troop, snapshot.food, snapshot.strategy, snapshot.risk };
+        float[] xs = compact
+            ? new[] { .18f, .58f, .18f, .58f }
+            : new[] { .09f, .55f, .09f, .55f };
+        float[] ys = compact
+            ? new[] { .82f, .82f, .71f, .71f }
+            : new[] { .83f, .83f, .73f, .73f };
+        float itemWidth = compact ? .37f : .36f;
+        float markerSize = compact ? 25f : 28f;
+        float textSize = compact ? 27f : 29f;
         for (int i = 0; i < labels.Length; i++)
         {
-            // Each row owns its labels and bar. This guarantees the text is
-            // rendered above the trend graphic and remains visible even when
-            // the report is rebuilt after a restored save.
-            float rowTop = .68f - i * .145f;
-            float rowBottom = rowTop - .095f;
-            GameObject row = CreateUIObject(labels[i] + "ResourceRow", parent);
-            SetAnchored(row.GetComponent<RectTransform>(), new Vector2(.035f, rowBottom), new Vector2(.965f, rowTop));
-
-            GameObject background = CreateUIObject(labels[i] + "BarBackground", row.transform);
-            SetAnchored(background.GetComponent<RectTransform>(), new Vector2(.18f, .18f), new Vector2(.82f, .82f));
-            background.AddComponent<Image>().color = new Color(.22f, .29f, .31f, .95f);
-
-            GameObject fill = CreateUIObject(labels[i] + "BarFill", background.transform);
-            RectTransform fillRect = fill.GetComponent<RectTransform>();
-            float normalized = Mathf.Clamp01(values[i] / 100f);
-            fillRect.anchorMin = Vector2.zero;
-            fillRect.anchorMax = new Vector2(normalized, 1f);
-            fillRect.offsetMin = Vector2.zero;
-            fillRect.offsetMax = Vector2.zero;
-            fill.AddComponent<Image>().color = ResourceColors[i];
-
-            TMP_Text label = CreateText(row.transform, labels[i], 30f,
-                TextAlignmentOptions.Left, TextPrimary, false);
-            SetAnchored(label.rectTransform, new Vector2(.00f, .02f), new Vector2(.17f, .98f));
-            label.enableAutoSizing = false;
-            label.overflowMode = TextOverflowModes.Overflow;
-            label.transform.SetAsLastSibling();
-
-            TMP_Text amount = CreateText(row.transform, snapshot == null ? "—" : Round(values[i]).ToString() + "%",
-                30f, TextAlignmentOptions.Right, ResourceColors[i], false);
-            SetAnchored(amount.rectTransform, new Vector2(.83f, .02f), new Vector2(1f, .98f));
-            amount.enableAutoSizing = false;
-            amount.overflowMode = TextOverflowModes.Overflow;
-            amount.transform.SetAsLastSibling();
+            string value = FormatResourceSummaryValue(labels[i], i, start, final);
+            TMP_Text text = CreateResourceSummaryItem(parent, labels[i], ResourceColors[i],
+                value, xs[i], ys[i], itemWidth, markerSize, textSize);
+            if (valueTargets != null && i < valueTargets.Length)
+                valueTargets[i] = text;
         }
+    }
+
+    private static void UpdateResourceSummary(TMP_Text[] valueTargets,
+        ResourceSnapshotData start, ResourceSnapshotData final)
+    {
+        if (valueTargets == null) return;
+        string[] labels = { "兵力", "粮草", "计策", "风险" };
+        for (int i = 0; i < labels.Length && i < valueTargets.Length; i++)
+            if (valueTargets[i] != null)
+                valueTargets[i].text = FormatResourceSummaryValue(labels[i], i, start, final);
+    }
+
+    private static string FormatResourceSummaryValue(string label, int index,
+        ResourceSnapshotData start, ResourceSnapshotData final)
+    {
+        if (final == null) return label + " —";
+        float value = index == 0 ? final.troop : index == 1 ? final.food :
+            index == 2 ? final.strategy : final.risk;
+        float startValue = start == null ? value : index == 0 ? start.troop : index == 1 ? start.food :
+            index == 2 ? start.strategy : start.risk;
+        return FormatResourceValue(label, value, value - startValue, start != null);
+    }
+
+    private TMP_Text CreateResourceSummaryItem(Transform parent, string label, Color color,
+        string value, float x, float y, float width, float markerSize, float textSize)
+    {
+        GameObject item = CreateUIObject(label + "ResourceSummary", parent);
+        SetAnchored(item.GetComponent<RectTransform>(), new Vector2(x, y),
+            new Vector2(x + width, y + .105f));
+        TMP_Text marker = CreateText(item.transform, GetResourceMarker(label), markerSize,
+            TextAlignmentOptions.Center, color, false);
+        marker.fontStyle = FontStyles.Bold;
+        SetAnchored(marker.rectTransform, new Vector2(0f, 0f), new Vector2(.11f, 1f));
+        TMP_Text text = CreateText(item.transform, value, textSize,
+            TextAlignmentOptions.Left, TextPrimary, false);
+        SetAnchored(text.rectTransform, new Vector2(.13f, 0f), new Vector2(1f, 1f));
+        return text;
+    }
+
+    private static string FormatResourceValue(string label, float value, float delta, bool hasDelta)
+    {
+        return label + " " + Round(value) + "% " + (hasDelta ? FormatDelta(delta) : "—");
+    }
+
+    private static string FormatDelta(float delta)
+    {
+        if (Mathf.Abs(delta) < .5f) return "—";
+        return delta > 0f ? "↑" + Round(Mathf.Abs(delta)) : "↓" + Round(Mathf.Abs(delta));
     }
 
     private static List<ResourceSnapshotData> BuildTrendTimeline(RunHistoryData history)
@@ -354,14 +445,19 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateCultureCard(float y)
     {
-        GameObject card = CreateCard("Culture", y, 172f);
+        GameObject card = CreateCard("Culture", y, 250f);
         TMP_Text title = CreateText(card.transform, "史官简注", 38f,
             TextAlignmentOptions.TopLeft, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(.025f, .63f), new Vector2(.97f, .93f));
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .76f), new Vector2(.97f, .94f));
         TMP_Text body = CreateText(card.transform, GetCultureNote(campaignMap.GetReachedEndingNodeId()), 34f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(body.rectTransform, new Vector2(.08f, .16f), new Vector2(.92f, .59f));
-        return y + 184f;
+        SetAnchored(body.rectTransform, new Vector2(CardTextLeft, .12f), new Vector2(.97f, .70f));
+        body.overflowMode = TextOverflowModes.Overflow;
+        body.enableAutoSizing = true;
+        body.fontSizeMin = 24f;
+        body.fontSizeMax = 34f;
+        body.verticalAlignment = VerticalAlignmentOptions.Middle;
+        return y + 262f;
     }
 
     private float CreateAdvisorEchoCard(float y, RunHistoryData history)
@@ -369,11 +465,11 @@ public sealed class BattleReportUI : MonoBehaviour
         if (history == null || history.advisorEchoes == null || history.advisorEchoes.Count == 0)
             return y;
 
-        float height = 148f + Mathf.Min(history.advisorEchoes.Count, 3) * 48f;
+        float height = 190f + Mathf.Min(history.advisorEchoes.Count, 3) * 105f;
         GameObject card = CreateCard("AdvisorEcho", y, height);
         TMP_Text title = CreateText(card.transform, "共谋回声", 38f,
             TextAlignmentOptions.TopLeft, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(.025f, .76f), new Vector2(.97f, .95f));
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .82f), new Vector2(.97f, .95f));
 
         List<string> lines = new List<string>();
         int limit = Mathf.Min(history.advisorEchoes.Count, 3);
@@ -383,12 +479,12 @@ public sealed class BattleReportUI : MonoBehaviour
             if (echo == null) continue;
             string verdict = echo.accepted ? "主将采纳" : "主将未采纳";
             lines.Add("参谋" + (string.IsNullOrWhiteSpace(echo.guestLabel) ? "" : "「" + echo.guestLabel + "」") +
-                "建议“" + Compact(echo.optionText, 18) + "”，" + verdict + "。" +
-                (string.IsNullOrWhiteSpace(echo.reason) ? "" : "\n理由：" + Compact(echo.reason, 24)));
+                "建议：" + (echo.optionText ?? "未填写") + "\n" + verdict + "。" +
+                (string.IsNullOrWhiteSpace(echo.reason) ? "" : "\n理由：" + echo.reason));
         }
-        TMP_Text body = CreateText(card.transform, string.Join("\n", lines), 34f,
+        TMP_Text body = CreateText(card.transform, string.Join("\n\n", lines), 30f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(body.rectTransform, new Vector2(.04f, .12f), new Vector2(.96f, .72f));
+        SetAnchored(body.rectTransform, new Vector2(CardTextLeft, .10f), new Vector2(.97f, .78f));
         body.overflowMode = TextOverflowModes.Overflow;
         return y + height + 12f;
     }
@@ -494,6 +590,11 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private GameObject CreateCard(string name, float y, float height)
     {
+        return CreateCard(name, y, height, true);
+    }
+
+    private GameObject CreateCard(string name, float y, float height, bool withBadgeSlot)
+    {
         GameObject card = CreateUIObject(name + "Card", content);
         RectTransform rect = card.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(.015f, 1f);
@@ -506,16 +607,49 @@ public sealed class BattleReportUI : MonoBehaviour
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
+        if (withBadgeSlot) CreateCardBadgeSlot(card.transform, name);
         return card;
     }
 
-    private void CreateLegend(Transform parent, string label, Color color, float x, float y)
+    private void CreateCardBadgeSlot(Transform parent, string cardName)
     {
-        GameObject mark = CreateUIObject(label + "Mark", parent);
-        SetAnchored(mark.GetComponent<RectTransform>(), new Vector2(x, y), new Vector2(x + .026f, y + .08f));
-        mark.AddComponent<Image>().color = color;
-        TMP_Text text = CreateText(parent, label, 28f, TextAlignmentOptions.Left, TextMuted, false);
-        SetAnchored(text.rectTransform, new Vector2(x + .032f, y - .01f), new Vector2(x + .15f, y + .09f));
+        GameObject slot = CreateUIObject("CardBadgeSlot", parent);
+        SetAnchored(slot.GetComponent<RectTransform>(), new Vector2(.018f, .10f), new Vector2(CardBadgeRight, .90f));
+        Image image = slot.AddComponent<Image>();
+        image.sprite = GetCardBadgeSprite(cardName);
+        image.preserveAspect = true;
+        image.color = image.sprite != null
+            ? Color.white
+            : new Color(.055f, .085f, .10f, .58f);
+        image.raycastTarget = false;
+        Outline outline = slot.AddComponent<Outline>();
+        outline.effectColor = new Color(.45f, .36f, .20f, .72f);
+        outline.effectDistance = new Vector2(1f, -1f);
+    }
+
+    private Sprite GetCardBadgeSprite(string cardName)
+    {
+        switch (cardName)
+        {
+            case "Stats": return statsCardBadge;
+            case "Tendency": return tendencyCardBadge;
+            case "ResourceTrend": return resourceTrendCardBadge;
+            case "Culture": return cultureCardBadge;
+            case "AdvisorEcho": return advisorEchoCardBadge;
+            default: return null;
+        }
+    }
+
+    private static string GetResourceMarker(string label)
+    {
+        switch (label)
+        {
+            case "兵力": return "●";
+            case "粮草": return "◆";
+            case "计策": return "▲";
+            case "风险": return "□";
+            default: return "●";
+        }
     }
 
     private Button CreateButton(Transform parent, string label, float fontSize)
@@ -611,7 +745,10 @@ public sealed class BattleReportUI : MonoBehaviour
         text.color = color;
         text.raycastTarget = false;
         text.enableWordWrapping = wrap;
-        text.overflowMode = TextOverflowModes.Ellipsis;
+        // Long report copy must wrap or overflow into a card that has been
+        // sized for it. Ellipsis hides authored history and makes the report
+        // look incomplete, especially for the historical ending note.
+        text.overflowMode = TextOverflowModes.Overflow;
         return text;
     }
 

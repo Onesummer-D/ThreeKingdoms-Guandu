@@ -47,7 +47,9 @@ if ($startSwap.Success) {
 } elseif ($startObject.Value -match '1883389926') {
     throw 'StartButton still references the legacy color override component.'
 }
-Require-Text $inviteUi 'option3Center\.y\s*-\s*optionSpacing' 'Invite button is not aligned to the option spacing.'
+Require-Text $inviteUi 'lowestCenter\.y\s*-\s*optionSpacing' 'Invite button is not aligned to the lowest visible option.'
+Require-Text $inviteUi 'GetRectWorldHeight' 'Invite button does not handle one-option nodes.'
+Require-Text $inviteUi 'HasUsableOptions\(node\)' 'Invite button is not driven by actual selectable nodes.'
 Require-Text $inviteUi 'rect\.anchorMin\s*=\s*new Vector2\(\.5f, \.44f\)' 'Invite button fallback anchor is not below the decision options.'
 Require-Text $inviteUi 'private void LateUpdate\(\)' 'Invite button does not retry alignment after layout.'
 Require-Text $inviteUi 'rect\.sizeDelta\s*=\s*new Vector2\(300f, 80f\)' 'Invite button is not using the compact four-character width.'

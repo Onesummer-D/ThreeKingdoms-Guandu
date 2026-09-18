@@ -40,6 +40,20 @@ public static class AdvisorStateChecks
         Assert(!state.SubmitSuggestion("重复", 0, "不应重复"), "duplicate submit blocked");
         Assert(state.AcceptSuggestion(), "accept suggestion");
         Assert(state.Status == InviteSessionStatus.Accepted && !string.IsNullOrWhiteSpace(state.EchoSummary), "accepted echo");
+        // A completed attempt must be replaceable at the same node. The
+        // production UI starts a fresh attempt after the host accepts/declines
+        // while the history tracker keeps the old echo separately.
+        state.Begin(snapshot, new List<string> { "坦诚文若之谋", "试探其意", "暂缓决断" });
+        Assert(state.Status == InviteSessionStatus.AwaitingGuest, "second attempt resets status");
+        Assert(state.SubmitSuggestion("另一位参谋", 2, "换一个方案"), "second attempt submit");
+        Assert(state.Suggestion.guestLabel == "另一位参谋" && state.Suggestion.optionIndex == 2,
+            "second attempt does not inherit first suggestion");
+        Assert(state.AcceptSuggestion(), "second attempt accept");
+        state.Begin(snapshot, new List<string> { "坦诚文若之谋", "试探其意", "暂缓决断" });
+        Assert(state.SubmitSuggestion("第三位参谋", 0, string.Empty), "decline attempt submit");
+        Assert(state.DeclineSuggestion(), "decline attempt");
+        state.Begin(snapshot, new List<string> { "坦诚文若之谋", "试探其意", "暂缓决断" });
+        Assert(state.Status == InviteSessionStatus.AwaitingGuest, "attempt after decline resets status");
         state.Reset();
         state.Begin(snapshot, new List<string> { "坦诚文若之谋", "试探其意", "暂缓决断" });
         Assert(state.SubmitSuggestion("无理由", 0, null), "null reason allowed");
