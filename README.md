@@ -1,279 +1,156 @@
-# 三国·官渡之战 | Three Kingdoms: Battle of Guandu
+# 《三国·官渡之战》
+
+**2D 剧情解谜冒险游戏** · **Three Kingdoms: Battle of Guandu**
 
 <p align="center">
   <img src="https://img.shields.io/badge/Unity-2022.3.62f3c1-blue?style=for-the-badge&logo=unity&logoColor=white" />
-  <img src="https://img.shields.io/badge/C%23-61.8%25-green?style=for-the-badge&logo=csharp&logoColor=white" />
+  <img src="https://img.shields.io/badge/C%23-green?style=for-the-badge&logo=csharp&logoColor=white" />
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" />
   <img src="https://img.shields.io/badge/Architecture-Data--Driven-orange?style=for-the-badge" />
 </p>
 
----
+## 作品概览
 
-# 项目简介
+《三国·官渡之战》把官渡之战中的关键抉择整理成一段可以亲自参与的短篇战役。玩家以曹操视角推进五幕剧情，在兵力、粮草、计策与风险之间做判断。每次选择都会改变资源状态、后续节点和终局评价，单局流程约十至十五分钟，适合完整体验后再次尝试另一条路线。
 
-**《三国·官渡之战》** 是一款基于 Unity 开发的历史剧情策略游戏。
+作品关注一个很具体的问题。历史人物面对信息不完整、资源有限和时间压力时，选择是怎样一步步变成结果的。游戏中的史实节点、历史说明和架空分支会明确区分，玩家可以在故事里做决定，也能在战绩报告和剧情回顾中回看决定造成的影响。
 
-项目核心并非单纯复现历史剧情，而是探索：
+## 试玩时可以看到什么
 
-> 如何通过数据驱动架构，实现复杂非线性剧情、动态资源约束与多结局决策系统。
+### 选择会留下痕迹
 
-玩家将在官渡之战背景下扮演曹操，通过战略选择影响：
+四项资源贯穿剧情。
 
-- 兵力
-- 粮草
-- 计策成功率
-- 风险值
+| 资源 | 在游戏中的作用 |
+| --- | --- |
+| 兵力 | 影响正面作战与守备能力 |
+| 粮草 | 影响持续作战和后续行动空间 |
+| 计策 | 影响策略行动的成功可能 |
+| 风险 | 记录局势失控和决策失误带来的压力 |
 
-系统根据玩家决策动态计算剧情走向，最终产生 **7种不同结局**。
+资源变化会即时显示。玩家可以根据当前状态调整策略，系统也会把关键变化写入运行记录。
 
+### 小游戏与剧情互相影响
 
-项目重点解决以下问题：
+剧情节点中穿插拼图、网格移动、挖地道和滑块策略等轻量交互。小游戏结果会影响资源与后续剧情，解谜过程和叙事结果保持在同一条因果线上。
 
-- 多分支剧情如何避免大量 if-else 嵌套；
-- 数百个剧情节点如何保持可维护性；
-- 多维资源如何影响事件结果；
-- 游戏逻辑如何实现配置化扩展。
+### 七种结局与一条彩蛋链
 
----
+游戏提供七条终局分支，其中包含一条历史走向和六条架空分支。每个结局都有独立评价、文化边界说明和回顾内容。部分节点还隐藏了连续触发的彩蛋，鼓励玩家在完成一局后继续探索。
 
-# 游戏展示
+### 一套围绕复盘设计的功能
 
-<img src="./README_Assets/Homepage.png" width="850">
+- 史官注为关键历史节点补充背景与史实边界
+- 人物介绍和玩法介绍帮助玩家快速进入情境
+- 剧情回顾按幕整理已解锁内容，并使用不同场景卡片呈现
+- 本地存档、自动检查点和通关记录支持中途退出与再次游玩
+- 战绩报告展示决策次数、资源状态、结局评价和资源可视化
+- 本地 PNG 海报把一局结果保存为可分享的战报
+- 决策点可发起离线“军议邀约”，填写昵称、选择建议并提交理由
+- 参谋建议只作为辅助信息，不会代替主玩家推进剧情
 
-## 剧情交互界面
+军议邀约是本地单机接力功能，不依赖账号、后端或网络服务。玩家始终保留最终选择权。
 
-<img src="./README_Assets/dialogue.png" width="850">
+## 游戏展示
 
-<img src="./README_Assets/dialogue1.png" width="850">
+### 首页与进入游戏
 
-<img src="./README_Assets/dialogue2.png" width="850">
+<img src="./README_Assets/Homepage.png" width="850" alt="游戏首页">
 
-<img src="./README_Assets/dialogue3.png" width="850">
+### 剧情交互
 
-<img src="./README_Assets/dialogue4.png" width="850">
+<img src="./README_Assets/dialogue.png" width="850" alt="剧情对话界面">
 
+<img src="./README_Assets/dialogue1.png" width="850" alt="剧情选项界面">
 
-## 资源决策系统
+<img src="./README_Assets/dialogue2.png" width="850" alt="资源变化界面">
 
-<img src="./README_Assets/resource.png" width="850">
+<img src="./README_Assets/dialogue3.png" width="850" alt="决策节点界面">
 
+<img src="./README_Assets/dialogue4.png" width="850" alt="军议邀约界面">
 
-## 多结局展示
+### 资源决策
 
-<img src="./README_Assets/endings.png" width="850">
+<img src="./README_Assets/resource.png" width="850" alt="资源决策系统">
 
----
+### 多结局
 
-# 游戏特性
+<img src="./README_Assets/endings.png" width="850" alt="多结局展示">
 
-## 当前版本新增
+## 技术实现
 
-- 本地手动存档、自动检查点与通关记录
-- 五幕剧情回顾、终局复盘与七结局评价
-- 决策/资源运行日志、战绩报告与本地 PNG 海报
-- 首页存档、关于、设置和局内退出流程
-- 五个关键决策点的本机参谋邀约、建议审核与“共谋回声”
-- 资源变化的动态视觉反馈与历史文化说明
+### 数据驱动的剧情结构
 
-参谋邀约当前为离线同机接力演示，不依赖账号、后端或网络服务；建议不会自动推进剧情，最终选择仍由主玩家完成。
-
-完整验收记录、素材授权状态与阶段计划见 [`Documentation`](./Documentation/) 和 [`.planning`](./.planning/)。
-
-## 非线性剧情系统
-
-- 200+剧情节点
-- 7种结局路线
-  - 1条历史胜利路线
-  - 6条架空历史路线
-
-玩家不同选择会改变：
-
-- 资源状态
-- 后续剧情
-- 最终结局
-
----
-
-## 动态决策系统
-
-设计四维资源模型：
-
-|资源|作用|
-|-|-|
-|兵力|影响战斗结果|
-|粮草|影响持续作战能力|
-|计策|影响策略成功概率|
-|风险|影响失败概率|
-
-
-通过资源组合动态决定事件结果，实现：
-
-<img src="./README_Assets/architecture.png" width="850">
-
----
-
-# 技术架构
-
-<img src="./README_Assets/techarchi.png" width="850">
-
-## 1. 数据驱动剧情系统
-
-针对传统剧情游戏中大量硬编码导致维护困难的问题，采用：
-
-**ScriptableObject + 配置化节点管理架构**
-
-实现：
-
-- 剧情文本数据与代码解耦；
-- 节点、选项、条件独立配置；
-- 支持策划人员无需修改代码调整剧情。
-
-
-核心数据结构：
+剧情文本、角色、背景、选项、条件、资源效果和后续节点保存在 ScriptableObject 数据中。运行时通过节点 ID 建立索引并处理跳转，内容调整和逻辑代码保持分离。
 
 ```text
 DialogueDataSO
- ├── DialogueNode
- │    ├── DialogueOption
- │    ├── ResourceEffect
- │    └── Condition
+ └── DialogueNode
+      ├── DialogueOption
+      ├── ResourceEffect
+      ├── Condition
+      └── NextNode
 ```
 
-每个剧情节点包含：
+统一的节点与选项结构用于维护多分支剧情，资源条件和历史选择共同参与结果计算，减少分支断链和重复逻辑。
 
-- 节点ID
-- 文本内容
-- 角色信息
-- 背景资源
-- 可选分支
-- 资源变化
-- 后续节点
+### 主要模块
 
+- Dialogue System 负责节点加载、选项处理、条件判断和分支跳转
+- Resource System 负责四项资源、变化事件和 UI 同步
+- Mini Game System 提供拼图、网格、地道和滑块交互
+- Save and History System 负责存档、检查点、通关记录和剧情回顾
+- Battle Report System 汇总决策、资源、结局评价和分享海报
+- Advisor System 管理军议邀约、建议审核与共谋回声
+- Audio and UI System 管理 BGM、音效、界面状态和 TextMeshPro 渲染
 
----
-
-## 2. 多分支剧情管理系统
-
-通过统一ID管理：
-
-- 支持200+节点快速索引；
-- 避免剧情断链；
-- 降低后期扩展成本。
-
-
----
-
-## 3. 动态决策算法
-
-设计基于资源阈值的条件判断机制。
-
-相比传统：
-
-```csharp
-if(resource > x)
-{
-    ...
-}
-else
-{
-    ...
-}
-```
-
-采用配置化条件规则：
-
-资源状态+事件条件+历史选择 -> 动态剧情结果
-
-同时通过配置化规则替代了传统硬编码分支逻辑，使剧情扩展不依赖代码修改。
-
----
-
-# 核心模块
-
-## Dialogue System
-
-负责完整剧情运行流程：
-
-- 节点加载与缓存；
-- 剧情节点跳转；
-- 玩家选项处理；
-- 条件判断与分支触发。
-
----
-
-## Resource System
-
-管理核心策略资源：
-
-- 兵力（Troops）
-- 粮草（Supplies）
-- 计策（Strategy）
-- 风险（Risk）
-
-
-支持：
-
-- 资源数值动态变化；
-- 状态监听与事件广播；
-- UI实时同步。
-
-
----
-
-## Mini Game System
-
-包含多个独立交互模块：
-
-- 拼图解谜（Puzzle）
-- 网格移动（Grid）
-- 挖地道（Tunnel）
-- 滑块策略（Slider）
-
-
-小游戏结果会影响：
-
-- 后续剧情节点；
-- 资源状态变化；
-- 最终结局判定。
-
-
----
-
-## Audio & UI System
-
-负责游戏表现层管理：
-
-- 动态 BGM 切换；
-- 音效播放与管理；
-- UI状态控制；
-- TextMeshPro 字体适配与文本渲染优化。
-
----
-
-# 技术栈
+### 技术栈
 
 | 类别 | 技术 |
-|---------|------|
+| --- | --- |
 | 游戏引擎 | Unity 2022.3.62f3c1 LTS |
 | 语言 | C# |
-| 架构 | Data-driven Architecture |
 | 数据系统 | ScriptableObject |
-| UI | UGUI + TextMeshPro |
-| 版本管理 | Git/GitHub |
+| UI | UGUI、TextMeshPro |
+| 运行平台 | Windows 10/11 64 位 |
+| 版本管理 | Git / GitHub |
 
----
+## 项目结构
 
-# 快速开始
+```text
+Assets/
+├── Scenes/Guanduuuu.unity       主场景
+├── Scripts/Data/                剧情数据与配置
+├── Scripts/Managers/            游戏流程与状态管理
+├── Scripts/UI/                  页面与交互界面
+└── Art/                         场景、角色、按钮和图标资源
+Documentation/                   阶段记录、授权台账与 QA 检查
+README_Assets/                   README 展示图片
+```
+
+## 开始开发
+
+使用 Unity Hub 以 **Unity 2022.3.62f3c1 LTS** 打开仓库，等待资源导入完成后运行 `Assets/Scenes/Guanduuuu.unity`。
 
 ```bash
 git clone https://github.com/Onesummer-D/ThreeKingdoms-Guandu.git
 ```
 
-使用 Unity Hub 以 **Unity 2022.3.62f3c1 LTS** 打开仓库，等待资源导入完成后运行 `Assets/Scenes/Guanduuuu.unity`。
+Windows 构建需要保留 Unity 导出的 exe、同名 `_Data` 文件夹、`MonoBleedingEdge`、`UnityPlayer.dll` 和 `UnityCrashHandler64.exe`。当前仓库以工程源码为主，构建与投稿材料按比赛提交包单独整理。
 
-Windows 10/11 64 位为当前主要运行平台。公开投稿或发布前，请先核对 [`Documentation/素材授权台账.md`](./Documentation/素材授权台账.md)，并使用有效 Unity 许可证重新构建。
+## 验收与资料
 
----
+阶段四的自动化检查覆盖存档、主页与设置、运行历史、战绩报告、军议邀约循环，以及章节和结局链路。4D 静态覆盖检查确认了五个关键历史锚点、七条终局分支、彩蛋链路和史实与架空边界。
+
+详细记录见以下文件。
+
+- [`Documentation/阶段四验收总结.md`](./Documentation/阶段四验收总结.md)
+- [`Documentation/阶段四开发记录.md`](./Documentation/阶段四开发记录.md)
+- [`Documentation/阶段四4D文化核对表.md`](./Documentation/阶段四4D文化核对表.md)
+- [`Documentation/QA/阶段四4D全流程回归清单.md`](./Documentation/QA/阶段四4D全流程回归清单.md)
+- [`Documentation/素材授权台账.md`](./Documentation/素材授权台账.md)
+
+当前版本定位为单机 Windows 作品，远程联机、手机端和跨设备服务不在本次构建范围内。
 
 ## 开源协议
 
