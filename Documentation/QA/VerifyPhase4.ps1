@@ -67,4 +67,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Battle report contract checks failed.' }
     & 'Documentation/QA/AdvisorLoopContractChecks.ps1'
     if ($LASTEXITCODE -ne 0) { throw 'Advisor loop contract checks failed.' }
+    & 'Documentation/QA/Stage4DCoverageChecks.ps1'
+    if ($LASTEXITCODE -ne 0) { throw 'Stage 4D coverage checks failed.' }
 } finally { Pop-Location }

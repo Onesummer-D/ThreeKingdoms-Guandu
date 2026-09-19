@@ -1,23 +1,54 @@
 $ErrorActionPreference = 'Stop'
 $projectDir = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$homeUi = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/HomeHubUI.cs')
-$finalUi = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/FinalUIManager.cs')
-$startFix = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/StartButtonLabelColorFix.cs')
-$inviteUi = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/InviteCoCreationUI.cs')
-$exitUi = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/GameplayExitUI.cs')
-$scene = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scenes/Guanduuuu.unity')
-$audio = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/AudioManager.cs')
+$homeUi = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/HomeHubUI.cs')
+$finalUi = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/FinalUIManager.cs')
+$startFix = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/StartButtonLabelColorFix.cs')
+$inviteUi = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/InviteCoCreationUI.cs')
+$exitUi = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/UI/GameplayExitUI.cs')
+$scene = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scenes/Guanduuuu.unity')
+$audio = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/AudioManager.cs')
 
 function Require-Text {
     param([string]$Text, [string]$Pattern, [string]$Message)
     if ($Text -notmatch $Pattern) { throw $Message }
 }
 
-foreach ($label in @('关于游戏', '认识人物', '玩法介绍', '背景音乐', '音效音量', '画面亮度', '画面模式：', 'GlobalMuteButton')) {
+function From-CodePoints {
+    param([int[]]$Codes)
+    return (-join ($Codes | ForEach-Object { [char]$_ }))
+}
+
+$homeLabels = @(
+    (From-CodePoints @(0x5173, 0x4E8E, 0x6E38, 0x620F)),
+    (From-CodePoints @(0x8BA4, 0x8BC6, 0x4EBA, 0x7269)),
+    (From-CodePoints @(0x73A9, 0x6CD5, 0x4ECB, 0x7ECD)),
+    (From-CodePoints @(0x80CC, 0x666F, 0x97F3, 0x4E50)),
+    (From-CodePoints @(0x97F3, 0x6548, 0x97F3, 0x91CF)),
+    (From-CodePoints @(0x753B, 0x9762, 0x4EAE, 0x5EA6)),
+    (From-CodePoints @(0x753B, 0x9762, 0x6A21, 0x5F0F, 0xFF1A)),
+    'GlobalMuteButton'
+)
+$aboutContents = @(
+    (From-CodePoints @(0x66F9, 0x64CD)),
+    (From-CodePoints @(0x8BB8, 0x6538)),
+    (From-CodePoints @(0x8881, 0x7ECD)),
+    ('7 ' + (From-CodePoints @(0x6761, 0x7ED3, 0x5C40, 0x7EBF))),
+    ('10' + [char]0x2014 + '15 ' + (From-CodePoints @(0x5206, 0x949F))),
+    (From-CodePoints @(0x519B, 0x8BAE, 0x9080, 0x7EA6)),
+    (From-CodePoints @(0x5F53, 0x524D, 0x7248, 0x672C, 0x5F00, 0x653E, 0x66F9, 0x64CD, 0x8DEF, 0x7EBF))
+)
+$removedStatus = @(
+    ('Unity ' + (From-CodePoints @(0x7F16, 0x8F91, 0x5668, 0x5185, 0x4E0D, 0x5207, 0x6362, 0x7A97, 0x53E3))),
+    ('60 ' + (From-CodePoints @(0x5E27)) + ' ·'),
+    ('120 ' + (From-CodePoints @(0x5E27)) + ' ·')
+)
+$fullscreenText = From-CodePoints @(0x5168, 0x5C4F, 0x663E, 0x793A)
+
+foreach ($label in $homeLabels) {
     Require-Text $homeUi ([regex]::Escape($label)) "Home/settings label is missing: $label"
 }
 
-foreach ($content in @('曹操', '许攸', '袁绍', '7 条结局线', '10—15 分钟', '军议邀约', '当前版本开放曹操路线')) {
+foreach ($content in $aboutContents) {
     Require-Text $homeUi ([regex]::Escape($content)) "About-game content is missing: $content"
 }
 
@@ -62,10 +93,10 @@ Require-Text $finalUi 'backgroundIntroClickArea\.onClick\.RemoveListener\(OnBack
 Require-Text $finalUi 'clickAreaButton\.transform\.SetAsLastSibling\(\)' 'Replay click-through layer is not restored above dialogue graphics.'
 Require-Text $audio 'EffectsVolume' 'Effects volume is not persistent.'
 Require-Text $audio 'public float GetBGMVolume\(\)' 'BGM setting cannot be read by UI.'
-if ($homeUi -match 'Unity 编辑器内不切换窗口|60 帧 ·|120 帧 ·') {
+if ($removedStatus | Where-Object { $homeUi -match [regex]::Escape($_) }) {
     throw 'Settings still contains removed helper status lines.'
 }
-if ($homeUi -match 'CreateToggle|全屏显示') {
+if ($homeUi -match ('CreateToggle|' + [regex]::Escape($fullscreenText))) {
     throw 'The removed fullscreen checkbox is still visible in settings.'
 }
 if ($audio -match 'currentBGMVolume\s*<=\s*0\.01f') {

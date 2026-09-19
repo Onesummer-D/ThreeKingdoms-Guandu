@@ -1,14 +1,16 @@
 $ErrorActionPreference = 'Stop'
 $projectDir = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$dataText = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunHistoryData.cs')
-$trackerText = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunHistoryTracker.cs')
-$saveText = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/LocalSaveManager.cs')
-$payloadText = Get-Content -Raw -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunSaveData.cs')
+$dataText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunHistoryData.cs')
+$trackerText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunHistoryTracker.cs')
+$saveText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/LocalSaveManager.cs')
+$payloadText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $projectDir 'Assets/Scripts/Managers/RunSaveData.cs')
 
 function Require-Text {
     param([string]$Text, [string]$Pattern, [string]$Message)
     if ($Text -notmatch $Pattern) { throw $Message }
 }
+
+$decisionLabel = -join @([char]0x51B3, [char]0x7B56)
 
 foreach ($field in @('activeSeconds', 'shownNodeOrder', 'decisions', 'resourceTimeline', 'nodeId', 'optionIndex', 'optionText', 'before', 'after')) {
     Require-Text $dataText ("\b" + $field + "\b") "Run history field is missing: $field"
@@ -16,7 +18,7 @@ foreach ($field in @('activeSeconds', 'shownNodeOrder', 'decisions', 'resourceTi
 
 Require-Text $trackerText 'OnOptionSelected\s*\+=' 'Decision event is not observed.'
 Require-Text $trackerText 'OnResourceChanged\s*\+=' 'Resource event is not observed.'
-Require-Text $trackerText 'AppendSnapshot\(nodeId,\s*"决策' 'Every actual decision must remain on the trend x-axis.'
+Require-Text $trackerText ('AppendSnapshot\(nodeId,\s*"' + [regex]::Escape($decisionLabel)) 'Every actual decision must remain on the trend x-axis.'
 Require-Text $trackerText 'last\.nodeId\s*==\s*nodeId\s*&&\s*last\.optionIndex\s*==\s*optionIndex' 'Duplicate decision guard is missing.'
 Require-Text $trackerText 'RestoreHistory' 'Run history restore is missing.'
 Require-Text $payloadText 'RunHistoryData\s+history' 'Save payload does not contain run history.'

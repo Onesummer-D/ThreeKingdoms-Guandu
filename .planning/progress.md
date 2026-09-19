@@ -253,3 +253,16 @@
 - 根据用户对比截图反馈，停止调整图表布局，只放大坐标文字：Detail X/Y 为 32/31，Compact X/Y 为 30/29；坐标字重从 Medium 提升为 SemiBold，颜色调整为更接近资源摘要的高亮灰白但不使用纯白。
 - 没有修改图例/摘要结构、图表高度、折线、marker、左侧卡片宽度、风险提示或资源数据逻辑。
 - `pwsh Documentation/QA/VerifyPhase4.ps1` 通过全部定向编译与契约检查；Unity Game View 仍不可操作，16:9 / 1.5x 录屏可读性需要人工最终确认。
+
+## 2026-09-20 · 阶段 4D 文化与结局回归覆盖
+
+- 恢复阶段四计划并新增 `08-cultural-regression`，把五锚点、七结局、彩蛋和文化边界从零散映射整理为独立 4D 验收任务。
+- 修正 `BattleReportUI.GetCultureNote` 的语义：500217 保留“史实结局”，其余六条明确为“史实背景 + 本局架空分支”。
+- 新增 `Documentation/阶段四4D文化核对表.md`、`Documentation/QA/阶段四4D全流程回归清单.md` 和 `Documentation/QA/Stage4DCoverageChecks.ps1`；检查五个可选锚点、每条史官注四字段、七个终止/解锁链、唯一结局标签、500214→500215 彩蛋和回顾勋章条件。
+- 4D 检查已接入 `VerifyPhase4.ps1`。本轮总检查退出码 0，包含定向 UI 编译、36 条章节、分析器、邀约状态、存档、首页/设置、运行日志、战报和 4D 覆盖；`git diff --check` 仅提示 CRLF 转换警告，没有空白错误。
+- 证据边界保持诚实：五锚点/七结局的 Unity 逐条路线回放仍待人工执行；当前没有远端邀约服务，因此不能宣称跨设备在线联机完成。
+- 只读进程检查未发现当前运行中的 Unity/UnityHub，故本轮不能继续取得 Game 视图截图；4D 计划状态暂停在 `awaiting_unity_regression`，下次可直接按新增清单执行，不需要重新盘点。
+- 4D 覆盖脚本现同时检查 500308/500406 的运行时资源分流门；脚本经 Windows PowerShell 5 复跑通过，Unity 五锚点/七结局点击回放仍待编辑器实机证据。
+- 为让阶段四总验收可在 Windows PowerShell 5 重复执行，存档、首页、运行日志、战报和邀约 QA 脚本的中文检查值已改为字符码构造；完整 `VerifyPhase4.ps1` 与 `git diff --check` 均通过。
+- 本轮再次检查 Windows 应用状态与常见 Unity 安装位置，仍无 Unity/UnityHub 可操作目标；4D 手工回放保持待实机，不改变已通过的静态覆盖结论。
+- 进一步把 500308/500406 的分流契约收紧为按方法边界检查完整条件表达式；`Stage4DCoverageChecks.ps1` 和完整 `VerifyPhase4.ps1` 均再次通过。
