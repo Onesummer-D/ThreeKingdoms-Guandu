@@ -1,0 +1,21 @@
+{
+  "activeSeconds": 42.5,
+  "completed": true,
+  "shownNodeOrder": [100001, 100101, 200101, 500217],
+  "decisions": [
+    {
+      "sequence": 1,
+      "nodeId": 100101,
+      "chapterIndex": 0,
+      "optionIndex": 0,
+      "optionText": "稳住粮道",
+      "nextNodeId": 200101,
+      "troopEffect": 0,
+      "foodEffect": 8,
+      "strategyEffect": 1,
+      "riskEffect": -2
+    }
+  ],
+  "resourceTimeline": [],
+  "advisorEchoes": []
+}

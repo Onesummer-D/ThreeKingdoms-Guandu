@@ -48,8 +48,18 @@ public sealed class AdvisorEchoData
 [Serializable]
 public sealed class RunHistoryData
 {
+    public int schemaVersion = RunEventSchema.CurrentVersion;
+    public string runId = string.Empty;
+    public string seed = string.Empty;
+    public string createdAtUtc = string.Empty;
     public float activeSeconds;
     public bool completed;
+    public bool dataIntegrityValid = true;
+    public string dataIntegrityNote = string.Empty;
+    public List<RunParticipantData> participants = new List<RunParticipantData>();
+    public List<RunEventData> events = new List<RunEventData>();
+    public List<MiniGameTraceData> miniGames = new List<MiniGameTraceData>();
+    public EndingAnalysisData ending = new EndingAnalysisData();
     public List<int> shownNodeOrder = new List<int>();
     public List<DecisionRecordData> decisions = new List<DecisionRecordData>();
     public List<ResourceSnapshotData> resourceTimeline = new List<ResourceSnapshotData>();

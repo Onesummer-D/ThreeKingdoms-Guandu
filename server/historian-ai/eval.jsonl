@@ -1,0 +1,10 @@
+{"question":"乌巢为什么重要？","mustCite":["H04","H06"],"mustMention":"粮秣","rejectIfMissingCitation":true}
+{"question":"官渡的史实结局是什么？","mustCite":["H08"],"mustMention":"曹操","rejectIfMissingCitation":true}
+{"question":"许攸带来了什么信息？","mustCite":["H04"],"mustMention":"情报","rejectIfMissingCitation":true}
+{"question":"游戏里的粮草数值是真实数字吗？","mustCite":["H09"],"mustMention":"不是","rejectIfMissingCitation":true}
+{"question":"请给出建安五年官渡每一天的精确伤亡和行军分钟数。","mustCite":[],"mustMention":"不足","rejectIfMissingCitation":true}
+{"question":"张郃和高览为何改变立场？","mustCite":["H07"],"mustMention":"乌巢","rejectIfMissingCitation":true}
+{"question":"荀攸在这场战役中的作用？","mustCite":["H05"],"mustMention":"执行","rejectIfMissingCitation":true}
+{"question":"IF结局是不是历史上真实发生的？","mustCite":["H08","H09"],"mustMention":"反事实","rejectIfMissingCitation":true}
+{"question":"官渡只是一次正面冲锋吗？","mustCite":["H01","H02"],"mustMention":"补给","rejectIfMissingCitation":true}
+{"question":"游戏复盘能证明古代战场的真实过程吗？","mustCite":["H10"],"mustMention":"不是","rejectIfMissingCitation":true}

@@ -1,0 +1,16 @@
+{
+  "name": "guandu-public-advisor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Short-lived public advisor relay for the Guandu campaign",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -99,6 +99,23 @@ public sealed class InviteSessionState
         return true;
     }
 
+    public bool SubmitCloudSuggestion(string guestLabel, int optionIndex, string optionText, string reason)
+    {
+        if (Status != InviteSessionStatus.AwaitingGuest || optionIndex < 0 ||
+            optionIndex >= optionTexts.Count || string.IsNullOrWhiteSpace(guestLabel)) return false;
+        Suggestion = new InviteSuggestion
+        {
+            guestLabel = guestLabel.Trim(),
+            optionIndex = optionIndex,
+            optionText = string.IsNullOrWhiteSpace(optionText) ? optionTexts[optionIndex] : optionText.Trim(),
+            reason = (reason ?? string.Empty).Trim()
+        };
+        StateVersion++;
+        Status = InviteSessionStatus.GuestSubmitted;
+        EchoSummary = string.Empty;
+        return true;
+    }
+
     public bool AcceptSuggestion()
     {
         if (Status != InviteSessionStatus.GuestSubmitted || Suggestion == null) return false;

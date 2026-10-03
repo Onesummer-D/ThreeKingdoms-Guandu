@@ -22,6 +22,7 @@ Active Subtask: unity-regression
 4. [x] 把 4D 检查接入 `VerifyPhase4.ps1`，并新增人工回归清单，区分已执行、待 Unity 实机和未部署在线能力。验证：总检查通过。
 5. [x] 运行完整阶段四检查、静态差异检查和 4D 覆盖检查；记录证据与剩余实机门槛。验证：`VerifyPhase4.ps1` 退出码 0，`git diff --check` 无错误。
 6. [x] 完成计划合规表；五锚点/七结局静态覆盖和可执行清单已齐全，Unity 全路线仍按证据边界保留为待实机，不宣称已完成。
+7. [x] 增加 `Stage4DRouteMatrixChecks.ps1`，从真实对白资产生成五锚点选项/跳转矩阵，并把七结局、两个动态门槛和彩蛋链固定为重放检查点。验证：脚本通过并生成 `Documentation/QA/Stage4DRouteMatrix.md`，已接入 `VerifyPhase4.ps1`。
 
 ## 验收映射
 
@@ -54,3 +55,4 @@ Active Subtask: unity-regression
 | 11 | 用 Windows PowerShell 5 跑完整 `VerifyPhase4.ps1` 时，原有存档/首页/运行日志/战报/邀约契约脚本中的 UTF-8 中文字面量也会触发解析或匹配失败 | 将这些 QA 脚本的中文检查值改为字符码构造，保持检查语义不变；完整阶段四总验收随后通过 |
 | 12 | 本轮再次通过 Windows 应用状态与本机常见 Unity 安装路径检查，未发现可操作 Unity/UnityHub 窗口或可直接启动的 Unity 编辑器目标 | 不修改 4D 证据边界；继续保持 `awaiting_unity_regression`，下次编辑器可用时直接执行既有五锚点/七结局清单 |
 | 13 | 初版运行时分流检查只验证全文件中存在阈值变量和目标节点，不能证明 500308/500406 的完整条件表达式对应正确分支 | 改为按两个方法边界检查完整阈值、fallback 和四个目标节点；4D 覆盖与阶段四总验收再次通过 |
+| 14 | 新增路线矩阵脚本初版使用大范围多行正则，在 Windows PowerShell 5 下解析 Unity YAML 资产超时 | 改为逐行建立节点块，再提取选项和 `nextNodeId`；脚本在 Windows PowerShell 5 下通过，并将锚点分支写入生成矩阵 |

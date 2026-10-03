@@ -69,4 +69,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Advisor loop contract checks failed.' }
     & 'Documentation/QA/Stage4DCoverageChecks.ps1'
     if ($LASTEXITCODE -ne 0) { throw 'Stage 4D coverage checks failed.' }
+    & 'Documentation/QA/Stage4DRouteMatrixChecks.ps1'
+    if ($LASTEXITCODE -ne 0) { throw 'Stage 4D route matrix checks failed.' }
 } finally { Pop-Location }

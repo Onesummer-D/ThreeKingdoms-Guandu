@@ -50,6 +50,7 @@ public sealed class BattleReportUI : MonoBehaviour
     private bool capturing;
 
     public event Action OnClosed;
+    public event Action OnReplayRequested;
 
     public void Initialize(CampaignMapUI map, RunHistoryTracker tracker, Transform root,
         Sprite sharedButtonSprite, Sprite reportPortrait)
@@ -109,6 +110,10 @@ public sealed class BattleReportUI : MonoBehaviour
         {
             if (!capturing) StartCoroutine(CapturePoster());
         });
+
+        Button replay = CreateButton(panel.transform, "战役绘卷", 31f);
+        SetAnchored(replay.GetComponent<RectTransform>(), new Vector2(.46f, .025f), new Vector2(.61f, .105f));
+        replay.onClick.AddListener(() => OnReplayRequested?.Invoke());
 
         Button close = CreateButton(panel.transform, "关闭", 31f);
         SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.81f, .025f), new Vector2(.95f, .105f));

@@ -43,13 +43,38 @@ public sealed class CampaignMapUI : MonoBehaviour
         public readonly string record;
         public readonly string interpretation;
         public readonly string adaptation;
+        public readonly string historicalBoundary;
 
         public HistorianNote(string source, string record, string interpretation, string adaptation)
+            : this(source, record, interpretation, adaptation,
+                "本卡只概括与本节点直接相关的史料；游戏中的资源、分支和结局属于交互化演绎。")
+        {
+        }
+
+        public HistorianNote(string source, string record, string interpretation, string adaptation,
+            string historicalBoundary)
         {
             this.source = source;
             this.record = record;
             this.interpretation = interpretation;
             this.adaptation = adaptation;
+            this.historicalBoundary = historicalBoundary;
+        }
+    }
+
+    private sealed class HistorianCard
+    {
+        public readonly string title;
+        public readonly string category;
+        public readonly int anchorNodeId;
+        public readonly HistorianNote note;
+
+        public HistorianCard(string title, string category, int anchorNodeId, HistorianNote note)
+        {
+            this.title = title;
+            this.category = category;
+            this.anchorNodeId = anchorNodeId;
+            this.note = note;
         }
     }
 
@@ -151,6 +176,92 @@ public sealed class CampaignMapUI : MonoBehaviour
             }
         };
 
+    // A compact, source-aware card set for the public-facing historian gallery.
+    // The five chapter notes above remain attached to the recap cards; these
+    // twelve entries add people, places, logistics and the adaptation boundary
+    // without pretending that a game branch is a historical source.
+    private static readonly HistorianCard[] HistorianCards =
+    {
+        new HistorianCard("官渡的位置", "战场", 1001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《资治通鉴》相关纪年",
+            "官渡位于许都以北、黄河以南，是许都与河北方向之间的交通要地。",
+            "地理位置让补给线和渡口控制成为战局的一部分，人数优势并不能自动换成胜势。",
+            "地图中的路线、风险和粮草门槛，把“守住通道”转成可操作的决策。",
+            "具体行军距离、道路阻力和资源数值是游戏抽象，不能当作史料中的精确数据。")),
+        new HistorianCard("曹操：守住反击空间", "人物", 1001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《三国志·魏书·荀彧传》",
+            "曹操在兵力不利时据守官渡，等待能够改变局面的机会。",
+            "“少”不等于只能被动挨打，关键是先让军队保持可行动状态。",
+            "游戏把坚守、试探和奇袭拆成入口，玩家要先维护能反击的资源底线。",
+            "曹操的内心独白和本局具体选择是叙事化处理，不能直接归入史实。")),
+        new HistorianCard("袁绍：兵多而势重", "人物", 2001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《三国志·魏书·袁绍传》",
+            "袁绍率大军南下与曹操相持，双方在官渡长期对峙。",
+            "兵力规模带来压力，也会放大粮秣、命令和判断失误的成本。",
+            "游戏没有把袁绍写成单纯的“数值 Boss”，而是让玩家感受长期压力如何积累。",
+            "袁绍路线的具体数值和对话分支是游戏设计，不是对袁绍性格的定论。")),
+        new HistorianCard("许攸夜访", "人物", 3001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《荀攸传》",
+            "许攸投奔曹操并提供袁绍粮仓位置等重要情报，乌巢由此成为破局焦点。",
+            "情报的价值取决于信任、验证和执行速度，消息本身不会自动改变战场。",
+            "游戏把许攸的态度、玩家的判断和行动窗口分别记录，形成可回放的情报链。",
+            "许攸的具体台词、来访时间和小游戏表现是戏剧化压缩，不能视作逐字史料。")),
+        new HistorianCard("乌巢粮仓", "地点", 3001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；裴松之注引相关材料",
+            "乌巢是袁绍军粮秣集中的地点，曹操夜袭并焚毁粮秣后，袁绍军势受到重创。",
+            "粮道是军队持续作战能力的底座，烧毁粮秣会把局部胜负推向全局危机。",
+            "游戏用粮草趋势、侦察结果和夜袭路线共同决定乌巢行动的收益。",
+            "营地布局、守军数量和火势效果是合并后的可玩化表达，未还原考据争议。")),
+        new HistorianCard("荀彧的后方判断", "人物", 2001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·荀彧传》",
+            "荀彧长期为曹操提供后方判断与战略支持，强调在关键处坚持而不轻退。",
+            "前线决策需要后方的粮秣、人员和信念支撑，参谋意见并非装饰。",
+            "参谋回声系统把后方建议放入资源变化前后，玩家可以在复盘中检查是否采纳。",
+            "游戏中的参谋发言是对人物思想的简化演绎，不代表史书原句。")),
+        new HistorianCard("张郃与高览", "人物", 5001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·张郃传》及《武帝纪》",
+            "官渡战后，张郃、高览等将领的去向成为袁绍军内部变化的一部分。",
+            "战局失衡后，将领选择会进一步影响军心与组织，而不是只改变一个战斗数值。",
+            "游戏将人物态度与结局余波分开呈现，用于解释不同结局的后续影响。",
+            "游戏没有复原人物完整生平，卡片只服务于官渡这一段战局的理解。")),
+        new HistorianCard("夜袭部署", "战术", 4001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《荀攸传》",
+            "曹操选择夜间出兵袭击乌巢，隐蔽行军和统一军令是行动成立的条件。",
+            "奇袭依赖多环节同时成立：信息、路线、兵力和执行节奏缺一都可能失效。",
+            "战术小游戏记录准备、行动和失误，把部署过程转成可解释的事件轨迹。",
+            "游戏中的小游戏判定不是对史实战术细节的复原，而是对多环节风险的象征化。")),
+        new HistorianCard("曹操焚粮", "事件", 5001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》",
+            "曹操军袭击乌巢并焚毁袁绍军粮，袁绍军心动摇，官渡局势转向。",
+            "真正的转折来自此前的判断积累和行动兑现，火光只是结果显现的瞬间。",
+            "终局报告会把导致乌巢结果的关键事件串成链，避免只展示一个胜负标签。",
+            "“焚粮”的镜头、音效和具体损耗是表现设计，史书没有提供游戏式资源面板。")),
+        new HistorianCard("许都与补给线", "后方", 2001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《三国志·魏书·荀彧传》",
+            "官渡作战不能脱离许都和后方补给，前线坚持的边界由后方承载能力决定。",
+            "战役不是一张前线地图，运输、等待和补充兵力同样会决定选择的代价。",
+            "资源趋势和等待事件会进入 RunRecord，复盘可以看到补给如何改变路线。",
+            "游戏把复杂的行政与运输过程压缩成资源变化，不等同于完整后勤史。")),
+        new HistorianCard("官渡的史实结局", "史实边界", 5001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》；《资治通鉴》建安五年记载",
+            "曹操在官渡击败袁绍，随后袁绍势力逐步衰落，北方格局发生变化。",
+            "史实结局是结果坐标，理解它仍需要追问粮道、情报和组织为何在此刻汇合。",
+            "游戏保留一条史实胜利线，同时允许玩家探索用于教学比较的 IF 结局。",
+            "IF 结局是反事实演绎，不应与历史事实并列为真实发生过的结果。")),
+        new HistorianCard("游戏中的三项资源", "演绎边界", 2001, new HistorianNote(
+            "参考来源：以《三国志》战役叙事为依据的交互设计说明",
+            "史书不会把兵力、粮草和军心写成三条同步增减的数值条。",
+            "数值的作用是让玩家看见长期战局中的压力，并能解释某个选择为何改变后续。",
+            "资源变化会进入统一事件流，VisualDirector、报告和绘卷读取同一份记录。",
+            "资源面板是教学模型，不能据此推导真实兵力、粮秣或伤亡数字。")),
+        new HistorianCard("战后余波", "结果", 5001, new HistorianNote(
+            "参考来源：陈寿《三国志·魏书·武帝纪》《张郃传》《袁绍传》",
+            "官渡胜负改变了袁绍与曹操的力量对比，后续北方战局由此展开。",
+            "结局不是终点标签，战役中的损耗与人物选择会决定下一阶段还有多少空间。",
+            "终局回顾会同时显示结局原因、资源走势和关键决策，形成一张战役绘卷。",
+            "游戏只展示官渡相关的短期余波，没有模拟整个北方统一过程。"))
+    };
+
     private readonly List<GameObject> chapterObjects = new List<GameObject>();
     private GameObject overlay;
     private GameObject mapButtonObject;
@@ -159,6 +270,12 @@ public sealed class CampaignMapUI : MonoBehaviour
     private RectTransform storyContent;
     private GameObject recapPanel;
     private GameObject historianOverlay;
+    private GameObject historianGalleryOverlay;
+    private RectTransform historianGalleryContent;
+    private GameObject historianAskOverlay;
+    private TMP_Text historianAskAnswerText;
+    private TMP_Text historianAskStatusText;
+    private HistorianAgentClient historianAgentClient;
     private TMP_Text historianTitleText;
     private TMP_Text historianSourceText;
     private TMP_Text historianRecordLabelText;
@@ -167,6 +284,7 @@ public sealed class CampaignMapUI : MonoBehaviour
     private TMP_Text historianInterpretationBodyText;
     private TMP_Text historianAdaptationLabelText;
     private TMP_Text historianAdaptationBodyText;
+    private bool historianReturnToGallery;
     private readonly Dictionary<int, int> selectedOptionIndices = new Dictionary<int, int>();
     private bool initialized;
     private bool isOpen;
@@ -198,6 +316,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         if (initialized || gameplayPanel == null) return;
         Instance = this;
         initialized = true;
+        historianAgentClient = GetComponent<HistorianAgentClient>();
+        if (historianAgentClient == null) historianAgentClient = gameObject.AddComponent<HistorianAgentClient>();
 
         CreateMapButton(gameplayPanel.transform);
         CreateOverlay(gameplayPanel.transform.root);
@@ -247,6 +367,9 @@ public sealed class CampaignMapUI : MonoBehaviour
         overlay.SetActive(true);
         if (recapPanel != null) recapPanel.SetActive(true);
         if (historianOverlay != null) historianOverlay.SetActive(false);
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
+        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
+        historianReturnToGallery = false;
         if (mapButtonObject != null) mapButtonObject.SetActive(false);
         RebuildStoryRecap();
     }
@@ -264,6 +387,9 @@ public sealed class CampaignMapUI : MonoBehaviour
         overlay.SetActive(true);
         if (recapPanel != null) recapPanel.SetActive(true);
         if (historianOverlay != null) historianOverlay.SetActive(false);
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
+        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
+        historianReturnToGallery = false;
         if (mapButtonObject != null) mapButtonObject.SetActive(false);
         RebuildStoryRecap();
     }
@@ -276,6 +402,9 @@ public sealed class CampaignMapUI : MonoBehaviour
         recapLastCurrentNodeId = int.MinValue;
         if (overlay != null) overlay.SetActive(false);
         if (historianOverlay != null) historianOverlay.SetActive(false);
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
+        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
+        historianReturnToGallery = false;
         if (recapPanel != null) recapPanel.SetActive(true);
         SetMapButtonVisible(true);
         OnClosed?.Invoke();
@@ -300,21 +429,58 @@ public sealed class CampaignMapUI : MonoBehaviour
         HistorianNote note;
         if (!isOpen || historianOverlay == null || !HistorianNotes.TryGetValue(anchorNodeId, out note)) return;
 
+        ShowHistorianNote("史官注 · " + GetChapterTitle(anchorNodeId), note, false);
+    }
+
+    private void OpenHistorianCard(int cardIndex)
+    {
+        if (cardIndex < 0 || cardIndex >= HistorianCards.Length) return;
+        HistorianCard card = HistorianCards[cardIndex];
+        ShowHistorianNote(card.title + " · " + card.category, card.note, true);
+    }
+
+    private void ShowHistorianNote(string title, HistorianNote note, bool returnToGallery)
+    {
+        if (!isOpen || historianOverlay == null || note == null) return;
+
         if (recapPanel != null) recapPanel.SetActive(false);
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
         historianOverlay.SetActive(true);
-        if (historianTitleText != null) historianTitleText.text = "史官注 · " + GetChapterTitle(anchorNodeId);
+        historianReturnToGallery = returnToGallery;
+        if (historianTitleText != null) historianTitleText.text = title;
         if (historianSourceText != null) historianSourceText.text = note.source;
         if (historianRecordLabelText != null) historianRecordLabelText.text = "史书记载";
         if (historianRecordBodyText != null) historianRecordBodyText.text = note.record;
         if (historianInterpretationLabelText != null) historianInterpretationLabelText.text = "今天如何理解";
         if (historianInterpretationBodyText != null) historianInterpretationBodyText.text = note.interpretation;
-        if (historianAdaptationLabelText != null) historianAdaptationLabelText.text = "游戏改编说明";
-        if (historianAdaptationBodyText != null) historianAdaptationBodyText.text = note.adaptation;
+        if (historianAdaptationLabelText != null) historianAdaptationLabelText.text = "史实边界 · 游戏改编";
+        if (historianAdaptationBodyText != null)
+            historianAdaptationBodyText.text = note.historicalBoundary + "\n" + note.adaptation;
     }
 
     private void CloseHistorianNote()
     {
         if (historianOverlay != null) historianOverlay.SetActive(false);
+        if (historianReturnToGallery && isOpen && historianGalleryOverlay != null)
+            historianGalleryOverlay.SetActive(true);
+        else if (isOpen && recapPanel != null)
+            recapPanel.SetActive(true);
+        historianReturnToGallery = false;
+    }
+
+    private void OpenHistorianGallery()
+    {
+        if (!isOpen || historianGalleryOverlay == null) return;
+        RebuildHistorianGallery();
+        if (recapPanel != null) recapPanel.SetActive(false);
+        if (historianOverlay != null) historianOverlay.SetActive(false);
+        historianGalleryOverlay.SetActive(true);
+        historianReturnToGallery = false;
+    }
+
+    private void CloseHistorianGallery()
+    {
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
         if (isOpen && recapPanel != null) recapPanel.SetActive(true);
     }
 
@@ -553,6 +719,10 @@ public sealed class CampaignMapUI : MonoBehaviour
         progressText = CreateText(panel.transform, "", 30f, TextAlignmentOptions.Left, TextMuted);
         SetTopLeft(progressText.rectTransform, new Vector2(40f, -96f), new Vector2(1400f, 44f));
 
+        Button galleryButton = CreateButton(panel.transform, "史官卡片", new Vector2(220f, 72f),
+            new Vector2(-230f, -26f), new Color(0.30f, 0.24f, 0.15f, 1f));
+        galleryButton.onClick.AddListener(OpenHistorianGallery);
+
         Button closeButton = CreateButton(panel.transform, "关闭", new Vector2(180f, 72f), new Vector2(-30f, -26f), new Color(0.30f, 0.20f, 0.18f, 1f));
         closeButton.onClick.AddListener(CloseMap);
 
@@ -587,6 +757,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         scroll.scrollSensitivity = 30f;
 
         CreateHistorianOverlay(overlay.transform);
+        CreateHistorianGalleryOverlay(overlay.transform);
+        CreateHistorianAskOverlay(overlay.transform);
 
         overlay.SetActive(false);
     }
@@ -628,10 +800,192 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         historianAdaptationLabelText = CreateText(panel.transform, "游戏改编说明", 44f, TextAlignmentOptions.Left, HistorianLabelColor);
         SetAnchored(historianAdaptationLabelText.rectTransform, new Vector2(0.07f, 0.15f), new Vector2(0.93f, 0.25f));
-        historianAdaptationBodyText = CreateAdaptiveSingleLineText(panel.transform, "", 36f, 26f, TextPrimary);
-        SetAnchored(historianAdaptationBodyText.rectTransform, new Vector2(0.07f, 0.02f), new Vector2(0.93f, 0.14f));
+        historianAdaptationBodyText = CreateWrappedText(panel.transform, "", 25f, TextPrimary);
+        SetAnchored(historianAdaptationBodyText.rectTransform, new Vector2(0.07f, 0.02f), new Vector2(0.93f, 0.15f));
 
         historianOverlay.SetActive(false);
+    }
+
+    private void CreateHistorianGalleryOverlay(Transform parent)
+    {
+        historianGalleryOverlay = CreateUIObject("HistorianGalleryOverlay", parent);
+        Stretch(historianGalleryOverlay.GetComponent<RectTransform>());
+        historianGalleryOverlay.AddComponent<Image>().color = new Color(0.015f, 0.025f, 0.035f, 0.90f);
+
+        GameObject panel = CreateUIObject("HistorianGalleryPanel", historianGalleryOverlay.transform);
+        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f));
+        panel.AddComponent<Image>().color = PanelColor;
+
+        TMP_Text title = CreateText(panel.transform, "史官卡片 · " + HistorianCards.Length + " 则", 54f,
+            TextAlignmentOptions.Left, TextPrimary);
+        SetTopLeft(title.rectTransform, new Vector2(38f, -28f), new Vector2(900f, 70f));
+        TMP_Text intro = CreateWrappedText(panel.transform,
+            "按本局进度解锁。每张卡区分史书记载、今天的理解与游戏演绎。", 28f, TextMuted);
+        SetTopLeft(intro.rectTransform, new Vector2(40f, -105f), new Vector2(1150f, 70f));
+
+        Button close = CreateButton(panel.transform, "返回", new Vector2(180f, 72f),
+            new Vector2(-30f, -26f), new Color(0.30f, 0.20f, 0.18f, 1f));
+        close.onClick.AddListener(CloseHistorianGallery);
+        Button ask = CreateButton(panel.transform, "问史官", new Vector2(200f, 72f),
+            new Vector2(-240f, -26f), new Color(0.30f, 0.24f, 0.15f, 1f));
+        ask.onClick.AddListener(OpenHistorianAsk);
+
+        GameObject scrollObject = CreateUIObject("HistorianGalleryScroll", panel.transform);
+        SetAnchored(scrollObject.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f),
+            new Vector2(0.965f, 0.78f));
+        scrollObject.AddComponent<Image>().color = new Color(0.025f, 0.045f, 0.065f, 0.88f);
+
+        GameObject viewportObject = CreateUIObject("Viewport", scrollObject.transform);
+        RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+        Stretch(viewport);
+        viewportObject.AddComponent<RectMask2D>();
+
+        GameObject contentObject = CreateUIObject("HistorianGalleryContent", viewportObject.transform);
+        historianGalleryContent = contentObject.GetComponent<RectTransform>();
+        historianGalleryContent.anchorMin = new Vector2(0f, 1f);
+        historianGalleryContent.anchorMax = new Vector2(1f, 1f);
+        historianGalleryContent.pivot = new Vector2(0.5f, 1f);
+        historianGalleryContent.anchoredPosition = Vector2.zero;
+        historianGalleryContent.sizeDelta = Vector2.zero;
+        VerticalLayoutGroup layout = contentObject.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(18, 18, 18, 18);
+        layout.spacing = 12f;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+        ContentSizeFitter fitter = contentObject.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        ScrollRect scroll = scrollObject.AddComponent<ScrollRect>();
+        scroll.viewport = viewport;
+        scroll.content = historianGalleryContent;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
+
+        historianGalleryOverlay.SetActive(false);
+    }
+
+    private void CreateHistorianAskOverlay(Transform parent)
+    {
+        historianAskOverlay = CreateUIObject("HistorianAskOverlay", parent);
+        Stretch(historianAskOverlay.GetComponent<RectTransform>());
+        historianAskOverlay.AddComponent<Image>().color = new Color(0.015f, 0.025f, 0.035f, 0.92f);
+        GameObject panel = CreateUIObject("HistorianAskPanel", historianAskOverlay.transform);
+        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
+        panel.AddComponent<Image>().color = PanelColor;
+
+        TMP_Text title = CreateText(panel.transform, "问史官 · 受约束回答", 52f,
+            TextAlignmentOptions.Left, TextPrimary);
+        SetTopLeft(title.rectTransform, new Vector2(38f, -28f), new Vector2(1000f, 70f));
+        Button close = CreateButton(panel.transform, "返回卡片", new Vector2(220f, 72f),
+            new Vector2(-30f, -26f), new Color(0.30f, 0.20f, 0.18f, 1f));
+        close.onClick.AddListener(CloseHistorianAsk);
+
+        TMP_Text hint = CreateWrappedText(panel.transform,
+            "选择一个问题查看带来源编号的回答；服务不可用时显示本地回退。", 28f, TextMuted);
+        SetAnchored(hint.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .88f));
+
+        Button q1 = CreateButton(panel.transform, "乌巢为什么重要？", new Vector2(360f, 64f), Vector2.zero,
+            new Color(.30f, .24f, .16f, 1f));
+        SetAnchored(q1.GetComponent<RectTransform>(), new Vector2(.06f, .67f), new Vector2(.45f, .75f));
+        q1.onClick.AddListener(() => AskHistorianQuestion("乌巢为什么重要？"));
+        Button q2 = CreateButton(panel.transform, "许攸带来了什么信息？", new Vector2(360f, 64f), Vector2.zero,
+            new Color(.30f, .24f, .16f, 1f));
+        SetAnchored(q2.GetComponent<RectTransform>(), new Vector2(.55f, .67f), new Vector2(.94f, .75f));
+        q2.onClick.AddListener(() => AskHistorianQuestion("许攸带来了什么信息？"));
+        Button q3 = CreateButton(panel.transform, "IF 结局是史实吗？", new Vector2(360f, 64f), Vector2.zero,
+            new Color(.30f, .24f, .16f, 1f));
+        SetAnchored(q3.GetComponent<RectTransform>(), new Vector2(.06f, .57f), new Vector2(.45f, .65f));
+        q3.onClick.AddListener(() => AskHistorianQuestion("IF 结局是史实吗？"));
+
+        historianAskStatusText = CreateText(panel.transform, "", 26f, TextAlignmentOptions.Left, TextMuted);
+        SetAnchored(historianAskStatusText.rectTransform, new Vector2(.55f, .57f), new Vector2(.94f, .65f));
+        historianAskAnswerText = CreateWrappedText(panel.transform, "请选择一个问题。", 30f, TextPrimary);
+        SetAnchored(historianAskAnswerText.rectTransform, new Vector2(.06f, .10f), new Vector2(.94f, .52f));
+        historianAskOverlay.SetActive(false);
+    }
+
+    private void OpenHistorianAsk()
+    {
+        if (!isOpen || historianAskOverlay == null) return;
+        if (recapPanel != null) recapPanel.SetActive(false);
+        if (historianOverlay != null) historianOverlay.SetActive(false);
+        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
+        historianAskOverlay.SetActive(true);
+    }
+
+    private void CloseHistorianAsk()
+    {
+        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
+        if (isOpen && historianGalleryOverlay != null) historianGalleryOverlay.SetActive(true);
+    }
+
+    private void AskHistorianQuestion(string question)
+    {
+        if (historianAskAnswerText != null) historianAskAnswerText.text = "正在读取史料卡片……";
+        if (historianAskStatusText != null) historianAskStatusText.text = "";
+        string context = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
+            ? "当前节点：" + DialogueSystem.Instance.CurrentNode.nodeId : string.Empty;
+        if (historianAgentClient == null)
+        {
+            if (historianAskAnswerText != null) historianAskAnswerText.text = "史官服务未初始化。";
+            return;
+        }
+        historianAgentClient.Ask(question, context, response =>
+        {
+            if (historianAskAnswerText != null) historianAskAnswerText.text = response.answer;
+            if (historianAskStatusText != null)
+                historianAskStatusText.text = "模式：" + response.mode + " · 来源：" +
+                    (response.retrieved == null ? "无" : string.Join(", ", response.retrieved));
+        }, error =>
+        {
+            if (historianAskAnswerText != null)
+                historianAskAnswerText.text = "史官服务暂不可用。请回到卡片库阅读固定史料。";
+            if (historianAskStatusText != null) historianAskStatusText.text = error;
+        });
+    }
+
+    private void RebuildHistorianGallery()
+    {
+        if (historianGalleryContent == null) return;
+        for (int i = historianGalleryContent.childCount - 1; i >= 0; i--)
+            Destroy(historianGalleryContent.GetChild(i).gameObject);
+
+        HashSet<int> visited = DialogueSystem.Instance != null
+            ? DialogueSystem.Instance.visitedNodeIds : null;
+        for (int i = 0; i < HistorianCards.Length; i++)
+        {
+            HistorianCard card = HistorianCards[i];
+            bool unlocked = visited != null && visited.Contains(card.anchorNodeId);
+            GameObject entry = CreateUIObject("HistorianCard_" + i, historianGalleryContent);
+            entry.AddComponent<LayoutElement>().preferredHeight = 120f;
+            Image image = entry.AddComponent<Image>();
+            image.color = unlocked ? new Color(0.13f, 0.20f, 0.22f, 1f) :
+                new Color(0.08f, 0.11f, 0.13f, 1f);
+            Button button = entry.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = unlocked;
+            int capturedIndex = i;
+            button.onClick.AddListener(() => OpenHistorianCard(capturedIndex));
+
+            TMP_Text heading = CreateText(entry.transform,
+                unlocked ? card.title : "未解锁 · 推进剧情后可读", 34f,
+                TextAlignmentOptions.Left, unlocked ? TextPrimary : TextMuted);
+            SetAnchored(heading.rectTransform, new Vector2(0.025f, 0.40f),
+                new Vector2(0.78f, 0.90f));
+            TMP_Text category = CreateText(entry.transform, card.category, 25f,
+                TextAlignmentOptions.Right, unlocked ? HistorianLabelColor : TextMuted);
+            SetAnchored(category.rectTransform, new Vector2(0.78f, 0.40f),
+                new Vector2(0.97f, 0.90f));
+            TMP_Text source = CreateText(entry.transform,
+                unlocked ? card.note.source : "章节锚点尚未到达", 22f,
+                TextAlignmentOptions.Left, TextMuted);
+            SetAnchored(source.rectTransform, new Vector2(0.025f, 0.08f),
+                new Vector2(0.97f, 0.40f));
+        }
     }
 
     private void RebuildStoryRecap()

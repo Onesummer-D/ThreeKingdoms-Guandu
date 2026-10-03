@@ -10,6 +10,8 @@ public sealed class LocalSaveManager : MonoBehaviour
 
     public static LocalSaveManager Instance { get; private set; }
 
+    public string CurrentRunId => currentRunId;
+
     private CampaignMapUI campaignMapUI;
     private string currentRunId;
 

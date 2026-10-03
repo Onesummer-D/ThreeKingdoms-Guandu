@@ -23,24 +23,45 @@ public sealed class VisualDirector : MonoBehaviour
     private Coroutine transitionRoutine;
     private Coroutine pulseRoutine;
     private Coroutine eventFlashRoutine;
+    private Coroutine cameraShakeRoutine;
+    private Camera responseCamera;
+    private Vector3 cameraBasePosition;
+    private VisualTier currentTier = VisualTier.Calm;
     private bool initialized;
 
     private Color baseTroopColor = Color.white;
     private Color baseFoodColor = Color.white;
     private Color baseStrategyColor = Color.white;
     private Color baseRiskColor = Color.white;
+    private Color baseCatapultColor = Color.white;
+    private Color baseLeftCharacterColor = Color.white;
+    private Color baseRightCharacterColor = Color.white;
+
+    private enum VisualTier
+    {
+        Calm,
+        Alert,
+        Crisis
+    }
 
     private struct VisualState
     {
+        public VisualTier tier;
         public Color tint;
         public Color vignette;
         public float pulseStrength;
+        public float cameraShake;
+        public float sceneIntensity;
 
-        public VisualState(Color tint, Color vignette, float pulseStrength)
+        public VisualState(VisualTier tier, Color tint, Color vignette,
+            float pulseStrength, float cameraShake, float sceneIntensity)
         {
+            this.tier = tier;
             this.tint = tint;
             this.vignette = vignette;
             this.pulseStrength = pulseStrength;
+            this.cameraShake = cameraShake;
+            this.sceneIntensity = sceneIntensity;
         }
     }
 
@@ -60,6 +81,8 @@ public sealed class VisualDirector : MonoBehaviour
             return;
         }
 
+        responseCamera = Camera.main;
+        if (responseCamera != null) cameraBasePosition = responseCamera.transform.localPosition;
         CacheBaseTextColors();
         CreateAtmosphereLayers();
         Subscribe();
@@ -74,6 +97,7 @@ public sealed class VisualDirector : MonoBehaviour
         if (vignetteTexture != null) Destroy(vignetteTexture);
         if (solidSprite != null) Destroy(solidSprite);
         if (solidTexture != null) Destroy(solidTexture);
+        if (cameraShakeRoutine != null) StopCoroutine(cameraShakeRoutine);
     }
 
     private void Subscribe()
@@ -101,6 +125,9 @@ public sealed class VisualDirector : MonoBehaviour
         if (uiManager.foodText != null) baseFoodColor = uiManager.foodText.color;
         if (uiManager.strategyText != null) baseStrategyColor = uiManager.strategyText.color;
         if (uiManager.riskText != null) baseRiskColor = uiManager.riskText.color;
+        if (uiManager.catapultImage != null) baseCatapultColor = uiManager.catapultImage.color;
+        if (uiManager.leftCharacterImage != null) baseLeftCharacterColor = uiManager.leftCharacterImage.color;
+        if (uiManager.rightCharacterImage != null) baseRightCharacterColor = uiManager.rightCharacterImage.color;
     }
 
     private void CreateAtmosphereLayers()
@@ -203,7 +230,8 @@ public sealed class VisualDirector : MonoBehaviour
     private VisualState CalculateState()
     {
         if (ResourceManager.Instance == null)
-            return new VisualState(Color.white, new Color(0.08f, 0.025f, 0.01f, 0f), 0f);
+            return new VisualState(VisualTier.Calm, Color.white,
+                new Color(0.08f, 0.025f, 0.01f, 0f), 0f, 0f, 0f);
 
         float troop = ResourceManager.Instance.GetTroop();
         float food = ResourceManager.Instance.GetFood();
@@ -215,6 +243,9 @@ public sealed class VisualDirector : MonoBehaviour
         float danger = Mathf.InverseLerp(55f, 92f, risk);
         float strategyGlow = Mathf.InverseLerp(60f, 100f, strategy);
         float pressure = Mathf.Clamp01(Mathf.Max(Mathf.Max(troopCrisis, foodCrisis), danger));
+        VisualTier tier = pressure >= 0.67f
+            ? VisualTier.Crisis
+            : (pressure >= 0.32f ? VisualTier.Alert : VisualTier.Calm);
 
         Color coolPressure = new Color(0.16f, 0.28f, 0.38f, 1f);
         Color warmDanger = new Color(0.58f, 0.16f, 0.07f, 1f);
@@ -228,11 +259,17 @@ public sealed class VisualDirector : MonoBehaviour
         float vignetteAlpha = Mathf.Clamp01(pressure * 0.56f);
         Color vignette = Color.Lerp(new Color(0.08f, 0.025f, 0.01f, 0f),
             new Color(0.08f, 0.025f, 0.01f, vignetteAlpha), pressure);
-        return new VisualState(tint, vignette, Mathf.Clamp01(pressure * 0.90f));
+        float cameraShake = tier == VisualTier.Crisis ? 5.5f :
+            (tier == VisualTier.Alert ? 1.5f : 0f);
+        float sceneIntensity = tier == VisualTier.Crisis ? 1f :
+            (tier == VisualTier.Alert ? 0.45f : 0f);
+        return new VisualState(tier, tint, vignette,
+            Mathf.Clamp01(pressure * 0.90f), cameraShake, sceneIntensity);
     }
 
     private void AnimateTo(VisualState target, bool resourceChanged)
     {
+        ApplyTierResponse(target, true);
         if (transitionRoutine != null) StopCoroutine(transitionRoutine);
         transitionRoutine = StartCoroutine(AnimateState(target, resourceChanged ? 0.32f : 0.55f));
     }
@@ -250,12 +287,79 @@ public sealed class VisualDirector : MonoBehaviour
             t = t * t * (3f - 2f * t);
             if (tintOverlay != null) tintOverlay.color = Color.Lerp(startTint, target.tint, t);
             if (vignetteOverlay != null) vignetteOverlay.color = Color.Lerp(startVignette, target.vignette, t);
+            ApplySceneElements(target.sceneIntensity);
             yield return null;
         }
 
         if (tintOverlay != null) tintOverlay.color = target.tint;
         if (vignetteOverlay != null) vignetteOverlay.color = target.vignette;
+        ApplySceneElements(target.sceneIntensity);
         transitionRoutine = null;
+    }
+
+    private void ApplyTierResponse(VisualState target, bool emitEvent)
+    {
+        bool changed = currentTier != target.tier;
+        currentTier = target.tier;
+        if (!changed) return;
+
+        if (emitEvent && RunHistoryTracker.Instance != null)
+            RunHistoryTracker.Instance.RecordSceneState(target.tier.ToString(),
+                "资源压力=" + target.sceneIntensity.ToString("F2"));
+
+        if (AudioManager.Instance != null)
+        {
+            if (target.tier == VisualTier.Crisis)
+                AudioManager.Instance.PlayAlert();
+            else if (target.tier == VisualTier.Alert)
+                AudioManager.Instance.PlayValueChange(-1f);
+        }
+
+        if (target.cameraShake > 0f && responseCamera != null)
+        {
+            if (cameraShakeRoutine != null) StopCoroutine(cameraShakeRoutine);
+            cameraShakeRoutine = StartCoroutine(CameraShake(target.cameraShake));
+        }
+    }
+
+    private void ApplySceneElements(float intensity)
+    {
+        if (uiManager == null) return;
+        if (uiManager.catapultImage != null)
+        {
+            Color color = baseCatapultColor;
+            color.a *= Mathf.Lerp(0.65f, 1f, intensity);
+            uiManager.catapultImage.color = color;
+        }
+
+        float characterBrightness = Mathf.Lerp(1f, 0.78f, intensity);
+        if (uiManager.leftCharacterImage != null)
+            uiManager.leftCharacterImage.color = MultiplyColor(baseLeftCharacterColor, characterBrightness);
+        if (uiManager.rightCharacterImage != null)
+            uiManager.rightCharacterImage.color = MultiplyColor(baseRightCharacterColor, characterBrightness);
+    }
+
+    private IEnumerator CameraShake(float amplitude)
+    {
+        const float duration = 0.36f;
+        float elapsed = 0f;
+        while (elapsed < duration && responseCamera != null)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float envelope = 1f - Mathf.Clamp01(elapsed / duration);
+            Vector2 offset = Random.insideUnitCircle * amplitude * envelope;
+            responseCamera.transform.localPosition = cameraBasePosition +
+                new Vector3(offset.x, offset.y, 0f);
+            yield return null;
+        }
+        if (responseCamera != null) responseCamera.transform.localPosition = cameraBasePosition;
+        cameraShakeRoutine = null;
+    }
+
+    private static Color MultiplyColor(Color color, float multiplier)
+    {
+        return new Color(color.r * multiplier, color.g * multiplier,
+            color.b * multiplier, color.a);
     }
 
     private void ApplyTextState()
@@ -356,8 +460,10 @@ public sealed class VisualDirector : MonoBehaviour
     {
         ApplyTextState();
         VisualState state = CalculateState();
+        ApplyTierResponse(state, false);
         if (tintOverlay != null) tintOverlay.color = state.tint;
         if (vignetteOverlay != null) vignetteOverlay.color = state.vignette;
+        ApplySceneElements(state.sceneIntensity);
     }
 
     public void ResetVisualState()
@@ -366,7 +472,10 @@ public sealed class VisualDirector : MonoBehaviour
         if (transitionRoutine != null) StopCoroutine(transitionRoutine);
         if (pulseRoutine != null) StopCoroutine(pulseRoutine);
         if (eventFlashRoutine != null) StopCoroutine(eventFlashRoutine);
+        if (cameraShakeRoutine != null) StopCoroutine(cameraShakeRoutine);
+        if (responseCamera != null) responseCamera.transform.localPosition = cameraBasePosition;
         if (eventFlashOverlay != null) eventFlashOverlay.color = Color.clear;
+        currentTier = VisualTier.Calm;
         RefreshImmediate();
     }
 }

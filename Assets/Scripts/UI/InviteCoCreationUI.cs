@@ -6,11 +6,15 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Offline battle-text sharing and player introduction. No network room is
-/// created here; a future transport must not treat a local hash as a join code.
+/// Battle-text sharing and player introduction. The local handoff remains the
+/// default; an optional PublicAdvisorClient can relay the same snapshot over a
+/// short-lived HTTPS session without giving the guest control of the route.
 /// </summary>
 public sealed class InviteCoCreationUI : MonoBehaviour
 {
+    [Header("公网军议（留空则使用本机回退）")]
+    [SerializeField] private string publicAdvisorBaseUrl = "http://81.70.40.146:8080";
+
     private readonly Color panelColor = new Color(0.075f, 0.11f, 0.15f, 0.98f);
     private readonly Color overlayColor = new Color(0.015f, 0.025f, 0.035f, 0.92f);
     private readonly Color textPrimary = new Color(0.94f, 0.94f, 0.88f, 1f);
@@ -37,16 +41,28 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private TMP_InputField advisorReasonInput;
     private TMP_Text advisorGuestStatusText;
     private TMP_Text advisorReviewText;
+    private GameObject advisorQrObject;
+    private RawImage advisorQrImage;
+    private Texture2D advisorQrTexture;
     private Button advisorAcceptButton;
     private Button advisorDeclineButton;
     private readonly List<Button> advisorOptionButtons = new List<Button>();
     private int advisorSelectedOption = -1;
     private InviteSessionState inviteSession = new InviteSessionState();
+    private PublicAdvisorClient publicAdvisorClient;
     private bool initialized;
 
     private void OnDestroy()
     {
         if (campaignMapUI != null) campaignMapUI.OnClosed -= HandleMapClosed;
+        if (publicAdvisorClient != null)
+        {
+            publicAdvisorClient.SessionCreated -= HandlePublicSessionCreated;
+            publicAdvisorClient.SuggestionReceived -= HandlePublicSuggestionReceived;
+            publicAdvisorClient.TransportError -= HandlePublicTransportError;
+            publicAdvisorClient.StopSession();
+        }
+        ClearAdvisorQr();
         if (DialogueSystem.Instance != null)
         {
             DialogueSystem.Instance.OnDialogueNodeShown -= HandleDecisionNodeShown;
@@ -62,6 +78,15 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (initialized || mapUI == null || uiRoot == null) return;
         initialized = true;
         campaignMapUI = mapUI;
+        publicAdvisorClient = GetComponent<PublicAdvisorClient>();
+        if (publicAdvisorClient == null) publicAdvisorClient = gameObject.AddComponent<PublicAdvisorClient>();
+        publicAdvisorClient.BaseUrl = publicAdvisorBaseUrl;
+        publicAdvisorClient.SessionCreated -= HandlePublicSessionCreated;
+        publicAdvisorClient.SessionCreated += HandlePublicSessionCreated;
+        publicAdvisorClient.SuggestionReceived -= HandlePublicSuggestionReceived;
+        publicAdvisorClient.SuggestionReceived += HandlePublicSuggestionReceived;
+        publicAdvisorClient.TransportError -= HandlePublicTransportError;
+        publicAdvisorClient.TransportError += HandlePublicTransportError;
         campaignMapUI.OnClosed -= HandleMapClosed;
         campaignMapUI.OnClosed += HandleMapClosed;
         if (DialogueSystem.Instance != null)
@@ -89,7 +114,11 @@ public sealed class InviteCoCreationUI : MonoBehaviour
             inviteSession.Status == InviteSessionStatus.Declined)
         {
             inviteSession.Begin(snapshot, GetCurrentOptionTexts());
+            StartPublicAdvisorSession();
         }
+        else if (inviteSession.Status == InviteSessionStatus.AwaitingGuest &&
+            publicAdvisorClient != null && !publicAdvisorClient.HasSession)
+            StartPublicAdvisorSession();
         RenderInviteCard();
         inviteOverlay.SetActive(true);
         inviteOverlay.transform.SetAsLastSibling();
@@ -181,7 +210,11 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         {
             string code = string.IsNullOrWhiteSpace(inviteSession.InviteCode)
                 ? "" : "\n本机接力码：" + inviteSession.InviteCode;
-            statusText.text = code;
+            string publicUrl = publicAdvisorClient != null && publicAdvisorClient.HasSession &&
+                !string.IsNullOrWhiteSpace(publicAdvisorClient.JoinUrl)
+                ? "\n公网参谋链接（可在手机打开）：" + publicAdvisorClient.JoinUrl
+                : "";
+            statusText.text = code + publicUrl;
         }
     }
 
@@ -190,7 +223,10 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (snapshot == null) return;
         GUIUtility.systemCopyBuffer = "【官渡之战 · 请你来参谋】\n" +
             snapshotText.text +
-            "\n\n请在聊天中回复建议的选项，理由可选。";
+            "\n\n请在聊天中回复建议的选项，理由可选。" +
+            (publicAdvisorClient != null && publicAdvisorClient.HasSession
+                ? "\n\n公网参谋链接：" + publicAdvisorClient.JoinUrl
+                : "");
         if (statusText != null) statusText.text = "已复制，可粘贴到微信发送";
     }
 
@@ -232,6 +268,12 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         statusText.enableWordWrapping = true;
         statusText.overflowMode = TextOverflowModes.Overflow;
 
+        advisorQrObject = CreateUIObject("PublicAdvisorQr", invitePanel.transform);
+        SetTopRight(advisorQrObject.GetComponent<RectTransform>(), new Vector2(-30f, -122f), new Vector2(180f, 180f));
+        advisorQrImage = advisorQrObject.AddComponent<RawImage>();
+        advisorQrImage.color = Color.white;
+        advisorQrObject.SetActive(false);
+
         Button copyButton = CreateButton(invitePanel.transform, "复制战局邀请", new Vector2(290f, 72f),
             new Vector2(-30f, -474f), new Color(0.30f, 0.24f, 0.16f, 1f));
         SetBottomRight(copyButton.GetComponent<RectTransform>(), new Vector2(-30f, 30f),
@@ -267,6 +309,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     /// </summary>
     public void ResetSession()
     {
+        if (publicAdvisorClient != null) publicAdvisorClient.StopSession();
+        ClearAdvisorQr();
         inviteSession.Reset();
         snapshot = null;
         advisorSelectedOption = -1;
@@ -278,6 +322,63 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     public string GetCurrentEchoSummary()
     {
         return inviteSession != null ? inviteSession.EchoSummary : string.Empty;
+    }
+
+    private void StartPublicAdvisorSession()
+    {
+        if (publicAdvisorClient == null || !publicAdvisorClient.IsConfigured || snapshot == null) return;
+        string runId = RunHistoryTracker.Instance != null ? RunHistoryTracker.Instance.CurrentRunId : string.Empty;
+        publicAdvisorClient.BeginSession(snapshot, GetCurrentOptionTexts(), runId,
+            (snapshot.StoryRecap ?? string.Empty) + "\n" + (snapshot.DecisionContext ?? string.Empty));
+        if (statusText != null) statusText.text = "正在创建公网参谋会话……";
+    }
+
+    private void HandlePublicSessionCreated(PublicAdvisorSessionResponse response)
+    {
+        if (statusText == null || response == null) return;
+        statusText.text = "公网参谋链接（可在手机打开）：" + response.joinUrl +
+            "\n会话将在短时间后自动过期；主线仍由主将决定。";
+        if (advisorQrObject != null) advisorQrObject.SetActive(false);
+        if (publicAdvisorClient != null && !string.IsNullOrWhiteSpace(response.qrUrl))
+        {
+            publicAdvisorClient.DownloadQr(response.qrUrl, texture =>
+            {
+                ClearAdvisorQr();
+                advisorQrTexture = texture;
+                if (advisorQrImage != null) advisorQrImage.texture = texture;
+                if (advisorQrObject != null) advisorQrObject.SetActive(true);
+            }, error =>
+            {
+                if (statusText != null) statusText.text += "\n二维码暂不可用：" + error;
+            });
+        }
+    }
+
+    private void HandlePublicSuggestionReceived(PublicAdvisorSuggestion suggestion)
+    {
+        if (suggestion == null || inviteSession == null) return;
+        if (inviteSession.SubmitCloudSuggestion(suggestion.guestLabel, suggestion.optionIndex,
+            suggestion.optionText, suggestion.reason))
+        {
+            if (inviteOverlay != null && inviteOverlay.activeSelf) ShowAdvisorReviewPanel();
+            if (statusText != null) statusText.text = "已收到公网参谋建议，请审核。";
+        }
+    }
+
+    private void HandlePublicTransportError(string message)
+    {
+        if (statusText != null) statusText.text = "公网参谋暂时不可用，仍可使用本机应邀加入。\n" + message;
+    }
+
+    private void ClearAdvisorQr()
+    {
+        if (advisorQrImage != null) advisorQrImage.texture = null;
+        if (advisorQrObject != null) advisorQrObject.SetActive(false);
+        if (advisorQrTexture != null)
+        {
+            Destroy(advisorQrTexture);
+            advisorQrTexture = null;
+        }
     }
 
     private void CreateAdvisorPanels()
@@ -468,6 +569,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     {
         if (inviteSession != null && inviteSession.AcceptSuggestion())
         {
+            if (publicAdvisorClient != null) publicAdvisorClient.SubmitDecision(true);
             RecordAdvisorEcho(true);
             ShowAdvisorReviewPanel();
         }
@@ -477,6 +579,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     {
         if (inviteSession != null && inviteSession.DeclineSuggestion())
         {
+            if (publicAdvisorClient != null) publicAdvisorClient.SubmitDecision(false);
             RecordAdvisorEcho(false);
             ShowAdvisorReviewPanel();
         }
@@ -493,6 +596,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
 
     private void WithdrawAdvisorInvitation()
     {
+        if (publicAdvisorClient != null) publicAdvisorClient.StopSession();
         inviteSession.Reset();
         snapshot = null;
         SetAdvisorPanels(false, false);

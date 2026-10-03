@@ -63,6 +63,7 @@ public class FinalUIManager : MonoBehaviour
     private GameplayExitUI gameplayExitUI;
     private RunHistoryTracker runHistoryTracker;
     private BattleReportUI battleReportUI;
+    private BattleReplayUI battleReplayUI;
 
     [Header("解锁结局按钮")]
     public Button viewEndingButton;
@@ -224,6 +225,14 @@ public class FinalUIManager : MonoBehaviour
                 endingButtonSprite, caocaoAvatar);
         battleReportUI.OnClosed -= HandleBattleReportClosed;
         battleReportUI.OnClosed += HandleBattleReportClosed;
+        battleReplayUI = GetComponent<BattleReplayUI>();
+        if (battleReplayUI == null) battleReplayUI = gameObject.AddComponent<BattleReplayUI>();
+        if (gameInterfacePanel != null)
+            battleReplayUI.Initialize(runHistoryTracker, gameInterfacePanel.transform.root, endingButtonSprite);
+        battleReportUI.OnReplayRequested -= HandleBattleReplayRequested;
+        battleReportUI.OnReplayRequested += HandleBattleReplayRequested;
+        battleReplayUI.OnClosed -= HandleBattleReplayClosed;
+        battleReplayUI.OnClosed += HandleBattleReplayClosed;
 
         localSaveManager = GetComponent<LocalSaveManager>();
         if (localSaveManager == null) localSaveManager = gameObject.AddComponent<LocalSaveManager>();
@@ -289,6 +298,12 @@ public class FinalUIManager : MonoBehaviour
     // ✅ 只有一个StartMiniGame方法（保留正确的版本）
     void StartMiniGame(string gameType, int nextNodeId)
     {
+        if (RunHistoryTracker.Instance != null)
+        {
+            int nodeId = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
+                ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
+            RunHistoryTracker.Instance.RecordMiniGameStarted(gameType, nodeId, nextNodeId);
+        }
         Debug.Log($"启动小游戏: {gameType}");
 
         // ✅ 修改：降低BGM音量到20%，而不是暂停
@@ -937,6 +952,17 @@ public class FinalUIManager : MonoBehaviour
         gameplayExitUI?.SetVisible(true);
     }
 
+    private void HandleBattleReplayRequested()
+    {
+        battleReplayUI?.Open();
+    }
+
+    private void HandleBattleReplayClosed()
+    {
+        // The report remains underneath the replay overlay, so closing the
+        // scroll returns directly to the existing report without reopening it.
+    }
+
     private void HandleRecapClosed()
     {
         // CloseMap restores the normal gameplay entry by design. On an ending
@@ -1407,6 +1433,8 @@ public class FinalUIManager : MonoBehaviour
         if (valueSlider != null)
         {
             float selectedValue = valueSlider.value;
+            RunHistoryTracker.Instance?.RecordMiniGameAction(
+                "slider-confirm", "value=" + selectedValue.ToString("F0"), false);
             Debug.Log($"玩家选择舍弃兵力: {selectedValue}");
 
             if (ResourceManager.Instance != null)
@@ -1425,6 +1453,14 @@ public class FinalUIManager : MonoBehaviour
 
     public void OnMiniGameFinished(bool success, int nextNodeId)
     {
+        if (RunHistoryTracker.Instance != null)
+        {
+            int nodeId = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
+                ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
+            RunHistoryTracker.Instance.RecordMiniGameCompleted(
+                string.Empty, nodeId, nextNodeId, success,
+                success ? "小游戏完成" : "小游戏失败");
+        }
         // ✅ 修改：恢复BGM音量
         if (AudioManager.Instance != null)
         {
@@ -1473,6 +1509,9 @@ public class FinalUIManager : MonoBehaviour
 
     void OnGridGameFinished(bool success, int nextNodeId)
     {
+        RunHistoryTracker.Instance?.RecordMiniGameAction(
+            "grid-result", success ? "避开敌军" : "被敌军发现", !success);
+
         if (!success)
         {
             if (ResourceManager.Instance != null)
@@ -1801,6 +1840,7 @@ public class FinalUIManager : MonoBehaviour
 
     public void OnDigBeforeClicked()
     {
+        RunHistoryTracker.Instance?.RecordMiniGameAction("dig-click", "完成一次挖掘", false);
         Debug.Log("点击了挖掘图片！");
         digTunnelClicked = true;
 

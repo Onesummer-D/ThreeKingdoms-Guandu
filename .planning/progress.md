@@ -266,3 +266,9 @@
 - 为让阶段四总验收可在 Windows PowerShell 5 重复执行，存档、首页、运行日志、战报和邀约 QA 脚本的中文检查值已改为字符码构造；完整 `VerifyPhase4.ps1` 与 `git diff --check` 均通过。
 - 本轮再次检查 Windows 应用状态与常见 Unity 安装位置，仍无 Unity/UnityHub 可操作目标；4D 手工回放保持待实机，不改变已通过的静态覆盖结论。
 - 进一步把 500308/500406 的分流契约收紧为按方法边界检查完整条件表达式；`Stage4DCoverageChecks.ps1` 和完整 `VerifyPhase4.ps1` 均再次通过。
+
+## 2026-09-20 · 阶段 4D 路线矩阵补强
+
+- 新增 `Documentation/QA/Stage4DRouteMatrixChecks.ps1`，逐行解析真实对白资产，精确验证五个军议锚点的选项数量和每个选项的 `nextNodeId`，避免只检查节点存在。
+- 生成 `Documentation/QA/Stage4DRouteMatrix.md`，记录 1001/2001/3001/4001/5001 的实际分支，以及七个结局、500308/500406 动态门和 500214→500215→500217 彩蛋链，作为 Unity 人工重放的路线入口。
+- 路线矩阵脚本已接入 `VerifyPhase4.ps1`；完整阶段四验收再次退出码 0。该证据仍是静态/数据驱动覆盖，不替代 Unity Game View 的逐条点击回放。
