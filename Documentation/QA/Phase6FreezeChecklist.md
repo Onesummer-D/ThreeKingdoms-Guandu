@@ -14,6 +14,7 @@
 ## 冻结前必须补证
 
 - [ ] Unity 2022.3.62f3c1 干净导入无编译错误
+- [ ] 按 `CleanBuildCommands.md` 完成无界面 Windows 构建
 - [ ] Windows 构建离线启动并走通固定演示路径
 - [ ] Game View 展示三种 VisualDirector 状态
 - [ ] 战役绘卷播放真实事件并能定位结局原因
