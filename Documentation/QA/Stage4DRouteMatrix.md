@@ -1,4 +1,4 @@
-﻿# Stage 4D ending route matrix
+# Stage 4D ending route matrix
 
 Generated from `GuanduDialogueData.asset`; use the option text and next node as the replay starting point.
 

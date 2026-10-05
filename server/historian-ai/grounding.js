@@ -52,9 +52,15 @@ async function askOpenAI(prompt) {
   if (!key) return null;
   const endpoint = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
   const model = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
+  const configuredTimeout = Number(process.env.OPENAI_TIMEOUT_MS || 8000);
+  const timeoutMs = Number.isFinite(configuredTimeout) ? Math.max(500, Math.min(configuredTimeout, 30000)) : 8000;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    signal: controller.signal,
     body: JSON.stringify({
       model,
       temperature: 0.1,
@@ -69,6 +75,9 @@ async function askOpenAI(prompt) {
   const data = await response.json();
   return data && data.choices && data.choices[0] && data.choices[0].message
     ? data.choices[0].message.content : null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function answerQuestion(question, context) {

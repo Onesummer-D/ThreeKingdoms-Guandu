@@ -52,7 +52,7 @@ function readBody(req) {
     });
     req.on('end', () => {
       if (chunks.length === 0) return resolve({});
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8').replace(/^\uFEFF/, ''))); }
       catch (_) { reject(new Error('invalid_json')); }
     });
     req.on('error', reject);
@@ -246,12 +246,12 @@ async function handle(req, res) {
 
   if (req.method === 'POST' && parts[3] === 'suggestions') {
     if (!requireGuest(req, res, session, body)) return;
-    if (session.state !== 'awaiting_guest') return error(res, 409, '本局已经收到建议', 'suggestion_closed');
     const requestId = cleanText(body.clientRequestId, 120);
     if (requestId && session.clientRequestIds.has(requestId)) {
       const existing = session.suggestions.find(item => item.clientRequestId === requestId);
       return json(res, 200, { ok: true, duplicate: true, suggestion: existing });
     }
+    if (session.state !== 'awaiting_guest') return error(res, 409, '本局已经收到建议', 'suggestion_closed');
     const optionIndex = Number(body.optionIndex);
     const guestLabel = cleanText(body.guestLabel, 40);
     if (!guestLabel || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= session.options.length)
@@ -294,4 +294,4 @@ const server = http.createServer((req, res) => handle(req, res).catch(err => {
   console.error(err);
   error(res, 500, '服务暂时不可用', 'internal_error');
 }));
-server.listen(PORT, '0.0.0.0', () => console.log(`public-advisor listening on ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`public-advisor listening on ${server.address().port}`));

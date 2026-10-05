@@ -7,6 +7,7 @@
 ```powershell
 $env:OPENAI_API_KEY = "..."
 $env:OPENAI_MODEL = "gpt-5.4-mini"
+$env:OPENAI_TIMEOUT_MS = "8000"
 node server.js
 ```
 
@@ -15,5 +16,7 @@ node server.js
 ## 微调边界
 
 当前先用检索增强和引用校验交付。只有在收集到足量、已审阅的问答对，有可用 GPU、模型许可证和独立评测集时，才考虑 LoRA/指令微调。训练集不能把游戏 IF 分支标成史实，也不能把模型自由生成当作史料。没有这些条件时，保持基础模型 + 本地知识包更稳。模型名通过 `OPENAI_MODEL` 配置，默认值是 `gpt-5.4-mini`，部署前应按账号可用模型和官方文档确认。
+
+模型请求默认 8 秒超时，可通过 `OPENAI_TIMEOUT_MS` 调整（范围 500–30000 毫秒）。超时、网络错误或回答未通过引用校验时，接口自动返回本地 `grounded_fallback`。
 
 `eval.jsonl` 是首批回归集，至少覆盖乌巢、许攸、荀攸、史实结局、游戏资源边界和证据不足拒答。

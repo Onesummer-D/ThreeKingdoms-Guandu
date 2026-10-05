@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-$HOME/guandu-public-advisor}"
 PORT="${PORT:-8080}"
 PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-http://81.70.40.146:${PORT}}"
 SOURCE_DIR="${SOURCE_DIR:-$PWD}"
+ENV_FILE="${ENV_FILE:-/etc/guandu-public-advisor.env}"
 
 if ! command -v node >/dev/null 2>&1; then
   sudo apt-get update
@@ -32,6 +33,7 @@ WorkingDirectory=$APP_DIR
 Environment=NODE_ENV=production
 Environment=PORT=$PORT
 Environment=PUBLIC_ORIGIN=$PUBLIC_ORIGIN
+EnvironmentFile=-$ENV_FILE
 ExecStart=$(command -v node) $APP_DIR/server.js
 Restart=always
 RestartSec=3
