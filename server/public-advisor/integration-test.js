@@ -9,11 +9,11 @@ async function main() {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{');
   });
-  model.listen(0, '127.0.0.1');
+  model.listen(18081, '127.0.0.1');
   await once(model, 'listening');
   const child = spawn(process.execPath, ['server.js'], {
     cwd: __dirname,
-    env: { ...process.env, PORT: '0', OPENAI_API_KEY: 'test-only',
+    env: { ...process.env, PORT: '18080', OPENAI_API_KEY: 'test-only',
       OPENAI_API_URL: `http://127.0.0.1:${model.address().port}`, OPENAI_TIMEOUT_MS: '500' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -34,9 +34,13 @@ async function main() {
     async function request(path, method = 'GET', body, headers = {}) {
       const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...headers },
         body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body), signal: AbortSignal.timeout(4000) });
-      return { status: r.status, body: await r.json() };
+      return { status: r.status, headers: r.headers, body: await r.json() };
     }
-    check((await request('/healthz')).status === 200, 'health');
+    const health = await request('/healthz');
+    check(health.status === 200, 'health');
+    check(health.headers.get('x-content-type-options') === 'nosniff' &&
+      health.headers.get('referrer-policy') === 'no-referrer' &&
+      health.headers.has('content-security-policy'), 'security response headers');
     const created = await request('/api/sessions', 'POST', '\uFEFF' + JSON.stringify({ options: ['A', 'B'], question: 'test' }));
     check(created.status === 201, 'BOM JSON accepted');
     const session = created.body;
@@ -64,4 +68,6 @@ async function main() {
     model.close();
   }
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+main().catch(error => { console.error(error); process.exitCode = 1; });
+
+
