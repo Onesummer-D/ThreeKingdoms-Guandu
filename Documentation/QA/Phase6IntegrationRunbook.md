@@ -60,6 +60,7 @@ curl.exe -sS -X POST "http://81.70.40.146:8080/api/historian/ask" `
 
 ## 当前证据与未完成项
 
+- [ ] `BuildEnvironmentChecks.ps1` 在 Unity 2022.3.62f3c1 构建机通过
 - [x] 14 项契约检查
 - [x] 本地 relay 集成回归 10/10
 - [x] 史料固定评测 10/10
