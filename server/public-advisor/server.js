@@ -26,6 +26,9 @@ function json(res, status, payload) {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, X-Host-Token, X-Join-Token',
     'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
@@ -144,7 +147,13 @@ async function handle(req, res) {
     const html = fs.readFileSync(pagePath, 'utf8')
       .replace('__SESSION_ID__', JSON.stringify(parts[1]))
       .replace('__JOIN_TOKEN__', JSON.stringify(url.searchParams.get('token') || ''));
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    });
     return res.end(html);
   }
 
