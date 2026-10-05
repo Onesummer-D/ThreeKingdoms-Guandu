@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $sample = Join-Path $PSScriptRoot 'SampleRunRecord.redacted.json'
 if (-not (Test-Path -LiteralPath $sample)) { throw "Missing redacted export sample: $sample" }
-$text = Get-Content -Raw $sample
+$text = [IO.File]::ReadAllText($sample, [Text.Encoding]::UTF8)
 try { $record = $text | ConvertFrom-Json } catch { throw "Sample is not valid JSON: $($_.Exception.Message)" }
 foreach ($field in @('schemaVersion', 'runId', 'events', 'ending')) {
     if ($null -eq $record.$field) { throw "Sample is missing $field" }
