@@ -27,6 +27,14 @@ curl.exe -i http://81.70.40.146:8080/healthz
 
 通过条件：返回 `HTTP/1.1 200 OK` 和 `"ok":true`。
 
+新版部署还应检查响应头：
+
+```powershell
+curl.exe -sS -D - -o NUL http://81.70.40.146:8080/healthz
+```
+
+应包含 `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer` 和 `Content-Security-Policy`。
+
 再用无 BOM JSON 测试史料接口：
 
 ```powershell
