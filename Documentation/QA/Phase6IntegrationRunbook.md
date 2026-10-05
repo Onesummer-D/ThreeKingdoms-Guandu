@@ -66,6 +66,7 @@ curl.exe -sS -X POST "http://81.70.40.146:8080/api/historian/ask" `
 - [x] 史料固定评测 10/10
 - [x] 腾讯云公网健康检查
 - [x] DeepSeek 实际 `grounded_model` 响应
+- [x] 脱敏 RunRecord 样例：`Documentation/QA/SampleRunRecord.redacted.json`
 - [x] 更新部署包上传后的远程回归
 - [ ] Unity Game View 固定演示路径
 - [ ] 两台真实设备完成二维码闭环

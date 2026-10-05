@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "runId": "demo-run-redacted",
+  "seed": "demo-seed",
+  "createdAtUtc": "2026-10-05T00:00:00Z",
+  "activeSeconds": 42.5,
+  "completed": true,
+  "dataIntegrityValid": true,
+  "dataIntegrityNote": "脱敏演示样例，不含账号、设备、文件路径或会话凭证。",
+  "participants": [
+    { "participantId": "player-redacted", "role": "host", "displayName": "主将", "joinedAtUtc": "" },
+    { "participantId": "advisor-redacted", "role": "advisor", "displayName": "远程参谋", "joinedAtUtc": "" }
+  ],
+  "events": [
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 1, "elapsedSeconds": 0, "eventType": "RunStarted", "nodeId": 1001, "chapterIndex": 0, "label": "战局开始", "payload": "", "success": true },
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 2, "elapsedSeconds": 4.2, "eventType": "NodeShown", "nodeId": 3001, "chapterIndex": 2, "label": "许攸夜访", "payload": "", "success": true },
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 3, "elapsedSeconds": 12.8, "eventType": "AdvisorSuggested", "nodeId": 3001, "chapterIndex": 2, "label": "远程建议", "payload": "optionIndex=0;accepted=true", "success": true },
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 4, "elapsedSeconds": 18.4, "eventType": "DecisionMade", "nodeId": 3001, "chapterIndex": 2, "label": "采纳夜袭粮道", "payload": "optionIndex=0;nextNodeId=4001", "success": true },
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 5, "elapsedSeconds": 35.1, "eventType": "EndingReached", "nodeId": 5001, "chapterIndex": 4, "label": "乌巢粮道被破", "payload": "endingId=historical-anchor", "success": true },
+    { "schemaVersion": 1, "runId": "demo-run-redacted", "sequence": 6, "elapsedSeconds": 42.5, "eventType": "RunCompleted", "nodeId": 5001, "chapterIndex": 4, "label": "战局完成", "payload": "", "success": true }
+  ],
+  "miniGames": [],
+  "ending": {
+    "nodeId": 5001,
+    "endingId": "historical-anchor",
+    "endingName": "粮道转折",
+    "reason": "示例记录中的关键决策改变了资源与路线。",
+    "historicalAnchor": "乌巢粮秣与官渡战局转折",
+    "historicalDeviation": "节点布局与资源数值为游戏演绎。",
+    "keyDecisionSequences": [4]
+  },
+  "shownNodeOrder": [1001, 3001, 4001, 5001],
+  "decisions": [],
+  "resourceTimeline": [],
+  "advisorEchoes": []
+}
