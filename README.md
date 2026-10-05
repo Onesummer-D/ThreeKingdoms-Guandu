@@ -49,6 +49,8 @@
 - 决策点可发起离线“军议邀约”，填写昵称、选择建议并提交理由
 - 参谋建议只作为辅助信息，不会代替主玩家推进剧情
 
+在配置 `InviteCoCreationUI.publicAdvisorBaseUrl` 后，也可以使用可选的公网军议服务：主机创建短期会话，手机扫码提交建议，主机轮询并确认采纳或拒绝。公网服务不可用时自动保留本地流程。
+
 军议邀约是本地单机接力功能，不依赖账号、后端或网络服务。玩家始终保留最终选择权。
 
 ## 游戏展示
@@ -102,6 +104,8 @@ DialogueDataSO
 - Save and History System 负责存档、检查点、通关记录和剧情回顾
 - Battle Report System 汇总决策、资源、结局评价和分享海报
 - Advisor System 管理军议邀约、建议审核与共谋回声
+- Public Advisor Client 负责可选的 HTTPS/HTTP 短轮询、二维码会话和断网回退
+- Historian Agent Client 调用受约束史料助手；模型不可用时显示本地史料卡片回退
 - Audio and UI System 管理 BGM、音效、界面状态和 TextMeshPro 渲染
 
 ### 技术栈
@@ -150,7 +154,7 @@ Windows 构建需要保留 Unity 导出的 exe、同名 `_Data` 文件夹、`Mon
 - [`Documentation/QA/阶段四4D全流程回归清单.md`](./Documentation/QA/阶段四4D全流程回归清单.md)
 - [`Documentation/素材授权台账.md`](./Documentation/素材授权台账.md)
 
-当前版本定位为单机 Windows 作品，远程联机、手机端和跨设备服务不在本次构建范围内。
+核心版本仍可离线运行；公网军议和 AI 史料助手属于可选演示能力，不是主线剧情的单点依赖。公网服务部署、回退矩阵和双设备验收步骤见 [`Documentation/QA/Phase6IntegrationRunbook.md`](./Documentation/QA/Phase6IntegrationRunbook.md)，正式构建冻结项见 [`Documentation/QA/Phase6FreezeChecklist.md`](./Documentation/QA/Phase6FreezeChecklist.md)。
 
 ## 开源协议
 
