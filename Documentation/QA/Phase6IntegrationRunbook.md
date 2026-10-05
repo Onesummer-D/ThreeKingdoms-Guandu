@@ -72,3 +72,5 @@ curl.exe -sS -X POST "http://81.70.40.146:8080/api/historian/ask" `
 - [ ] Unity Game View 固定演示路径
 - [ ] 两台真实设备完成二维码闭环
 - [ ] 干净 Unity Windows 构建
+
+冻结前完整清单见 `Phase6FreezeChecklist.md`。
