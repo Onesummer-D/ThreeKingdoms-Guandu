@@ -7,6 +7,7 @@
 ```powershell
 $qa = 'Unity/官渡之战/Documentation/QA'
 powershell -ExecutionPolicy Bypass -File "$qa/DeploymentConsistencyChecks.ps1"
+powershell -ExecutionPolicy Bypass -File "$qa/RedactedExportChecks.ps1"
 Get-ChildItem "$qa/*Checks.ps1" | ForEach-Object {
   powershell -ExecutionPolicy Bypass -File $_.FullName
 }
