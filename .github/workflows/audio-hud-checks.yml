@@ -34,3 +34,5 @@ jobs:
         run: node Documentation/QA/AudioHudStaticChecks.js
       - name: Audit every story sound reference
         run: node Documentation/QA/NarrativeAudioAuditChecks.js
+      - name: Measure original audio clip levels (informational)
+        run: node Documentation/QA/SoundAssetLevelAudit.js
