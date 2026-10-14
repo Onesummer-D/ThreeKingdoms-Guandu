@@ -35,7 +35,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip errorSFX;              // 错误
     public AudioClip achievementSFX;        // 达成成就（走格子胜利用）
     public AudioClip craftSuccessSFX;       // 打造成功（拼图完成用）
-    public AudioClip fireWuchaoSFX;         // 火烧乌巢音效（SFX）
+    public AudioClip fireWuchaoSFX;         // 预留专用燃烧SFX：素材库暂无合适音频，禁止误用箭矢音。火烧动画已另配BGM。
 
     [Header("挖地道专用音效")]
     public AudioClip digTunnelDiggingSFX;    // 园艺-用铲子（挖掘中）
