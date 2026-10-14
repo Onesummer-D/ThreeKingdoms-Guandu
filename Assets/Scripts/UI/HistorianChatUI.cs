@@ -174,6 +174,9 @@ public sealed class HistorianChatUI : MonoBehaviour
         textArea.AddComponent<RectMask2D>();
         TMP_Text inputText = Text(textArea.transform, "", 27f, Paper);
         Anchors(inputText.rectTransform, Vector2.zero, Vector2.one);
+        // TMP uses <u>...</u> internally to underline Chinese/Japanese IME composition.
+        // The common Text() helper disables rich text, which renders those tags literally.
+        inputText.richText = true;
         inputText.enableWordWrapping = true;
         inputText.overflowMode = TextOverflowModes.Overflow;
         TMP_Text placeholder = Text(textArea.transform, "想问些什么？输入问题…", 27f, Muted);
@@ -184,6 +187,13 @@ public sealed class HistorianChatUI : MonoBehaviour
         input.textComponent = inputText;
         input.placeholder = placeholder;
         input.fontAsset = font;
+        input.richText = true; // Render TMP's IME composition underline, not literal <u> tags.
+        input.isRichTextEditingAllowed = false; // Player input must remain plain text.
+        input.customCaretColor = true;
+        input.caretColor = new Color(.98f, .86f, .58f, 1f);
+        input.caretWidth = 3;
+        input.caretBlinkRate = .85f;
+        input.selectionColor = new Color(.83f, .66f, .37f, .38f);
         input.lineType = TMP_InputField.LineType.MultiLineNewline;
         input.characterLimit = 800;
         input.onValueChanged.AddListener(_ => RefreshControls());
@@ -209,6 +219,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (launcher != null) launcher.SetActive(false);
         RefreshControls();
         StartCoroutine(ScrollToLatest());
+        input.Select();
         input.ActivateInputField();
     }
 
@@ -334,7 +345,7 @@ public sealed class HistorianChatUI : MonoBehaviour
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
             "当前为史料摘录，联网后可继续向史官提问";
         RefreshControls();
-        if (IsOpen) { input.ActivateInputField(); StartCoroutine(ScrollToLatest()); }
+        if (IsOpen) { input.Select(); input.ActivateInputField(); StartCoroutine(ScrollToLatest()); }
     }
 
     private void RefreshControls()
