@@ -1,0 +1,36 @@
+name: Historian evidence regression
+
+on:
+  pull_request:
+    paths:
+      - 'server/historian-ai/**'
+      - 'server/public-advisor/server.js'
+      - 'Assets/Scripts/UI/Historian*.cs'
+      - '.github/workflows/historian-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'server/historian-ai/**'
+      - 'server/public-advisor/server.js'
+      - '.github/workflows/historian-tests.yml'
+
+jobs:
+  node-historian:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: |
+          node --check server/historian-ai/grounding.js
+          node --check server/historian-ai/run-evidence.js
+          node --check server/historian-ai/chat-test.js
+      - name: Evidence regression
+        run: node server/historian-ai/run-eval.js
+        env:
+          OPENAI_API_KEY: ''
+      - name: HTTP and run review regression
+        run: node server/historian-ai/chat-test.js
