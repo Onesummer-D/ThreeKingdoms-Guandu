@@ -1,0 +1,34 @@
+name: Audio and persistent HUD checks
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/AudioManager.cs'
+      - 'Assets/Audio/output_sfx/箭矢破空音.ogg.meta'
+      - 'Assets/Scripts/Data/GuanduDialogueData.asset'
+      - 'Assets/Scripts/UI/HomeHubUI.cs'
+      - 'Assets/Scripts/UI/HistorianChatUI.cs'
+      - 'Documentation/QA/AudioHudStaticChecks.js'
+      - '.github/workflows/audio-hud-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/AudioManager.cs'
+      - 'Assets/Audio/output_sfx/箭矢破空音.ogg.meta'
+      - 'Assets/Scripts/Data/GuanduDialogueData.asset'
+      - 'Assets/Scripts/UI/HomeHubUI.cs'
+      - 'Assets/Scripts/UI/HistorianChatUI.cs'
+      - 'Documentation/QA/AudioHudStaticChecks.js'
+      - '.github/workflows/audio-hud-checks.yml'
+
+jobs:
+  static-audio-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check sound cue and UI contracts
+        run: node Documentation/QA/AudioHudStaticChecks.js
