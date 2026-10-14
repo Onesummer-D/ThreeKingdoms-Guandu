@@ -416,7 +416,8 @@ public sealed class HistorianChatUI : MonoBehaviour
                     sequence = d.sequence, chapterIndex = d.chapterIndex,
                     optionText = label.Length > 110 ? label.Substring(0, 110) : label,
                     troopEffect = d.troopEffect, foodEffect = d.foodEffect,
-                    strategyEffect = d.strategyEffect, riskEffect = d.riskEffect
+                    strategyEffect = d.strategyEffect, riskEffect = d.riskEffect,
+                    before = RunSnapshot(d.before), after = RunSnapshot(d.after)
                 });
             }
         }
@@ -519,7 +520,9 @@ public sealed class HistorianChatUI : MonoBehaviour
     private void AddSources(Transform bubble, HistorianCitation[] citations)
     {
         if (citations == null || citations.Length == 0) return;
-        Button toggle = Button(bubble, "查看史料来源（" + citations.Length + "）", 22f);
+        bool gameRecord = citations.Length == 1 && citations[0].id == "G01";
+        string sourceLabel = gameRecord ? "查看本局记录依据" : "查看史料来源";
+        Button toggle = Button(bubble, sourceLabel + "（" + citations.Length + "）", 22f);
         toggle.gameObject.AddComponent<LayoutElement>().preferredHeight = 42f;
         StringBuilder lines = new StringBuilder();
         foreach (HistorianCitation citation in citations)
@@ -531,7 +534,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         toggle.onClick.AddListener(() =>
         {
             details.gameObject.SetActive(!details.gameObject.activeSelf);
-            toggle.GetComponentInChildren<TMP_Text>().text = details.gameObject.activeSelf ? "收起来源" : "查看史料来源（" + citations.Length + "）";
+            toggle.GetComponentInChildren<TMP_Text>().text = details.gameObject.activeSelf ? "收起来源" : sourceLabel + "（" + citations.Length + "）";
             LayoutRebuilder.MarkLayoutForRebuild(content);
         });
     }
