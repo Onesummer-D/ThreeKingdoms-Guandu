@@ -40,11 +40,13 @@ function scoreDocument(doc, query) {
   const titleHits = overlap(qgrams, title);
   const summaryHits = overlap(qgrams, summary);
   const boundaryHits = overlap(qgrams, boundary);
+  const ifBoost = /(if|架空|反事实|真实发生|假如)/.test(q) &&
+    doc.title.includes('结局') && /IF|反事实/.test(doc.boundary) ? 14 : 0;
   // One common Chinese character never creates relevance. Ignore source names
   // such as 三国志, which appear across unrelated cards.
   const score = tagHits * 12 + Math.min(titleHits, 8) * 4 +
-    Math.min(summaryHits, 10) * 2 + Math.min(boundaryHits, 4);
-  const meaningful = tagHits > 0 || titleHits >= 2 || summaryHits >= 3;
+    Math.min(summaryHits, 10) * 2 + Math.min(boundaryHits, 4) + ifBoost;
+  const meaningful = tagHits > 0 || titleHits >= 2 || summaryHits >= 3 || ifBoost > 0;
   return meaningful ? score : 0;
 }
 function retrieve(question, limit = 4) {
