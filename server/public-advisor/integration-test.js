@@ -9,11 +9,11 @@ async function main() {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write('{');
   });
-  model.listen(18081, '127.0.0.1');
+  model.listen(0, '127.0.0.1');
   await once(model, 'listening');
   const child = spawn(process.execPath, ['server.js'], {
     cwd: __dirname,
-    env: { ...process.env, PORT: '18080', OPENAI_API_KEY: 'test-only',
+    env: { ...process.env, PORT: '0', OPENAI_API_KEY: 'test-only',
       OPENAI_API_URL: `http://127.0.0.1:${model.address().port}`, OPENAI_TIMEOUT_MS: '500' },
     stdio: ['ignore', 'pipe', 'pipe']
   });

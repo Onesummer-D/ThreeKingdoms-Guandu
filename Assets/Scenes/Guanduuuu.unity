@@ -9936,6 +9936,8 @@ MonoBehaviour:
   fireWuchaoSFX: {fileID: 8300000, guid: 97ac0f4b6f0c1724fa5f909a7270a76c, type: 3}
   digTunnelDiggingSFX: {fileID: 8300000, guid: 400de1866a2fc734baf6ef96d8dc46ef, type: 3}
   digTunnelSuccessSFX: {fileID: 8300000, guid: 25018c098746e914cb3d7f0a48679765, type: 3}
+  paperTurnSFX: {fileID: 8300000, guid: d9dd8e61055cbdd45a1b171e22b8eec8, type: 3}
+  gridStepSFX: {fileID: 8300000, guid: 64ab25bdc152a9c4f87cab7f07a6d954, type: 3}
   bgmVolume: 1
 --- !u!4 &1475383911
 Transform:

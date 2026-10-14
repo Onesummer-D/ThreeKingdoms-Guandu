@@ -142,6 +142,16 @@ async function handle(req, res) {
   if (req.method === 'GET' && url.pathname === '/healthz')
     return json(res, 200, { ok: true, service: 'public-advisor', now: now() });
 
+  const assetTypes = { 'battlefield.png':'image/png', 'option.png':'image/png',
+    'option-selected.png':'image/png', 'game-font.ttf':'font/ttf' };
+  if (req.method === 'GET' && parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
+    const assetPath = path.join(publicDir, 'assets', parts[1]);
+    if (!fs.existsSync(assetPath)) return error(res, 404, '资源不存在');
+    res.writeHead(200, { 'Content-Type':assetTypes[parts[1]], 'Cache-Control':'public, max-age=3600',
+      'X-Content-Type-Options':'nosniff' });
+    return fs.createReadStream(assetPath).pipe(res);
+  }
+
   if (req.method === 'GET' && parts[0] === 'join' && parts[1]) {
     const pagePath = path.join(publicDir, 'index.html');
     const html = fs.readFileSync(pagePath, 'utf8')
@@ -182,14 +192,14 @@ async function handle(req, res) {
     try { body = await readBody(req); } catch (err) { return error(res, 400, '请求体不是有效 JSON', err.message); }
     const question = cleanText(body.question, 800);
     if (!question) return error(res, 400, '问题不能为空', 'question_required');
-    const result = await historian.answerQuestion(question, cleanText(body.context, 2000));
+    const result = await historian.answerQuestion(question, cleanText(body.context, 2000), body.history);
     const audit = {
       auditId: token(8),
       createdAt: now(),
       question,
       retrieved: result.retrieved || [],
       mode: result.mode,
-      answerVersion: 'grounding-v1'
+      answerVersion: 'grounding-v2'
     };
     historianAudit.push(audit);
     if (historianAudit.length > 100) historianAudit.shift();

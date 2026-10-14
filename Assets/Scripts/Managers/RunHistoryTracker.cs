@@ -54,6 +54,7 @@ public sealed class RunHistoryTracker : MonoBehaviour
 
     private void Update()
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         if (runActive && current != null) current.activeSeconds += Time.unscaledDeltaTime;
     }
 

@@ -123,7 +123,7 @@ public sealed class InviteSessionState
         Status = InviteSessionStatus.Accepted;
         EchoSummary = "参谋建议“" + Suggestion.optionText + "”" +
             (string.IsNullOrWhiteSpace(Suggestion.reason) ? "" : "，理由：“" + Suggestion.reason + "”") +
-            "；主将已采纳，实际决策仍由主将亲自确认。";
+            "。";
         return true;
     }
 

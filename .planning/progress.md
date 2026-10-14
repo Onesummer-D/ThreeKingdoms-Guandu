@@ -272,3 +272,14 @@
 - 新增 `Documentation/QA/Stage4DRouteMatrixChecks.ps1`，逐行解析真实对白资产，精确验证五个军议锚点的选项数量和每个选项的 `nextNodeId`，避免只检查节点存在。
 - 生成 `Documentation/QA/Stage4DRouteMatrix.md`，记录 1001/2001/3001/4001/5001 的实际分支，以及七个结局、500308/500406 动态门和 500214→500215→500217 彩蛋链，作为 Unity 人工重放的路线入口。
 - 路线矩阵脚本已接入 `VerifyPhase4.ps1`；完整阶段四验收再次退出码 0。该证据仍是静态/数据驱动覆盖，不替代 Unity Game View 的逐条点击回放。
+
+## 2026-10-14 · 音效精修
+
+- 用户授权后合并选项资源音效，风险反向判定，混合结果仅保留点击声；移除逐资源重复播放。
+- AudioManager 增加同音效限频、长提示防叠加及四声并发上限；调整警报、成功、挖掘与步进播放倍率。
+- 场景绑定翻纸/专用步进音，背景介绍推进与回顾入口接入翻纸；走格子开始改为点击声。
+- BGM 改为 0.35 秒淡出/0.65 秒淡入，小游戏降低配乐按用户音量比例计算；修正音量协程取消方式。
+- 完整非 Editor 游戏源码编译通过，首页/存档/文化覆盖/路线矩阵检查通过。旧 VerifyPhase4 缺少最近新增源码而失败；没有修改旧脚本或宣称通过。
+- 当前无运行中的 Unity，实机听感待验收。具体清单见 09-audio-polish/plan.md。
+
+- 2026-10-14 战绩报告配图：按用户五张图分别接入 Stats（战况速览）、Tendency（决策倾向）、AdvisorEcho（共谋回声）、ResourceTrend（四项资源趋势）、Culture（史官简注）。原图无修改导入 Assets/Resources/BattleReport，Sprite 单图模式自动加载并保持比例，配图不再绘制占位框 Outline。五张文件哈希匹配；BattleReportContractChecks 与 diff 空白检查通过。

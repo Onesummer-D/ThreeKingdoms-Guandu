@@ -81,3 +81,7 @@
 - 修正 Unity 二维码下载处理器，改用 `DownloadHandlerTexture` 读取 PNG，并将该契约加入检查。
 - 公网与 AI 合约检查通过，史料固定评测保持 10/10，Node 语法检查通过。
 - 路线图活动阶段校正为 `05-ai-historian`；阶段 01–04 标记为 partial，剩余工作集中在真实 Unity 运行时、SSH/云端部署、二维码、HTTPS 和双设备验收。
+
+## 2026-10-14 — 问史官聊天完成
+- 用户图标原样保留透明，独立聊天窗和最近三轮历史上线；真实 DeepSeek 两轮 grounded_model / grounding-v2 已验证。Unity 编译、23 项运行检查、三种尺寸渲染和 Game View 实际中文输入/Enter/追问均通过。后端新测试 13/13、史料 10/10、relay 11/11。证据见工作区 outputs/2026-10-14-historian-chat。未记录凭据。
+

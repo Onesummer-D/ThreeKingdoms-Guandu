@@ -6,13 +6,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Battle-text sharing and player introduction. The local handoff remains the
-/// default; an optional PublicAdvisorClient can relay the same snapshot over a
+/// Battle-text sharing and player introduction. Public invitations relay the
+/// current snapshot to a friend through PublicAdvisorClient over a
 /// short-lived HTTPS session without giving the guest control of the route.
 /// </summary>
 public sealed class InviteCoCreationUI : MonoBehaviour
 {
-    [Header("公网军议（留空则使用本机回退）")]
+    [Header("公网军议服务地址")]
     [SerializeField] private string publicAdvisorBaseUrl = "http://81.70.40.146:8080";
 
     private readonly Color panelColor = new Color(0.075f, 0.11f, 0.15f, 0.98f);
@@ -34,20 +34,13 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private Button beginButton;
     private GameObject decisionInviteButton;
     private Image decisionInviteImage;
-    private GameObject advisorGuestPanel;
     private GameObject advisorReviewPanel;
-    private TMP_InputField advisorCodeInput;
-    private TMP_InputField advisorNameInput;
-    private TMP_InputField advisorReasonInput;
-    private TMP_Text advisorGuestStatusText;
     private TMP_Text advisorReviewText;
     private GameObject advisorQrObject;
     private RawImage advisorQrImage;
     private Texture2D advisorQrTexture;
     private Button advisorAcceptButton;
     private Button advisorDeclineButton;
-    private readonly List<Button> advisorOptionButtons = new List<Button>();
-    private int advisorSelectedOption = -1;
     private InviteSessionState inviteSession = new InviteSessionState();
     private PublicAdvisorClient publicAdvisorClient;
     private bool initialized;
@@ -130,7 +123,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
             inviteSession.Status == InviteSessionStatus.Declined)
             ShowAdvisorReviewPanel();
         else
-            SetAdvisorPanels(false, false);
+            SetAdvisorReviewVisible(false);
     }
 
     private void CloseInvitePanel()
@@ -139,7 +132,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (UnityEngine.EventSystems.EventSystem.current != null)
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
         snapshot = null;
-        SetAdvisorPanels(false, false);
+        SetAdvisorReviewVisible(false);
         RefreshDecisionInviteButton();
     }
 
@@ -149,7 +142,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (UnityEngine.EventSystems.EventSystem.current != null)
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
         snapshot = null;
-        SetAdvisorPanels(false, false);
+        SetAdvisorReviewVisible(false);
         // Closing a recap is not leaving the decision node. Re-evaluate the
         // current node so the invite affordance returns on every story line.
         RefreshDecisionInviteButton();
@@ -208,13 +201,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         }
         if (statusText != null)
         {
-            string code = string.IsNullOrWhiteSpace(inviteSession.InviteCode)
-                ? "" : "\n本机接力码：" + inviteSession.InviteCode;
-            string publicUrl = publicAdvisorClient != null && publicAdvisorClient.HasSession &&
-                !string.IsNullOrWhiteSpace(publicAdvisorClient.JoinUrl)
-                ? "\n公网参谋链接（可在手机打开）：" + publicAdvisorClient.JoinUrl
-                : "";
-            statusText.text = code + publicUrl;
+            statusText.text = "";
         }
     }
 
@@ -260,6 +247,10 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         CreateWrappedText(content, "如何邀请", 44f, accentColor);
         CreateWrappedText(content,
             "复制战局邀请 → 粘贴到微信发给朋友 → 回到游戏作出决定", 38f, textPrimary);
+        CreateWrappedText(content, "邀请朋友扫描二维码，进入战局", 38f, textPrimary);
+
+        GameObject invitationActions = CreateUIObject("InvitationActions", content);
+        invitationActions.AddComponent<LayoutElement>().preferredHeight = 330f;
 
         statusText = CreateText(invitePanel.transform, "", 30f, TextAlignmentOptions.Left, textMuted);
         SetAnchored(statusText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f));
@@ -268,23 +259,17 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         statusText.enableWordWrapping = true;
         statusText.overflowMode = TextOverflowModes.Overflow;
 
-        advisorQrObject = CreateUIObject("PublicAdvisorQr", invitePanel.transform);
-        SetTopRight(advisorQrObject.GetComponent<RectTransform>(), new Vector2(-30f, -122f), new Vector2(180f, 180f));
+        advisorQrObject = CreateUIObject("PublicAdvisorQr", invitationActions.transform);
+        SetTopRight(advisorQrObject.GetComponent<RectTransform>(), new Vector2(-18f, -6f), new Vector2(210f, 210f));
         advisorQrImage = advisorQrObject.AddComponent<RawImage>();
         advisorQrImage.color = Color.white;
         advisorQrObject.SetActive(false);
 
-        Button copyButton = CreateButton(invitePanel.transform, "复制战局邀请", new Vector2(290f, 72f),
+        Button copyButton = CreateButton(invitationActions.transform, "复制战局邀请", new Vector2(290f, 72f),
             new Vector2(-30f, -474f), new Color(0.30f, 0.24f, 0.16f, 1f));
-        SetBottomRight(copyButton.GetComponent<RectTransform>(), new Vector2(-30f, 30f),
+        SetBottomRight(copyButton.GetComponent<RectTransform>(), new Vector2(-18f, 12f),
             new Vector2(290f, 72f));
         copyButton.onClick.AddListener(CopyBattleInvitation);
-
-        Button localHandoffButton = CreateButton(invitePanel.transform, "本机应邀加入",
-            new Vector2(290f, 72f), Vector2.zero, new Color(.30f, .24f, .16f, 1f));
-        SetBottomRight(localHandoffButton.GetComponent<RectTransform>(), new Vector2(-345f, 30f),
-            new Vector2(290f, 72f));
-        localHandoffButton.onClick.AddListener(OpenGuestAdvisorPanel);
 
         CreateAdvisorPanels();
 
@@ -313,9 +298,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         ClearAdvisorQr();
         inviteSession.Reset();
         snapshot = null;
-        advisorSelectedOption = -1;
         if (inviteOverlay != null) inviteOverlay.SetActive(false);
-        SetAdvisorPanels(false, false);
+        SetAdvisorReviewVisible(false);
         RefreshDecisionInviteButton();
     }
 
@@ -329,15 +313,14 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (publicAdvisorClient == null || !publicAdvisorClient.IsConfigured || snapshot == null) return;
         string runId = RunHistoryTracker.Instance != null ? RunHistoryTracker.Instance.CurrentRunId : string.Empty;
         publicAdvisorClient.BeginSession(snapshot, GetCurrentOptionTexts(), runId,
-            (snapshot.StoryRecap ?? string.Empty) + "\n" + (snapshot.DecisionContext ?? string.Empty));
+            snapshot.StoryRecap ?? string.Empty);
         if (statusText != null) statusText.text = "正在创建公网参谋会话……";
     }
 
     private void HandlePublicSessionCreated(PublicAdvisorSessionResponse response)
     {
         if (statusText == null || response == null) return;
-        statusText.text = "公网参谋链接（可在手机打开）：" + response.joinUrl +
-            "\n会话将在短时间后自动过期；主线仍由主将决定。";
+        statusText.text = "";
         if (advisorQrObject != null) advisorQrObject.SetActive(false);
         if (publicAdvisorClient != null && !string.IsNullOrWhiteSpace(response.qrUrl))
         {
@@ -361,13 +344,13 @@ public sealed class InviteCoCreationUI : MonoBehaviour
             suggestion.optionText, suggestion.reason))
         {
             if (inviteOverlay != null && inviteOverlay.activeSelf) ShowAdvisorReviewPanel();
-            if (statusText != null) statusText.text = "已收到公网参谋建议，请审核。";
+            if (statusText != null) statusText.text = "";
         }
     }
 
     private void HandlePublicTransportError(string message)
     {
-        if (statusText != null) statusText.text = "公网参谋暂时不可用，仍可使用本机应邀加入。\n" + message;
+        if (statusText != null) statusText.text = "邀约暂不可用，请稍后重新发起。";
     }
 
     private void ClearAdvisorQr()
@@ -383,48 +366,6 @@ public sealed class InviteCoCreationUI : MonoBehaviour
 
     private void CreateAdvisorPanels()
     {
-        advisorGuestPanel = CreateUIObject("AdvisorGuestPanel", invitePanel.transform);
-        SetAnchored(advisorGuestPanel.GetComponent<RectTransform>(), new Vector2(.04f, .14f), new Vector2(.96f, .84f));
-        Image guestPanelImage = advisorGuestPanel.AddComponent<Image>();
-        guestPanelImage.color = new Color(.06f, .095f, .125f, .995f);
-        // The full-screen invite overlay is the modal blocker. Let child
-        // controls receive pointer events instead of allowing this decorative
-        // panel background to become a stale raycast target after reopening.
-        guestPanelImage.raycastTarget = false;
-
-        TMP_Text guestTitle = CreateText(advisorGuestPanel.transform, "应邀加入", 42f,
-            TextAlignmentOptions.Left, textPrimary);
-        SetAnchored(guestTitle.rectTransform, new Vector2(.04f, .88f), new Vector2(.96f, .99f));
-
-        advisorCodeInput = CreateInput(advisorGuestPanel.transform, "本机接力码", 30f);
-        SetAnchored(advisorCodeInput.GetComponent<RectTransform>(), new Vector2(.04f, .77f), new Vector2(.34f, .85f));
-        advisorNameInput = CreateInput(advisorGuestPanel.transform, "参谋昵称", 30f);
-        SetAnchored(advisorNameInput.GetComponent<RectTransform>(), new Vector2(.04f, .66f), new Vector2(.34f, .74f));
-
-        TMP_Text optionTitle = CreateText(advisorGuestPanel.transform, "选择建议", 32f,
-            TextAlignmentOptions.Left, accentColor);
-        SetAnchored(optionTitle.rectTransform, new Vector2(.40f, .72f), new Vector2(.94f, .80f));
-        TMP_Text reasonTitle = CreateText(advisorGuestPanel.transform, "一句理由", 32f,
-            TextAlignmentOptions.Left, accentColor);
-        SetAnchored(reasonTitle.rectTransform, new Vector2(.04f, .53f), new Vector2(.34f, .61f));
-        advisorReasonInput = CreateInput(advisorGuestPanel.transform, "我建议这样做，因为……", 29f);
-        SetAnchored(advisorReasonInput.GetComponent<RectTransform>(), new Vector2(.04f, .28f), new Vector2(.34f, .50f));
-        advisorReasonInput.lineType = TMP_InputField.LineType.MultiLineNewline;
-
-        advisorGuestStatusText = CreateText(advisorGuestPanel.transform, "", 26f,
-            TextAlignmentOptions.Left, textMuted);
-        SetAnchored(advisorGuestStatusText.rectTransform, new Vector2(.04f, .14f), new Vector2(.94f, .22f));
-
-        Button submit = CreateButton(advisorGuestPanel.transform, "提交建议", new Vector2(230f, 64f),
-            Vector2.zero, new Color(.44f, .32f, .22f, 1f));
-        SetAnchored(submit.GetComponent<RectTransform>(), new Vector2(.72f, .04f), new Vector2(.95f, .14f));
-        submit.onClick.AddListener(SubmitAdvisorSuggestion);
-
-        Button back = CreateButton(advisorGuestPanel.transform, "返回快照", new Vector2(230f, 64f),
-            Vector2.zero, new Color(.24f, .28f, .29f, 1f));
-        SetAnchored(back.GetComponent<RectTransform>(), new Vector2(.46f, .04f), new Vector2(.69f, .14f));
-        back.onClick.AddListener(CloseGuestAdvisorPanel);
-
         advisorReviewPanel = CreateUIObject("AdvisorReviewPanel", invitePanel.transform);
         SetAnchored(advisorReviewPanel.GetComponent<RectTransform>(), new Vector2(.04f, .14f), new Vector2(.96f, .84f));
         Image reviewPanelImage = advisorReviewPanel.AddComponent<Image>();
@@ -456,88 +397,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         SetAnchored(withdraw.GetComponent<RectTransform>(), new Vector2(.19f, .04f), new Vector2(.42f, .14f));
         withdraw.onClick.AddListener(WithdrawAdvisorInvitation);
 
-        SetAdvisorPanels(false, false);
-    }
-
-    private void OpenGuestAdvisorPanel()
-    {
-        if (inviteSession == null || !inviteSession.IsActive) return;
-        ClearSelectedUi();
-
-        // Re-enable the guest panel before touching its TMP fields. When this
-        // panel is reopened after being hidden, doing the reset while it is
-        // inactive can leave TMP_InputField's internal activation state stale.
-        SetAdvisorPanels(true, false);
-        if (advisorGuestPanel != null) advisorGuestPanel.transform.SetAsLastSibling();
-        Canvas.ForceUpdateCanvases();
-        ResetAdvisorInput(advisorCodeInput, inviteSession.InviteCode);
-        ResetAdvisorInput(advisorNameInput, string.Empty);
-        ResetAdvisorInput(advisorReasonInput, string.Empty);
-        advisorSelectedOption = -1;
-        PopulateAdvisorOptions();
-        if (advisorGuestStatusText != null)
-            advisorGuestStatusText.text = "";
-        if (titleText != null) titleText.text = "应邀加入";
-    }
-
-    private void CloseGuestAdvisorPanel()
-    {
-        ClearSelectedUi();
-        SetAdvisorPanels(false, false);
-        if (titleText != null) titleText.text = "军议邀约";
-        Canvas.ForceUpdateCanvases();
-    }
-
-    private void PopulateAdvisorOptions()
-    {
-        for (int i = advisorOptionButtons.Count - 1; i >= 0; i--)
-            if (advisorOptionButtons[i] != null) Destroy(advisorOptionButtons[i].gameObject);
-        advisorOptionButtons.Clear();
-        int count = inviteSession != null && inviteSession.OptionTexts != null
-            ? inviteSession.OptionTexts.Count : 0;
-        int visibleCount = Mathf.Min(count, 3);
-        for (int i = 0; i < visibleCount; i++)
-        {
-            int optionIndex = i;
-            Button optionButton = CreateButton(advisorGuestPanel.transform,
-                (i + 1) + ". " + inviteSession.OptionTexts[i], new Vector2(0f, 0f),
-                Vector2.zero, new Color(.18f, .24f, .26f, 1f));
-            float top = .64f - i * .105f;
-            SetAnchored(optionButton.GetComponent<RectTransform>(), new Vector2(.40f, top - .08f),
-                new Vector2(.94f, top));
-            optionButton.onClick.AddListener(() => SelectAdvisorOption(optionIndex));
-            advisorOptionButtons.Add(optionButton);
-        }
-        if (count == 0 && advisorGuestStatusText != null)
-            advisorGuestStatusText.text = "当前节点没有可提交的剧情选项。";
-    }
-
-    private void SelectAdvisorOption(int optionIndex)
-    {
-        advisorSelectedOption = optionIndex;
-        for (int i = 0; i < advisorOptionButtons.Count; i++)
-        {
-            Image image = advisorOptionButtons[i] != null ? advisorOptionButtons[i].GetComponent<Image>() : null;
-            if (image != null)
-                image.color = i == optionIndex ? new Color(.55f, .42f, .22f, 1f) : new Color(.18f, .24f, .26f, 1f);
-        }
-    }
-
-    private void SubmitAdvisorSuggestion()
-    {
-        if (inviteSession == null || !inviteSession.ValidateCode(advisorCodeInput != null ? advisorCodeInput.text : string.Empty))
-        {
-            if (advisorGuestStatusText != null) advisorGuestStatusText.text = "接力码无效或已过期，请回到主将快照重新发起。";
-            return;
-        }
-        string guest = advisorNameInput != null ? advisorNameInput.text : string.Empty;
-        string reason = advisorReasonInput != null ? advisorReasonInput.text : string.Empty;
-        if (!inviteSession.SubmitSuggestion(guest, advisorSelectedOption, reason))
-        {
-            if (advisorGuestStatusText != null) advisorGuestStatusText.text = "请填写昵称并选择建议";
-            return;
-        }
-        ShowAdvisorReviewPanel();
+        SetAdvisorReviewVisible(false);
     }
 
     private void ShowAdvisorReviewPanel()
@@ -553,13 +413,10 @@ public sealed class InviteCoCreationUI : MonoBehaviour
                 string reason = string.IsNullOrWhiteSpace(suggestion.reason) ? "未填写" : suggestion.reason;
                 advisorReviewText.text = "参谋：" + suggestion.guestLabel + "\n\n" +
                     "建议选项：" + suggestion.optionText + "\n\n" +
-                    "理由：" + reason + "\n\n" +
-                    (string.IsNullOrWhiteSpace(inviteSession.EchoSummary)
-                        ? "请主将选择采纳或拒绝。采纳不会自动点击剧情选项。"
-                        : inviteSession.EchoSummary);
+                    "理由：" + reason;
             }
         }
-        SetAdvisorPanels(false, true);
+        SetAdvisorReviewVisible(true);
         bool reviewable = inviteSession != null && inviteSession.Status == InviteSessionStatus.GuestSubmitted;
         if (advisorAcceptButton != null) advisorAcceptButton.interactable = reviewable;
         if (advisorDeclineButton != null) advisorDeclineButton.interactable = reviewable;
@@ -571,7 +428,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         {
             if (publicAdvisorClient != null) publicAdvisorClient.SubmitDecision(true);
             RecordAdvisorEcho(true);
-            ShowAdvisorReviewPanel();
+            CloseInvitePanel();
         }
     }
 
@@ -581,7 +438,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         {
             if (publicAdvisorClient != null) publicAdvisorClient.SubmitDecision(false);
             RecordAdvisorEcho(false);
-            ShowAdvisorReviewPanel();
+            CloseInvitePanel();
         }
     }
 
@@ -599,16 +456,17 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (publicAdvisorClient != null) publicAdvisorClient.StopSession();
         inviteSession.Reset();
         snapshot = null;
-        SetAdvisorPanels(false, false);
+        SetAdvisorReviewVisible(false);
         if (titleText != null) titleText.text = "军议邀约";
         if (statusText != null) statusText.text = "邀约已撤销，可在当前决策点重新发起。";
-        RefreshDecisionInviteButton();
+        CloseInvitePanel();
     }
 
-    private void SetAdvisorPanels(bool showGuest, bool showReview)
+    private void SetAdvisorReviewVisible(bool showReview)
     {
-        if (advisorGuestPanel != null) advisorGuestPanel.SetActive(showGuest);
         if (advisorReviewPanel != null) advisorReviewPanel.SetActive(showReview);
+        if (inviteScroll != null) inviteScroll.gameObject.SetActive(!showReview);
+        if (statusText != null) statusText.gameObject.SetActive(!showReview);
     }
 
     private static void ClearSelectedUi()
@@ -945,97 +803,6 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         text.overflowMode = TextOverflowModes.Overflow;
         text.richText = false;
         return text;
-    }
-
-    private static TMP_InputField CreateInput(Transform parent, string placeholder, float size)
-    {
-        GameObject fieldObject = CreateUIObject("Input", parent);
-        Image background = fieldObject.AddComponent<Image>();
-        background.color = new Color(.12f, .17f, .19f, 1f);
-        TMP_InputField field = fieldObject.AddComponent<TMP_InputField>();
-        field.lineType = TMP_InputField.LineType.SingleLine;
-        field.contentType = TMP_InputField.ContentType.Standard;
-        field.targetGraphic = background;
-        field.interactable = true;
-        field.readOnly = false;
-        background.raycastTarget = true;
-        // Make focus visible immediately after a mouse click.  The default
-        // TMP caret is only one pixel wide and inherits the text colour,
-        // which is effectively lost against this dark panel at game scale.
-        // A slightly wider accent caret keeps the normal blink but gives the
-        // player an unambiguous editing-state cue.
-        field.customCaretColor = true;
-        field.caretColor = new Color(.96f, .82f, .42f, 1f);
-        field.caretBlinkRate = .85f;
-        field.caretWidth = 2;
-        field.selectionColor = new Color(.89f, .71f, .32f, .32f);
-
-        // TMP_InputField normally wires its own pointer handler, but the
-        // invite panel is rebuilt/reparented while the modal overlay changes
-        // sibling order.  Re-activate the field explicitly on click so a
-        // second open cannot leave the input looking enabled while the
-        // EventSystem still has no selected control.
-        UnityEngine.EventSystems.EventTrigger trigger =
-            fieldObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-        UnityEngine.EventSystems.EventTrigger.Entry clickEntry =
-            new UnityEngine.EventSystems.EventTrigger.Entry
-            {
-                eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick
-            };
-        clickEntry.callback.AddListener(_ =>
-        {
-            if (field == null || !field.interactable || field.readOnly) return;
-            field.Select();
-            field.ActivateInputField();
-            field.caretPosition = field.text != null ? field.text.Length : 0;
-        });
-        trigger.triggers.Add(clickEntry);
-
-        GameObject textObject = CreateUIObject("Text", fieldObject.transform);
-        SetAnchored(textObject.GetComponent<RectTransform>(), new Vector2(.04f, .02f), new Vector2(.96f, .98f));
-        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
-        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Fonts & Materials/SC-Regular SDF");
-        if (font != null)
-        {
-            text.font = font;
-            if (font.material != null) text.fontSharedMaterial = font.material;
-        }
-        text.fontSize = size;
-        text.color = Color.white;
-        text.alignment = TextAlignmentOptions.Left;
-        text.raycastTarget = false;
-        text.enableWordWrapping = false;
-        field.textComponent = text;
-
-        GameObject placeholderObject = CreateUIObject("Placeholder", fieldObject.transform);
-        SetAnchored(placeholderObject.GetComponent<RectTransform>(), new Vector2(.04f, .02f), new Vector2(.96f, .98f));
-        TextMeshProUGUI placeholderText = placeholderObject.AddComponent<TextMeshProUGUI>();
-        if (font != null) placeholderText.font = font;
-        placeholderText.text = placeholder;
-        placeholderText.fontSize = size;
-        placeholderText.color = new Color(.62f, .68f, .69f, 1f);
-        placeholderText.alignment = TextAlignmentOptions.Left;
-        placeholderText.raycastTarget = false;
-        placeholderText.enableWordWrapping = false;
-        field.placeholder = placeholderText;
-        return field;
-    }
-
-    private static void ResetAdvisorInput(TMP_InputField field, string value)
-    {
-        if (field == null) return;
-        if (!field.gameObject.activeSelf) field.gameObject.SetActive(true);
-        field.enabled = true;
-        field.interactable = true;
-        field.readOnly = false;
-        field.gameObject.transform.SetAsLastSibling();
-        if (field.targetGraphic == null)
-            field.targetGraphic = field.GetComponent<Graphic>();
-        field.DeactivateInputField();
-        field.SetTextWithoutNotify(value ?? string.Empty);
-        field.caretPosition = field.text.Length;
-        field.selectionAnchorPosition = field.caretPosition;
-        field.selectionFocusPosition = field.caretPosition;
     }
 
     private static Button CreateButton(Transform parent, string label, Vector2 size,

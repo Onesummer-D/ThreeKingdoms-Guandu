@@ -272,10 +272,6 @@ public sealed class CampaignMapUI : MonoBehaviour
     private GameObject historianOverlay;
     private GameObject historianGalleryOverlay;
     private RectTransform historianGalleryContent;
-    private GameObject historianAskOverlay;
-    private TMP_Text historianAskAnswerText;
-    private TMP_Text historianAskStatusText;
-    private HistorianAgentClient historianAgentClient;
     private TMP_Text historianTitleText;
     private TMP_Text historianSourceText;
     private TMP_Text historianRecordLabelText;
@@ -316,8 +312,6 @@ public sealed class CampaignMapUI : MonoBehaviour
         if (initialized || gameplayPanel == null) return;
         Instance = this;
         initialized = true;
-        historianAgentClient = GetComponent<HistorianAgentClient>();
-        if (historianAgentClient == null) historianAgentClient = gameObject.AddComponent<HistorianAgentClient>();
 
         CreateMapButton(gameplayPanel.transform);
         CreateOverlay(gameplayPanel.transform.root);
@@ -344,6 +338,7 @@ public sealed class CampaignMapUI : MonoBehaviour
     private void Update()
     {
         if (!initialized) return;
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         if (Input.GetKeyDown(KeyCode.M)) ToggleMap();
         if (isOpen) SyncRecapIfStateChanged();
     }
@@ -362,13 +357,13 @@ public sealed class CampaignMapUI : MonoBehaviour
     public void OpenMap()
     {
         if (!initialized || overlay == null) return;
+        if (!isOpen && AudioManager.Instance != null) AudioManager.Instance.PlayPaperTurn();
         endingReviewMode = false;
         isOpen = true;
         overlay.SetActive(true);
         if (recapPanel != null) recapPanel.SetActive(true);
         if (historianOverlay != null) historianOverlay.SetActive(false);
         if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
-        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
         historianReturnToGallery = false;
         if (mapButtonObject != null) mapButtonObject.SetActive(false);
         RebuildStoryRecap();
@@ -382,13 +377,13 @@ public sealed class CampaignMapUI : MonoBehaviour
     public void OpenEndingReview()
     {
         if (!initialized || overlay == null) return;
+        if (!isOpen && AudioManager.Instance != null) AudioManager.Instance.PlayPaperTurn();
         endingReviewMode = true;
         isOpen = true;
         overlay.SetActive(true);
         if (recapPanel != null) recapPanel.SetActive(true);
         if (historianOverlay != null) historianOverlay.SetActive(false);
         if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
-        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
         historianReturnToGallery = false;
         if (mapButtonObject != null) mapButtonObject.SetActive(false);
         RebuildStoryRecap();
@@ -403,7 +398,6 @@ public sealed class CampaignMapUI : MonoBehaviour
         if (overlay != null) overlay.SetActive(false);
         if (historianOverlay != null) historianOverlay.SetActive(false);
         if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
-        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
         historianReturnToGallery = false;
         if (recapPanel != null) recapPanel.SetActive(true);
         SetMapButtonVisible(true);
@@ -453,9 +447,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         if (historianRecordBodyText != null) historianRecordBodyText.text = note.record;
         if (historianInterpretationLabelText != null) historianInterpretationLabelText.text = "今天如何理解";
         if (historianInterpretationBodyText != null) historianInterpretationBodyText.text = note.interpretation;
-        if (historianAdaptationLabelText != null) historianAdaptationLabelText.text = "史实边界 · 游戏改编";
-        if (historianAdaptationBodyText != null)
-            historianAdaptationBodyText.text = note.historicalBoundary + "\n" + note.adaptation;
+        // The card intentionally omits the historical-boundary/game-adaptation
+        // section. A compact disclaimer is rendered at the bottom of every card.
     }
 
     private void CloseHistorianNote()
@@ -758,7 +751,7 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         CreateHistorianOverlay(overlay.transform);
         CreateHistorianGalleryOverlay(overlay.transform);
-        CreateHistorianAskOverlay(overlay.transform);
+
 
         overlay.SetActive(false);
     }
@@ -796,12 +789,12 @@ public sealed class CampaignMapUI : MonoBehaviour
         historianInterpretationLabelText = CreateText(panel.transform, "今天如何理解", 44f, TextAlignmentOptions.Left, HistorianLabelColor);
         SetAnchored(historianInterpretationLabelText.rectTransform, new Vector2(0.07f, 0.41f), new Vector2(0.93f, 0.51f));
         historianInterpretationBodyText = CreateWrappedText(panel.transform, "", 36f, TextPrimary);
-        SetAnchored(historianInterpretationBodyText.rectTransform, new Vector2(0.07f, 0.28f), new Vector2(0.93f, 0.40f));
+        SetAnchored(historianInterpretationBodyText.rectTransform, new Vector2(0.07f, 0.22f), new Vector2(0.93f, 0.40f));
 
-        historianAdaptationLabelText = CreateText(panel.transform, "游戏改编说明", 44f, TextAlignmentOptions.Left, HistorianLabelColor);
-        SetAnchored(historianAdaptationLabelText.rectTransform, new Vector2(0.07f, 0.15f), new Vector2(0.93f, 0.25f));
-        historianAdaptationBodyText = CreateWrappedText(panel.transform, "", 25f, TextPrimary);
-        SetAnchored(historianAdaptationBodyText.rectTransform, new Vector2(0.07f, 0.02f), new Vector2(0.93f, 0.15f));
+        TMP_Text disclaimer = CreateText(panel.transform,
+            "游戏中的资源、分支和结局仅属于交互化演绎", 22f,
+            TextAlignmentOptions.Center, TextMuted);
+        SetAnchored(disclaimer.rectTransform, new Vector2(0.07f, 0.04f), new Vector2(0.93f, 0.11f));
 
         historianOverlay.SetActive(false);
     }
@@ -819,9 +812,6 @@ public sealed class CampaignMapUI : MonoBehaviour
         TMP_Text title = CreateText(panel.transform, "史官卡片 · " + HistorianCards.Length + " 则", 54f,
             TextAlignmentOptions.Left, TextPrimary);
         SetTopLeft(title.rectTransform, new Vector2(38f, -28f), new Vector2(900f, 70f));
-        TMP_Text intro = CreateWrappedText(panel.transform,
-            "按本局进度解锁。每张卡区分史书记载、今天的理解与游戏演绎。", 28f, TextMuted);
-        SetTopLeft(intro.rectTransform, new Vector2(40f, -105f), new Vector2(1150f, 70f));
 
         Button close = CreateButton(panel.transform, "返回", new Vector2(180f, 72f),
             new Vector2(-30f, -26f), new Color(0.30f, 0.20f, 0.18f, 1f));
@@ -868,84 +858,10 @@ public sealed class CampaignMapUI : MonoBehaviour
         historianGalleryOverlay.SetActive(false);
     }
 
-    private void CreateHistorianAskOverlay(Transform parent)
-    {
-        historianAskOverlay = CreateUIObject("HistorianAskOverlay", parent);
-        Stretch(historianAskOverlay.GetComponent<RectTransform>());
-        historianAskOverlay.AddComponent<Image>().color = new Color(0.015f, 0.025f, 0.035f, 0.92f);
-        GameObject panel = CreateUIObject("HistorianAskPanel", historianAskOverlay.transform);
-        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
-        panel.AddComponent<Image>().color = PanelColor;
-
-        TMP_Text title = CreateText(panel.transform, "问史官 · 受约束回答", 52f,
-            TextAlignmentOptions.Left, TextPrimary);
-        SetTopLeft(title.rectTransform, new Vector2(38f, -28f), new Vector2(1000f, 70f));
-        Button close = CreateButton(panel.transform, "返回卡片", new Vector2(220f, 72f),
-            new Vector2(-30f, -26f), new Color(0.30f, 0.20f, 0.18f, 1f));
-        close.onClick.AddListener(CloseHistorianAsk);
-
-        TMP_Text hint = CreateWrappedText(panel.transform,
-            "选择一个问题查看带来源编号的回答；服务不可用时显示本地回退。", 28f, TextMuted);
-        SetAnchored(hint.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .88f));
-
-        Button q1 = CreateButton(panel.transform, "乌巢为什么重要？", new Vector2(360f, 64f), Vector2.zero,
-            new Color(.30f, .24f, .16f, 1f));
-        SetAnchored(q1.GetComponent<RectTransform>(), new Vector2(.06f, .67f), new Vector2(.45f, .75f));
-        q1.onClick.AddListener(() => AskHistorianQuestion("乌巢为什么重要？"));
-        Button q2 = CreateButton(panel.transform, "许攸带来了什么信息？", new Vector2(360f, 64f), Vector2.zero,
-            new Color(.30f, .24f, .16f, 1f));
-        SetAnchored(q2.GetComponent<RectTransform>(), new Vector2(.55f, .67f), new Vector2(.94f, .75f));
-        q2.onClick.AddListener(() => AskHistorianQuestion("许攸带来了什么信息？"));
-        Button q3 = CreateButton(panel.transform, "IF 结局是史实吗？", new Vector2(360f, 64f), Vector2.zero,
-            new Color(.30f, .24f, .16f, 1f));
-        SetAnchored(q3.GetComponent<RectTransform>(), new Vector2(.06f, .57f), new Vector2(.45f, .65f));
-        q3.onClick.AddListener(() => AskHistorianQuestion("IF 结局是史实吗？"));
-
-        historianAskStatusText = CreateText(panel.transform, "", 26f, TextAlignmentOptions.Left, TextMuted);
-        SetAnchored(historianAskStatusText.rectTransform, new Vector2(.55f, .57f), new Vector2(.94f, .65f));
-        historianAskAnswerText = CreateWrappedText(panel.transform, "请选择一个问题。", 30f, TextPrimary);
-        SetAnchored(historianAskAnswerText.rectTransform, new Vector2(.06f, .10f), new Vector2(.94f, .52f));
-        historianAskOverlay.SetActive(false);
-    }
-
     private void OpenHistorianAsk()
     {
-        if (!isOpen || historianAskOverlay == null) return;
-        if (recapPanel != null) recapPanel.SetActive(false);
-        if (historianOverlay != null) historianOverlay.SetActive(false);
-        if (historianGalleryOverlay != null) historianGalleryOverlay.SetActive(false);
-        historianAskOverlay.SetActive(true);
-    }
-
-    private void CloseHistorianAsk()
-    {
-        if (historianAskOverlay != null) historianAskOverlay.SetActive(false);
-        if (isOpen && historianGalleryOverlay != null) historianGalleryOverlay.SetActive(true);
-    }
-
-    private void AskHistorianQuestion(string question)
-    {
-        if (historianAskAnswerText != null) historianAskAnswerText.text = "正在读取史料卡片……";
-        if (historianAskStatusText != null) historianAskStatusText.text = "";
-        string context = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
-            ? "当前节点：" + DialogueSystem.Instance.CurrentNode.nodeId : string.Empty;
-        if (historianAgentClient == null)
-        {
-            if (historianAskAnswerText != null) historianAskAnswerText.text = "史官服务未初始化。";
-            return;
-        }
-        historianAgentClient.Ask(question, context, response =>
-        {
-            if (historianAskAnswerText != null) historianAskAnswerText.text = response.answer;
-            if (historianAskStatusText != null)
-                historianAskStatusText.text = "模式：" + response.mode + " · 来源：" +
-                    (response.retrieved == null ? "无" : string.Join(", ", response.retrieved));
-        }, error =>
-        {
-            if (historianAskAnswerText != null)
-                historianAskAnswerText.text = "史官服务暂不可用。请回到卡片库阅读固定史料。";
-            if (historianAskStatusText != null) historianAskStatusText.text = error;
-        });
+        CloseMap();
+        HistorianChatUI.Instance?.Open();
     }
 
     private void RebuildHistorianGallery()

@@ -63,7 +63,6 @@ public class FinalUIManager : MonoBehaviour
     private GameplayExitUI gameplayExitUI;
     private RunHistoryTracker runHistoryTracker;
     private BattleReportUI battleReportUI;
-    private BattleReplayUI battleReplayUI;
 
     [Header("解锁结局按钮")]
     public Button viewEndingButton;
@@ -195,6 +194,9 @@ public class FinalUIManager : MonoBehaviour
         if (mapUI == null) mapUI = gameObject.AddComponent<CampaignMapUI>();
         campaignMapUI = mapUI;
         mapUI.Initialize(gameInterfacePanel);
+        HistorianChatUI historianChat = GetComponent<HistorianChatUI>();
+        if (historianChat == null) historianChat = gameObject.AddComponent<HistorianChatUI>();
+        historianChat.Initialize(gameInterfacePanel);
         mapUI.OnClosed -= HandleRecapClosed;
         mapUI.OnClosed += HandleRecapClosed;
         CreateEndingReviewButton();
@@ -225,14 +227,6 @@ public class FinalUIManager : MonoBehaviour
                 endingButtonSprite, caocaoAvatar);
         battleReportUI.OnClosed -= HandleBattleReportClosed;
         battleReportUI.OnClosed += HandleBattleReportClosed;
-        battleReplayUI = GetComponent<BattleReplayUI>();
-        if (battleReplayUI == null) battleReplayUI = gameObject.AddComponent<BattleReplayUI>();
-        if (gameInterfacePanel != null)
-            battleReplayUI.Initialize(runHistoryTracker, gameInterfacePanel.transform.root, endingButtonSprite);
-        battleReportUI.OnReplayRequested -= HandleBattleReplayRequested;
-        battleReportUI.OnReplayRequested += HandleBattleReplayRequested;
-        battleReplayUI.OnClosed -= HandleBattleReplayClosed;
-        battleReplayUI.OnClosed += HandleBattleReplayClosed;
 
         localSaveManager = GetComponent<LocalSaveManager>();
         if (localSaveManager == null) localSaveManager = gameObject.AddComponent<LocalSaveManager>();
@@ -790,6 +784,7 @@ public class FinalUIManager : MonoBehaviour
 
     void OnViewEndingClicked()
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         Debug.Log($"<color=green>点击解锁结局，跳转到节点：{currentNextNodeId}</color>");
 
         if (viewEndingButton != null)
@@ -952,17 +947,6 @@ public class FinalUIManager : MonoBehaviour
         gameplayExitUI?.SetVisible(true);
     }
 
-    private void HandleBattleReplayRequested()
-    {
-        battleReplayUI?.Open();
-    }
-
-    private void HandleBattleReplayClosed()
-    {
-        // The report remains underneath the replay overlay, so closing the
-        // scroll returns directly to the existing report without reopening it.
-    }
-
     private void HandleRecapClosed()
     {
         // CloseMap restores the normal gameplay entry by design. On an ending
@@ -1034,6 +1018,8 @@ public class FinalUIManager : MonoBehaviour
 
     void OnBackgroundIntroClicked()
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperTurn();
         if (DialogueSystem.Instance?.CurrentNode != null)
         {
             int nextId = DialogueSystem.Instance.CurrentNode.nextNodeId;
@@ -1229,6 +1215,7 @@ public class FinalUIManager : MonoBehaviour
 
     void OnClickAreaClicked()
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         if (!waitingForContinue) return;
 
         HideClickArea();
@@ -1303,6 +1290,7 @@ public class FinalUIManager : MonoBehaviour
 
     void OnOptionClicked(int optionIndex)
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         if (optionTransitionInProgress || DialogueSystem.Instance?.CurrentNode == null) return;
 
         var options = DialogueSystem.Instance.CurrentNode.options;
@@ -1666,6 +1654,8 @@ public class FinalUIManager : MonoBehaviour
 
     void ResetRunState()
     {
+        HistorianChatUI.Instance?.Close();
+        HistorianChatUI.Instance?.ResetConversation();
         StopAllCoroutines();
         inviteCoCreationUI?.ResetSession();
         runHistoryTracker?.ResetRunState();

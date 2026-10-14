@@ -210,7 +210,7 @@ public class GridGameManager : MonoBehaviour
 
         // ========== 新增：播放移动音效（开始游戏）==========
         if (AudioManager.Instance != null)
-            AudioManager.Instance.PlayPuzzleMove();  // 用移动音作为开始音
+            AudioManager.Instance.PlayUI(AudioManager.Instance.defaultButtonClick);
                                                      // ===============================================
 
         Debug.Log($"[GridGameManager] 游戏开始！玩家位置: ({selectedTile.GridX}, {selectedTile.GridY})");

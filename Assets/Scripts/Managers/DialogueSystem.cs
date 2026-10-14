@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -254,8 +254,15 @@ public class DialogueSystem : MonoBehaviour
         // 播放数值变化音效
         if (AudioManager.Instance != null)
         {
-            float totalChange = selectedOption.troopEffect + selectedOption.foodEffect +
-                               selectedOption.strategyEffect + selectedOption.riskEffect;
+            float[] outcomes = { selectedOption.troopEffect, selectedOption.foodEffect,
+                                 selectedOption.strategyEffect, -selectedOption.riskEffect };
+            bool gain = false, loss = false;
+            foreach (float outcome in outcomes)
+            {
+                gain |= outcome > 0f;
+                loss |= outcome < 0f;
+            }
+            float totalChange = gain == loss ? 0f : (gain ? 1f : -1f);
             if (totalChange != 0)
             {
                 AudioManager.Instance.PlayValueChange(totalChange);
@@ -384,25 +391,21 @@ public class DialogueSystem : MonoBehaviour
         if (option.troopEffect < 0)
         {
             ResourceManager.Instance.ModifyTroop(option.troopEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(-1);
             Debug.Log($"资源变化 - 兵力: {option.troopEffect}");
         }
         if (option.foodEffect < 0)
         {
             ResourceManager.Instance.ModifyFood(option.foodEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(-1);
             Debug.Log($"资源变化 - 粮草: {option.foodEffect}");
         }
         if (option.strategyEffect < 0)
         {
             ResourceManager.Instance.ModifyStrategy(option.strategyEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(-1);
             Debug.Log($"资源变化 - 计策: {option.strategyEffect}");
         }
         if (option.riskEffect < 0)
         {
             ResourceManager.Instance.ModifyRisk(option.riskEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(-1);
             Debug.Log($"资源变化 - 风险: {option.riskEffect}");
         }
 
@@ -410,25 +413,21 @@ public class DialogueSystem : MonoBehaviour
         if (option.troopEffect > 0)
         {
             ResourceManager.Instance.ModifyTroop(option.troopEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(1);
             Debug.Log($"资源变化 - 兵力: +{option.troopEffect}");
         }
         if (option.foodEffect > 0)
         {
             ResourceManager.Instance.ModifyFood(option.foodEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(1);
             Debug.Log($"资源变化 - 粮草: +{option.foodEffect}");
         }
         if (option.strategyEffect > 0)
         {
             ResourceManager.Instance.ModifyStrategy(option.strategyEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(1);
             Debug.Log($"资源变化 - 计策: +{option.strategyEffect}");
         }
         if (option.riskEffect > 0)
         {
             ResourceManager.Instance.ModifyRisk(option.riskEffect);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayValueChange(1);
             Debug.Log($"资源变化 - 风险: +{option.riskEffect}");
         }
     }

@@ -19,6 +19,7 @@ public class GridPlayer : MonoBehaviour
 
     void Update()
     {
+        if (HistorianChatUI.Instance != null && HistorianChatUI.Instance.IsOpen) return;
         if (!isActive) return;
 
         // 平滑移动

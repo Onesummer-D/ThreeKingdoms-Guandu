@@ -50,7 +50,6 @@ public sealed class BattleReportUI : MonoBehaviour
     private bool capturing;
 
     public event Action OnClosed;
-    public event Action OnReplayRequested;
 
     public void Initialize(CampaignMapUI map, RunHistoryTracker tracker, Transform root,
         Sprite sharedButtonSprite, Sprite reportPortrait)
@@ -60,6 +59,11 @@ public sealed class BattleReportUI : MonoBehaviour
         historyTracker = tracker;
         buttonSprite = sharedButtonSprite;
         portraitSprite = reportPortrait;
+        if (statsCardBadge == null) statsCardBadge = Resources.Load<Sprite>("BattleReport/Stats");
+        if (tendencyCardBadge == null) tendencyCardBadge = Resources.Load<Sprite>("BattleReport/Tendency");
+        if (advisorEchoCardBadge == null) advisorEchoCardBadge = Resources.Load<Sprite>("BattleReport/AdvisorEcho");
+        if (resourceTrendCardBadge == null) resourceTrendCardBadge = Resources.Load<Sprite>("BattleReport/ResourceTrend");
+        if (cultureCardBadge == null) cultureCardBadge = Resources.Load<Sprite>("BattleReport/Culture");
         CreateOverlay(root);
     }
 
@@ -110,10 +114,6 @@ public sealed class BattleReportUI : MonoBehaviour
         {
             if (!capturing) StartCoroutine(CapturePoster());
         });
-
-        Button replay = CreateButton(panel.transform, "战役绘卷", 31f);
-        SetAnchored(replay.GetComponent<RectTransform>(), new Vector2(.46f, .025f), new Vector2(.61f, .105f));
-        replay.onClick.AddListener(() => OnReplayRequested?.Invoke());
 
         Button close = CreateButton(panel.transform, "关闭", 31f);
         SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.81f, .025f), new Vector2(.95f, .105f));
@@ -203,7 +203,7 @@ public sealed class BattleReportUI : MonoBehaviour
             image.preserveAspect = true;
         }
         TMP_Text title = CreateText(card.transform, "恭喜通关 · " + campaignMap.GetReachedEndingLabel(), 46f,
-            TextAlignmentOptions.TopLeft, AccentColor, false);
+            TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(.23f, .62f), new Vector2(.96f, .92f));
         // Keep the ending sentence complete. The previous two-line summary
         // appended the evaluation into a short card and TMP rendered the
@@ -505,9 +505,7 @@ public sealed class BattleReportUI : MonoBehaviour
         Texture2D image = null;
         try
         {
-            image = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
-            image.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
-            image.Apply();
+            image = RenderCompleteReport();
             byte[] png = image.EncodeToPNG();
             string folder = GetPosterDirectory();
             Directory.CreateDirectory(folder);
@@ -526,6 +524,80 @@ public sealed class BattleReportUI : MonoBehaviour
         {
             if (image != null) Destroy(image);
             capturing = false;
+        }
+    }
+
+    private Texture2D RenderCompleteReport()
+    {
+        // Render an isolated copy of all report content, outside the scroll mask.
+        float width = content.rect.width;
+        float height = content.rect.height;
+        int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
+        float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
+        int pixelWidth = Mathf.Max(1, Mathf.CeilToInt(width * scale));
+        int pixelHeight = Mathf.Max(1, Mathf.CeilToInt(height * scale));
+        GameObject canvasObject = new GameObject("CompleteReportExport", typeof(RectTransform), typeof(Canvas));
+        GameObject cameraObject = new GameObject("CompleteReportCamera", typeof(Camera));
+        RenderTexture target = null;
+        RenderTexture previous = RenderTexture.active;
+        Texture2D result = null;
+        try
+        {
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            Canvas sourceCanvas = content.GetComponentInParent<Canvas>();
+            canvas.additionalShaderChannels = sourceCanvas.additionalShaderChannels;
+            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(width, height);
+            canvasRect.position = new Vector3(10000f, 10000f, 0f);
+            Image background = canvasObject.AddComponent<Image>();
+            background.color = PanelColor;
+            RectTransform copy = Instantiate(content, canvasRect, false);
+            copy.anchorMin = new Vector2(0f, 1f);
+            copy.anchorMax = new Vector2(1f, 1f);
+            copy.pivot = new Vector2(.5f, 1f);
+            copy.anchoredPosition = Vector2.zero;
+            copy.sizeDelta = new Vector2(0f, height);
+            // The graph's generated children are copied; prevent a data-less
+            // cloned component from rebuilding them before the export.
+            foreach (MonoBehaviour component in copy.GetComponentsInChildren<MonoBehaviour>())
+                if (component is ResourceTrendPlotUI || component is Button) component.enabled = false;
+            foreach (Transform child in canvasObject.GetComponentsInChildren<Transform>())
+                child.gameObject.layer = 31;
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.enabled = false;
+            camera.orthographic = true;
+            camera.orthographicSize = height / 2f;
+            camera.aspect = width / height;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = PanelColor;
+            camera.cullingMask = 1 << 31;
+            camera.nearClipPlane = .1f;
+            camera.farClipPlane = 20f;
+            camera.transform.position = canvasRect.position + new Vector3(0f, 0f, -10f);
+            canvas.worldCamera = camera;
+            target = RenderTexture.GetTemporary(pixelWidth, pixelHeight, 24, RenderTextureFormat.ARGB32);
+            camera.targetTexture = target;
+            Canvas.ForceUpdateCanvases();
+            foreach (TMP_Text label in copy.GetComponentsInChildren<TMP_Text>()) label.ForceMeshUpdate();
+            camera.Render();
+            RenderTexture.active = target;
+            result = new Texture2D(pixelWidth, pixelHeight, TextureFormat.RGB24, false);
+            result.ReadPixels(new Rect(0, 0, pixelWidth, pixelHeight), 0, 0);
+            result.Apply();
+            return result;
+        }
+        catch
+        {
+            if (result != null) Destroy(result);
+            throw;
+        }
+        finally
+        {
+            RenderTexture.active = previous;
+            if (target != null) RenderTexture.ReleaseTemporary(target);
+            Destroy(cameraObject);
+            Destroy(canvasObject);
         }
     }
 
@@ -627,9 +699,12 @@ public sealed class BattleReportUI : MonoBehaviour
             ? Color.white
             : new Color(.055f, .085f, .10f, .58f);
         image.raycastTarget = false;
-        Outline outline = slot.AddComponent<Outline>();
-        outline.effectColor = new Color(.45f, .36f, .20f, .72f);
-        outline.effectDistance = new Vector2(1f, -1f);
+        if (image.sprite == null)
+        {
+            Outline outline = slot.AddComponent<Outline>();
+            outline.effectColor = new Color(.45f, .36f, .20f, .72f);
+            outline.effectDistance = new Vector2(1f, -1f);
+        }
     }
 
     private Sprite GetCardBadgeSprite(string cardName)

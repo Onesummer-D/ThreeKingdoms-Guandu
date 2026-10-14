@@ -24,10 +24,8 @@ try {
     }
 
     $inviteTextNeedles = @(
-        'OpenGuestAdvisorPanel', 'SubmitAdvisorSuggestion', 'ShowAdvisorReviewPanel', 'RecordAdvisorEcho',
+        'HandlePublicSuggestionReceived', 'ShowAdvisorReviewPanel', 'RecordAdvisorEcho',
         (From-CodePoints @(0x64A4, 0x9500, 0x9080, 0x7EA6)),
-        (From-CodePoints @(0x672C, 0x673A, 0x63A5, 0x529B, 0x7801)),
-        (From-CodePoints @(0x8BF7, 0x586B, 0x5199, 0x6635, 0x79F0, 0x5E76, 0x9009, 0x62E9, 0x5EFA, 0x8BAE)),
         (From-CodePoints @(0x7406, 0x7531, 0x53EF, 0x9009)),
         'Status == InviteSessionStatus.Accepted', 'HasUsableOptions', 'GetRectWorldHeight'
     )
@@ -61,16 +59,13 @@ try {
         }
     }
     $inviteText = Get-Content -Raw -Encoding UTF8 -LiteralPath $invite
-    foreach ($needle in @('field.targetGraphic = background;', 'field.interactable = true;', 'field.readOnly = false;', 'SetSelectedGameObject(null);')) {
-        Assert-Contains $invite $needle "input lifecycle $needle"
+    Assert-Contains $invite 'SetSelectedGameObject(null);' 'modal close clears focus'
+    foreach ($obsolete in @('OpenGuestAdvisorPanel', 'AdvisorGuestPanel', 'ResetAdvisorInput')) {
+        if ($inviteText.Contains($obsolete)) { throw "Removed local handoff remains: $obsolete" }
     }
-    $openStart = $inviteText.IndexOf('private void OpenGuestAdvisorPanel()', [System.StringComparison]::Ordinal)
-    $openEnd = $inviteText.IndexOf('private void PopulateAdvisorOptions()', $openStart, [System.StringComparison]::Ordinal)
-    if ($openStart -lt 0 -or $openEnd -le $openStart) { throw 'Missing advisor panel open method boundary.' }
-    $openBlock = $inviteText.Substring($openStart, $openEnd - $openStart)
-    if ($openBlock.IndexOf('SetAdvisorPanels(true, false)', [System.StringComparison]::Ordinal) -gt
-        $openBlock.IndexOf('ResetAdvisorInput(', [System.StringComparison]::Ordinal)) {
-        throw 'Advisor panel must be activated before resetting TMP input fields.'
+    foreach ($action in @('AcceptAdvisorSuggestion', 'DeclineAdvisorSuggestion', 'WithdrawAdvisorInvitation')) {
+        $block = [regex]::Match($inviteText, ('(?s)private void ' + $action + '\(\).*?(?=\n    private )')).Value
+        if (-not $block.Contains('CloseInvitePanel();')) { throw "Review action does not close modal: $action" }
     }
     Assert-Contains $history 'advisorEchoes' 'history advisor echoes'
     Assert-Contains $tracker 'RecordAdvisorEcho' 'tracker advisor echo'

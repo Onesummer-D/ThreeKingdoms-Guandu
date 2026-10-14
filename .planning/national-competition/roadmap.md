@@ -57,3 +57,7 @@
 **Gate Status: CLEARED**
 
 Planning Gate 已清除。阶段 01–04 已完成主要实现，仍需 Unity 运行时、真实设备或服务器验收；当前推进阶段 05，随后进入阶段 06 集成验收。后续新增范围必须按 Scope Change Protocol 更新规格和计划。
+
+
+## 2026-10-14 问史官聊天扩展
+- 用户授权的透明入口、半透明悬浮窗、自由输入、连续追问、来源和离线回退已完成。详见 work/05-ai-historian/05-chat-interface/plan.md；原有其他阶段验收状态不变。

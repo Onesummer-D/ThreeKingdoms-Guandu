@@ -312,6 +312,11 @@ public sealed class LocalSaveManager : MonoBehaviour
 
     private static string GetSaveDirectory()
     {
+#if UNITY_EDITOR
+        // Explicit editor smoke tests must not overwrite the player's autosave.
+        string qaDirectory = Environment.GetEnvironmentVariable("GUANDU_QA_SAVE_DIRECTORY");
+        if (!string.IsNullOrEmpty(qaDirectory)) return qaDirectory;
+#endif
         return Path.Combine(Application.persistentDataPath, "GuanduSaves");
     }
 
