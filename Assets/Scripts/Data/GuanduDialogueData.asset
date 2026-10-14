@@ -179,7 +179,7 @@ MonoBehaviour:
     bgmClip: {fileID: 0}
     loopBGM: 1
     stopPreviousBGM: 1
-    sfxOnEnter: {fileID: 0}
+    sfxOnEnter: {fileID: 8300000, guid: 97ac0f4b6f0c1724fa5f909a7270a76c, type: 3}
   - nodeId: 100105
     dialogueText: "\u66F9\u519B\u5C06\u58EB\u5373\u4FBF\u5728\u8425\u4E2D\u884C\u8D70\uFF0C\u4E5F\u5FC5\u987B\u9876\u76FE\u8D70\u52A8\uFF0C\u54EA\u6015\u53EA\u662F\u53BB\u6CB3\u8FB9\u53D6\u6C34\uFF0C\u90FD\u5E38\u6709\u58EB\u5175\u88AB\u5C04\u6B7B\u3002"
     backgroundImage: {fileID: 21300000, guid: b2956350925fec64a8cdf5853d439c7c, type: 3}
