@@ -109,13 +109,14 @@ function validateAnswer(answer, docs) {
   }
   // Split at real sentences rather than trusting a single reference at the
   // end of a long paragraph to justify unrelated claims above it.
-  const sentences = text.split(/(?<=[。！？!?；;])|\n+/u).map(s => s.trim()).filter(Boolean);
+  const normalized = text.replace(/([。！？!?；;])((?:\s*\[[A-Z]\d{2}\])+)/g, '$2$1');
+  const sentences = normalized.split(/(?<=[。！？!?；;])|\n+/u).map(s => s.trim()).filter(Boolean);
   let supportedStatements = 0;
   for (const sentence of sentences) {
     const cleaned = sentence.replace(/\[[A-Z]\d{2}\]/g, '').trim();
     if (!/[\u4e00-\u9fff]/.test(cleaned)) continue;
     const cited = [...sentence.matchAll(/\[([A-Z]\d{2})\]/g)].map(match => match[1]);
-    if (!cited.length || !/\[[A-Z]\d{2}\]\s*$/.test(sentence)) return { valid: false, reason: 'uncited_sentence' };
+    if (!cited.length || !/\[[A-Z]\d{2}\][。！？!?；;]?\s*$/.test(sentence)) return { valid: false, reason: 'uncited_sentence' };
     const sources = cited.map(id => allowed.get(id));
     const reference = sources.map(doc => [doc.title, doc.summary, doc.boundary, ...(doc.tags || [])].join(' ')).join(' ');
     // Quoted alleged original wording must occur verbatim in the source cards.
