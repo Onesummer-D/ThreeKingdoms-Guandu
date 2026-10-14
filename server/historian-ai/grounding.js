@@ -136,7 +136,7 @@ function validateAnswer(answer, docs) {
 function fallbackAnswer(question, docs) {
   if (!docs.length) return '现有史料不足以确认这个问题。请尝试更具体的官渡人物或事件问题。';
   // Keep excerpts attributable; don't turn unrelated cards into an essay.
-  return docs.slice(0, 2).map(doc => doc.summary + '（' + doc.boundary + '）[' + doc.id + ']').join('\n');
+  return docs.slice(0, 2).map(doc => doc.title + '：' + doc.summary + '（' + doc.boundary + '）[' + doc.id + ']').join('\n');
 }
 async function askOpenAI(prompt, question, history) {
   const key = process.env.OPENAI_API_KEY;
