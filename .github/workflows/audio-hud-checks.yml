@@ -24,7 +24,7 @@ on:
 jobs:
   static-audio-ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,5 +34,9 @@ jobs:
         run: node Documentation/QA/AudioHudStaticChecks.js
       - name: Audit every story sound reference
         run: node Documentation/QA/NarrativeAudioAuditChecks.js
+      - name: Install FFmpeg for audible-asset diagnostics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
       - name: Measure original audio clip levels (informational)
         run: node Documentation/QA/SoundAssetLevelAudit.js
