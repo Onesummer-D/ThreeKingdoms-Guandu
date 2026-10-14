@@ -10,7 +10,48 @@ public sealed class HistorianAskRequest
     public string question;
     public string context;
     public HistorianChatMessage[] history;
+    public HistorianRunEvidence run;
 }
+
+[Serializable]
+public sealed class HistorianRunSnapshot
+{
+    public float troop, food, strategy, risk;
+}
+
+[Serializable]
+public sealed class HistorianRunDecision
+{
+    public int sequence, chapterIndex;
+    public string optionText;
+    public float troopEffect, foodEffect, strategyEffect, riskEffect;
+}
+
+[Serializable]
+public sealed class HistorianRunMiniGame
+{
+    public string gameType;
+    public bool success;
+    public int failedAttempts;
+}
+
+[Serializable]
+public sealed class HistorianRunEnding
+{
+    public string id, name, reason;
+    public int[] keyDecisions;
+}
+
+[Serializable]
+public sealed class HistorianRunEvidence
+{
+    public bool completed, integrityValid;
+    public HistorianRunSnapshot start, current;
+    public HistorianRunEnding ending;
+    public HistorianRunDecision[] decisions;
+    public HistorianRunMiniGame[] miniGames;
+}
+
 
 [Serializable]
 public sealed class HistorianChatMessage
@@ -57,11 +98,17 @@ public sealed class HistorianAgentClient : MonoBehaviour
     public void Ask(string question, string context, Action<HistorianAskResponse> completed,
         Action<string> failed)
     {
-        Ask(question, context, null, completed, failed);
+        Ask(question, context, null, null, completed, failed);
     }
 
     public void Ask(string question, string context, HistorianChatMessage[] history,
         Action<HistorianAskResponse> completed, Action<string> failed)
+    {
+        Ask(question, context, history, null, completed, failed);
+    }
+
+    public void Ask(string question, string context, HistorianChatMessage[] history,
+        HistorianRunEvidence run, Action<HistorianAskResponse> completed, Action<string> failed)
     {
         CancelPending();
         if (!IsConfigured)
@@ -69,7 +116,7 @@ public sealed class HistorianAgentClient : MonoBehaviour
             failed?.Invoke("史官服务地址未配置");
             return;
         }
-        pending = StartCoroutine(AskRoutine(question, context, history, completed, failed));
+        pending = StartCoroutine(AskRoutine(question, context, history, run, completed, failed));
     }
 
     public void CancelPending()
@@ -82,13 +129,14 @@ public sealed class HistorianAgentClient : MonoBehaviour
     private void OnDisable() { CancelPending(); }
 
     private IEnumerator AskRoutine(string question, string context, HistorianChatMessage[] history,
-        Action<HistorianAskResponse> completed, Action<string> failed)
+        HistorianRunEvidence run, Action<HistorianAskResponse> completed, Action<string> failed)
     {
         HistorianAskRequest payload = new HistorianAskRequest
         {
             question = question ?? string.Empty,
             context = context ?? string.Empty,
-            history = history ?? new HistorianChatMessage[0]
+            history = history ?? new HistorianChatMessage[0],
+            run = run
         };
         UnityWebRequest request = new UnityWebRequest(
             baseUrl.TrimEnd('/') + "/api/historian/ask", "POST");
