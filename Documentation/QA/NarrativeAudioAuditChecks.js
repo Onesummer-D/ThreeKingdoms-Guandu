@@ -69,6 +69,15 @@ for(const [id,suffix] of required) {
   console.log('PASS '+id+' '+suffix);
 }
 const scene=file('Assets/Scenes/Guanduuuu.unity');
+// Inspector-assigned AudioManager and DialogueSystem tracks are a second
+// reference channel, independent of per-node sfxOnEnter.
+const inspectorSoundRefs = [...scene.matchAll(/^\s*(\w+): \{fileID: 8300000,\s*guid: ([a-f0-9]{32}), type: 3\}/gm)]
+  .filter(m => /^(?:bgm\w+|warBackgroundBGM|defaultButtonClick|valueChange\w*SFX|puzzle\w*SFX|alertSFX|errorSFX|achievementSFX|craftSuccessSFX|fireWuchaoSFX|digTunnel\w*SFX|paperTurnSFX|gridStepSFX)$/.test(m[1]));
+assert.ok(inspectorSoundRefs.length > 25, 'Inspector audio fields unexpectedly disappeared');
+for (const match of inspectorSoundRefs) {
+  assert.ok(assets.has(match[2]), 'Broken scene audio ref '+match[1]+': '+match[2]);
+}
+console.log('PASS scene inspector sound references: '+inspectorSoundRefs.length+' validated');
 const audio=file('Assets/AudioManager.cs');
 const dialogue=file('Assets/Scripts/Managers/DialogueSystem.cs');
 const animation=file('Assets/Scripts/Managers/FinalUIManager.cs');
