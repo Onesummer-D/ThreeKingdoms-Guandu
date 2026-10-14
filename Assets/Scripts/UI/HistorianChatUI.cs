@@ -454,7 +454,7 @@ public sealed class HistorianChatUI : MonoBehaviour
     private static bool IsRunReviewQuestion(string question)
     {
         return Regex.IsMatch(question ?? string.Empty,
-            @"本局|这局|这一局|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|哪一步|复盘|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜)");
+            @"本局|这局|这一局|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|哪一步|帮我复盘|给我复盘|复盘一下|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜)");
     }
 
     private static HistorianAskResponse LocalRunReview(HistorianRunEvidence run)
