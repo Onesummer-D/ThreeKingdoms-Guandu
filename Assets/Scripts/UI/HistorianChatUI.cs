@@ -312,25 +312,29 @@ public sealed class HistorianChatUI : MonoBehaviour
         status.text = "史官正在查阅史料…";
         RefreshControls();
         string context = CurrentContext();
-        client.Ask(question, context, previous, response =>
+        HistorianRunEvidence run = CurrentRunEvidence();
+        client.Ask(question, context, previous, run, response =>
         {
             if (generation != requestGeneration || pendingText == null) return;
             CompleteAnswer(pendingText, response);
         }, error =>
         {
             if (generation != requestGeneration || pendingText == null) return;
-            CompleteAnswer(pendingText, knowledge.Answer(question, previous, context));
+            CompleteAnswer(pendingText, IsRunReviewQuestion(question)
+                ? LocalRunReview(run) : knowledge.Answer(question, previous, context));
         });
     }
 
     private void CompleteAnswer(TMP_Text body, HistorianAskResponse response)
     {
-        body.text = Regex.Replace(response.answer, @"\[H\d{2}\]", "").Trim();
+        body.text = Regex.Replace(response.answer, @"\[[HG]\d{2}\]", "").Trim();
         history.Add(new HistorianChatMessage("assistant", response.answer));
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
         status.text = response.mode == "grounded_model" ? "依据史料回答 · Enter 发送 · Shift + Enter 换行" :
+            response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
+            response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
             "当前为史料摘录，联网后可继续向史官提问";
         RefreshControls();
@@ -350,6 +354,147 @@ public sealed class HistorianChatUI : MonoBehaviour
         string text = Regex.Replace(node.dialogueText ?? string.Empty, "<[^>]*>", "");
         if (text.Length > 1400) text = text.Substring(0, 1400);
         return "当前已显示节点：" + node.nodeId + "\n游戏演绎文本（不能当作史实）：" + text;
+    }
+
+
+    // Export only already-recorded gameplay. Never send player identifiers,
+    // unvisited dialogue nodes, future routes, or advisor participant names.
+    private HistorianRunEvidence CurrentRunEvidence()
+    {
+        RunHistoryTracker tracker = RunHistoryTracker.Instance;
+        if (tracker == null) return null;
+        RunHistoryData recorded = tracker.ExportHistory();
+        string expected = LocalSaveManager.Instance != null
+            ? LocalSaveManager.Instance.CurrentRunId : string.Empty;
+        if (recorded == null || string.IsNullOrWhiteSpace(expected) ||
+            recorded.runId != expected || recorded.events == null || recorded.events.Count == 0)
+            return null;
+
+        HistorianRunEvidence result = new HistorianRunEvidence
+        {
+            completed = recorded.completed,
+            integrityValid = recorded.dataIntegrityValid
+        };
+        if (recorded.resourceTimeline != null && recorded.resourceTimeline.Count > 0)
+        {
+            result.start = RunSnapshot(recorded.resourceTimeline[0]);
+            result.current = RunSnapshot(recorded.resourceTimeline[recorded.resourceTimeline.Count - 1]);
+        }
+        // ResourceManager may be ahead of the last recorded snapshot by one frame.
+        // Only use its live state when the run is still in progress.
+        if (!recorded.completed && ResourceManager.Instance != null)
+        {
+            ResourceManager resources = ResourceManager.Instance;
+            result.current = new HistorianRunSnapshot
+            {
+                troop = resources.GetTroop(), food = resources.GetFood(),
+                strategy = resources.GetStrategy(), risk = resources.GetRisk()
+            };
+        }
+        if (recorded.completed && recorded.ending != null)
+        {
+            result.ending = new HistorianRunEnding
+            {
+                id = recorded.ending.endingId,
+                name = recorded.ending.endingName,
+                reason = recorded.ending.reason,
+                keyDecisions = recorded.ending.keyDecisionSequences != null
+                    ? recorded.ending.keyDecisionSequences.ToArray() : new int[0]
+            };
+        }
+        List<HistorianRunDecision> choices = new List<HistorianRunDecision>();
+        if (recorded.decisions != null)
+        {
+            int first = Mathf.Max(0, recorded.decisions.Count - 40);
+            for (int i = first; i < recorded.decisions.Count; i++)
+            {
+                DecisionRecordData d = recorded.decisions[i];
+                if (d == null) continue;
+                string label = Regex.Replace(d.optionText ?? string.Empty, "<[^>]*>", "");
+                choices.Add(new HistorianRunDecision
+                {
+                    sequence = d.sequence, chapterIndex = d.chapterIndex,
+                    optionText = label.Length > 110 ? label.Substring(0, 110) : label,
+                    troopEffect = d.troopEffect, foodEffect = d.foodEffect,
+                    strategyEffect = d.strategyEffect, riskEffect = d.riskEffect
+                });
+            }
+        }
+        result.decisions = choices.ToArray();
+        List<HistorianRunMiniGame> games = new List<HistorianRunMiniGame>();
+        if (recorded.miniGames != null)
+        {
+            int first = Mathf.Max(0, recorded.miniGames.Count - 12);
+            for (int i = first; i < recorded.miniGames.Count; i++)
+            {
+                MiniGameTraceData item = recorded.miniGames[i];
+                if (item == null) continue;
+                games.Add(new HistorianRunMiniGame
+                {
+                    gameType = item.gameType, success = item.success,
+                    failedAttempts = item.failedAttempts
+                });
+            }
+        }
+        result.miniGames = games.ToArray();
+        return result;
+    }
+
+    private static HistorianRunSnapshot RunSnapshot(ResourceSnapshotData item)
+    {
+        if (item == null) return null;
+        return new HistorianRunSnapshot
+        {
+            troop = item.troop, food = item.food,
+            strategy = item.strategy, risk = item.risk
+        };
+    }
+
+    private static bool IsRunReviewQuestion(string question)
+    {
+        return Regex.IsMatch(question ?? string.Empty,
+            @"本局|这局|这一局|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么|输了|赢了|失败|获胜)|哪一步|复盘|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜)");
+    }
+
+    private static HistorianAskResponse LocalRunReview(HistorianRunEvidence run)
+    {
+        if (run == null || !run.integrityValid)
+            return new HistorianAskResponse
+            {
+                ok = true, mode = "run_unavailable",
+                answer = "我目前没有可靠的本局决策记录，不能凭历史故事判断你为什么输或赢。",
+                citations = new HistorianCitation[0]
+            };
+        StringBuilder text = new StringBuilder();
+        if (run.completed && run.ending != null)
+            text.Append("本局结局：「").Append(run.ending.name).Append("」。游戏评价：")
+                .Append(run.ending.reason).Append("。[G01]\n");
+        else
+            text.Append("本局尚未出现结局，不能判断输赢原因。[G01]\n");
+        if (run.decisions != null && run.decisions.Length > 0)
+        {
+            HistorianRunDecision latest = run.decisions[run.decisions.Length - 1];
+            text.Append("最近的选择：").Append(latest.optionText).Append("。[G01]\n");
+        }
+        if (run.current != null)
+            text.Append("已记录资源：兵力").Append(run.current.troop.ToString("0.#"))
+                .Append("，粮草").Append(run.current.food.ToString("0.#"))
+                .Append("，计策").Append(run.current.strategy.ToString("0.#"))
+                .Append("，风险").Append(run.current.risk.ToString("0.#"))
+                .Append("。[G01]\n");
+        text.Append("这只是游戏内的实际记录，不能作为历史事实或唯一因果的证明。[G01]");
+        return new HistorianAskResponse
+        {
+            ok = true, mode = "run_evidence", answer = text.ToString(),
+            citations = new[]
+            {
+                new HistorianCitation
+                {
+                    id = "G01", title = "本局战况记录",
+                    source = "RunHistoryTracker 游戏事件；非历史史料"
+                }
+            }
+        };
     }
 
     private TMP_Text AddMessage(string speaker, string value, bool fromPlayer)
