@@ -33,4 +33,5 @@
 
 ## 自动检查
 - `node Documentation/QA/AudioHudStaticChecks.js` 校验资源引用、代码路径和常驻层级。
+- `node Documentation/QA/NarrativeAudioAuditChecks.js` 校验所有剧情节点的音效引用与关键场景是否正确绑定。全部补音 / 缺素材待办见 `NarrativeAudioAudit.md`。
 - 该检查**不是** Unity 编译 / Play Mode 或真实声学听感测试。
