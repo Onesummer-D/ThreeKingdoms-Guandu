@@ -36,7 +36,8 @@ function sanitizeRun(value) {
       troopEffect: number(item.troopEffect),
       foodEffect: number(item.foodEffect),
       strategyEffect: number(item.strategyEffect),
-      riskEffect: number(item.riskEffect)
+      riskEffect: number(item.riskEffect),
+      before: snapshot(item.before), after: snapshot(item.after)
     })),
     miniGames: games.filter(item => item && typeof item === 'object').map(item => ({
       gameType: clampText(item.gameType, 35),
@@ -55,9 +56,18 @@ function formatResources(data) {
 function formatEffects(item) {
   const fields = [['兵力', item.troopEffect], ['粮草', item.foodEffect],
     ['计策', item.strategyEffect], ['风险', item.riskEffect]];
-  const changed = fields.filter(pair => pair[1] !== null && pair[1] !== 0)
+  const observed = item.before && item.after;
+  const measured = observed ? [
+    ['兵力', item.after.troop - item.before.troop],
+    ['粮草', item.after.food - item.before.food],
+    ['计策', item.after.strategy - item.before.strategy],
+    ['风险', item.after.risk - item.before.risk]
+  ] : fields;
+  const changed = measured.filter(pair => pair[1] !== null && pair[1] !== 0)
     .map(pair => pair[0] + (pair[1] > 0 ? '+' : '') + format(pair[1]));
-  return changed.length ? '；选项配置变化：' + changed.join('、') : '';
+  return changed.length
+    ? '；' + (observed ? '记录的资源变化：' : '选项配置变化：') + changed.join('、')
+    : '';
 }
 function isRunQuestion(question) {
   return /(本局|这局|这一局|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|哪一步|复盘|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜))/.test(String(question || ''));
@@ -88,8 +98,11 @@ function answerRunQuestion(run, question) {
   if (run.current) parts.push('当前' + (run.completed ? '终局' : '已发生') +
     '资源为' + formatResources(run.current) + '。[G01]');
   if (run.start && run.current) {
-    const changed = Object.keys(run.current).some(k => run.start[k] !== run.current[k]);
-    if (!changed) parts.push('记录中的资源暂未观察到变化。[G01]');
+    const labels = { troop: '兵力', food: '粮草', strategy: '计策', risk: '风险' };
+    const deltas = Object.keys(labels).map(k => [labels[k], run.current[k] - run.start[k]])
+      .filter(pair => pair[1] !== 0).map(pair =>
+        pair[0] + (pair[1] > 0 ? '+' : '') + format(pair[1]));
+    if (deltas.length) parts.push('与出征时比较，资源净变化：' + deltas.join('、') + '。[G01]');
   }
   if (/(小游戏|拼图|地道|滑块)/.test(question) && run.miniGames.length) {
     parts.push('小游戏记录：' + run.miniGames.slice(-3).map(g =>
