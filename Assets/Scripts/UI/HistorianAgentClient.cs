@@ -25,6 +25,7 @@ public sealed class HistorianRunDecision
     public int sequence, chapterIndex;
     public string optionText;
     public float troopEffect, foodEffect, strategyEffect, riskEffect;
+    public HistorianRunSnapshot before, after;
 }
 
 [Serializable]
