@@ -192,14 +192,14 @@ async function handle(req, res) {
     try { body = await readBody(req); } catch (err) { return error(res, 400, '请求体不是有效 JSON', err.message); }
     const question = cleanText(body.question, 800);
     if (!question) return error(res, 400, '问题不能为空', 'question_required');
-    const result = await historian.answerQuestion(question, cleanText(body.context, 2000), body.history);
+    const result = await historian.answerQuestion(question, cleanText(body.context, 2000), body.history, body.run);
     const audit = {
       auditId: token(8),
       createdAt: now(),
       question,
       retrieved: result.retrieved || [],
       mode: result.mode,
-      answerVersion: 'grounding-v2'
+      answerVersion: 'grounding-v3'
     };
     historianAudit.push(audit);
     if (historianAudit.length > 100) historianAudit.shift();
