@@ -133,6 +133,10 @@ public static class HistorianChatSmoke
         Check(chat.IsOpen && Time.timeScale == 0f, "icon opens chat and pauses game");
         Check(FinalUIManager.Instance.dialogueText.GetComponent<CanvasGroup>().alpha == 0f, "paused story text does not overlap composer");
         TMP_InputField input = Field<TMP_InputField>(chat, "input");
+        Check(input.richText && input.textComponent.richText && !input.isRichTextEditingAllowed,
+            "IME composition underline is rendered without enabling user rich-text editing");
+        Check(input.customCaretColor && input.caretColor.a > .9f && input.caretWidth >= 2,
+            "text insertion caret has explicit visible contrast");
         Button send = Field<Button>(chat, "send");
         Check(!send.interactable, "blank input cannot send");
         input.text = "许攸带来了什么信息？";
