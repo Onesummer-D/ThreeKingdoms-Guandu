@@ -252,14 +252,53 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateTendencyCard(float y, DecisionTendencyResult tendency)
     {
-        GameObject card = CreateCard("Tendency", y, 160f);
-        TMP_Text label = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
+        // The report explains two different questions: *how* the army was
+        // deployed and *how* the commander evaluated advice. A rejected
+        // advisor recommendation is not an incorrect choice.
+        GameObject card = CreateCard("Tendency", y, 390f);
+        TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(label.rectTransform, new Vector2(CardTextLeft, .70f), new Vector2(.97f, .94f));
-        TMP_Text body = CreateText(card.transform, tendency.summary, 34f,
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .84f), new Vector2(.97f, .965f));
+
+        TMP_Text counsel = CreateText(card.transform, "谋议方式 · " + tendency.consultationLabel, 33f,
+            TextAlignmentOptions.Center, AccentColor, false);
+        SetAnchored(counsel.rectTransform, new Vector2(CardTextLeft, .72f), new Vector2(.97f, .84f));
+
+        TMP_Text strategy = CreateText(card.transform, tendency.summary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(body.rectTransform, new Vector2(CardTextLeft, .18f), new Vector2(.96f, .68f));
-        return y + 172f;
+        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .57f), new Vector2(.97f, .72f));
+
+        TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 26f,
+            TextAlignmentOptions.Center, TextPrimary, true);
+        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .43f), new Vector2(.97f, .56f));
+
+        // At most two facts, tied to actual (nodeId, optionIndex) decisions
+        // or an actual reviewed guest suggestion. No generic "data can be
+        // traced" line: the resource chart below already exposes every step.
+        List<string> visibleFacts = new List<string>();
+        if (tendency.evidence != null && tendency.evidence.Count > 0)
+        {
+            visibleFacts.Add(tendency.evidence[0]);
+            if (tendency.evidence.Count > 1)
+                visibleFacts.Add(tendency.evidence[tendency.evidence.Count - 1]);
+        }
+        TMP_Text facts = CreateText(card.transform,
+            visibleFacts.Count == 0 ? "暂无足够的已记录行为依据" :
+            "行为依据 · " + string.Join("\n", visibleFacts.ToArray()),
+            26f, TextAlignmentOptions.Center, TextPrimary, true);
+        facts.enableAutoSizing = true;
+        facts.fontSizeMin = 21f;
+        facts.fontSizeMax = 26f;
+        SetAnchored(facts.rectTransform, new Vector2(CardTextLeft, .15f), new Vector2(.97f, .43f));
+
+        if (tendency.outcomeEvidence != null && tendency.outcomeEvidence.Count > 0)
+        {
+            TMP_Text outcome = CreateText(card.transform,
+                "战局记录 · " + string.Join("　", tendency.outcomeEvidence.ToArray()),
+                23f, TextAlignmentOptions.Center, TextPrimary, true);
+            SetAnchored(outcome.rectTransform, new Vector2(CardTextLeft, .06f), new Vector2(.97f, .16f));
+        }
+        return y + 402f;
     }
 
     private float CreateTrendCard(float y, RunHistoryData history)

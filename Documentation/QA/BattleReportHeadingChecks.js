@@ -16,8 +16,11 @@ function method(start,end){
 const tendency=method('private float CreateTendencyCard(', 'private float CreateTrendCard(');
 check(/"本局决策倾向 · " \+ tendency\.label,\s*40f,\s*TextAlignmentOptions\.Center/.test(tendency),
   'Decision tendency heading horizontally centered');
-check(/CreateText\(card\.transform, tendency\.summary,\s*34f,\s*TextAlignmentOptions\.Center/.test(tendency),
-  'Decision tendency description unchanged and centered');
+check(/CreateText\(card\.transform, tendency\.summary,\s*29f,\s*TextAlignmentOptions\.Center/.test(tendency),
+  'War style description centered in expanded report card');
+check(tendency.includes('"谋议方式 · " + tendency.consultationLabel') &&
+      tendency.includes('tendency.evidence'),
+  'Second dimension and actual decision evidence retained');
 const trend=method('private float CreateTrendCard(', 'private void CreateTrendDetailOverlay(');
 check(/CreateText\(card\.transform, "四项资源趋势", 40f,\s*TextAlignmentOptions\.Center/.test(trend),
   'Resource heading uses short copy and centered alignment');
@@ -43,15 +46,15 @@ check(advisor.includes('history.advisorEchoes')&&advisor.includes('主将未采�
 const exportMethod=method('private Texture2D RenderCompleteReport(', 'private static string GetPosterDirectory(');
 check(exportMethod.includes('Instantiate(content, canvasRect, false)'),
   'Export uses exactly the same report content and inherits new titles');
-const labels=['稳慎','奇谋','果决','纳谏'];
-check(labels.every(label=>analyzer.includes('"'+label+'"')),
-  'Existing four classifier categories retained');
-check(analyzer.includes('TendencyOrder = { "稳慎", "奇谋", "果决", "纳谏" }'),
-  'Tie breaking order unchanged');
-check(analyzer.includes('label = "尚待观察"'),
-  'No-data fallback remains intact');
-check(labels.every(label=>doc.includes('| '+label+' |'))&&doc.includes('| 尚待观察 |'),
-  'All five display states added to copywriter handoff');
+check(['稳慎','奇谋','果决','兼采并用'].every(label=>analyzer.includes('"'+label+'"')),
+  'Strategy labels retained with independent counsel dimension');
+check(analyzer.includes('DecisionBehaviorCatalog.TryFind') &&
+      !analyzer.includes('TendencyOrder ='),
+  'Analyzer uses stable semantic choice IDs, not old keyword classifier');
+check(analyzer.includes('label = "尚待观察"'), 'Unclassified save fallback retained');
+check(doc.includes('| 纳谏践行 |') && doc.includes('| 审议自决 |') &&
+      doc.includes('| 兼采并用 |'),
+  'Copywriter document describes the actual dual-dimensional classifier');
 check(doc.includes('- 四项资源趋势')&&doc.includes('- 资源趋势详情')&&
   !doc.includes('四项资源趋势 · 真实节点记录')&&
   !doc.includes('资源趋势详情 · 决策前后节点'),

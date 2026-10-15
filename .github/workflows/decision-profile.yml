@@ -1,0 +1,36 @@
+name: Evidence-based Decision Profile
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/BattleReportAnalyzer.cs'
+      - 'Assets/Scripts/UI/DecisionBehaviorCatalog.cs'
+      - 'Assets/Scripts/UI/BattleReportUI.cs'
+      - 'Assets/Resources/BattleReport/**'
+      - 'tests/DecisionProfileHarness/**'
+      - 'Documentation/QA/DecisionProfileIntegrity.js'
+      - '.github/workflows/decision-profile.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/BattleReportAnalyzer.cs'
+      - 'Assets/Scripts/UI/DecisionBehaviorCatalog.cs'
+      - 'Assets/Resources/BattleReport/**'
+      - 'tests/DecisionProfileHarness/**'
+
+jobs:
+  profile-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate every real option and all report bindings
+        run: node Documentation/QA/DecisionProfileIntegrity.js
+      - name: Execute actual C# analyzer with win/loss and counsel fixtures
+        run: dotnet run --configuration Release --project tests/DecisionProfileHarness/DecisionProfileHarness.csproj
