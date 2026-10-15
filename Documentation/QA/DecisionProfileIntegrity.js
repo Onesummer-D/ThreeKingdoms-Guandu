@@ -11,14 +11,14 @@ const history=read('Assets/Scripts/Managers/RunHistoryData.cs');
 const tracker=read('Assets/Scripts/Managers/RunHistoryTracker.cs');
 let passed=0;
 function check(truth,msg){assert.ok(truth,msg);passed++;console.log('PASS '+msg);}
-check(catalog.version===1&&catalog.entries.length===13,'Stable version and 13 real selected choices');
+check(catalog.version===1&&catalog.entries.length===19,'Stable version and 19 classified/political choice records');
 const nodeRegex=/^  - nodeId: (\d+)\n([\s\S]*?)(?=^  - nodeId: |(?![\\s\\S]))/gm;
 const realChoices=new Map();
 for(const block of asset.matchAll(nodeRegex)){
   const count=(block[2].match(/^    - optionText:/gm)||[]).length;
   if(count)realChoices.set(+block[1],count);
 }
-check(realChoices.size===5,'Script has exactly five strategic option sets');
+check(realChoices.size===9,'Script has nine option nodes including the confirm-only utility node');
 let validKeys=new Set();
 for(const row of catalog.entries){
   const key=row.nodeId+':'+row.optionIndex;
@@ -31,8 +31,9 @@ for(const row of catalog.entries){
     'Mapped choice still leads to the verified real route: '+key);
   validKeys.add(key);
 }
-check([...realChoices].every(([id,count])=>Array.from({length:count},(_,i)=>id+':'+i).every(key=>validKeys.has(key))),
-  'Every key decision choice has a semantic record: no silent holes');
+check([...realChoices].every(([id,count])=>Array.from({length:count},(_,i)=>id+':'+i).every(key=>key==='1004:0'||validKeys.has(key))),
+  'Every meaningful option is mapped while confirmation-only actions are excluded');
+check(!validKeys.has('1004:0'),'Pure mini-game confirmation is not scored as a strategic choice');
 check(catalog.entries.every(row=>['稳慎','奇谋','果决',''].includes(row.strategy)&&
     ['none','adopt','review'].includes(row.counsel)&&row.action.length>5),
   'All action semantics explicit and text-independent');
