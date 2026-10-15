@@ -229,7 +229,7 @@ public sealed class SaveArchiveUI : MonoBehaviour
         image.type = buttonSprite != null ? Image.Type.Simple : Image.Type.Sliced;
         image.color = background;
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
+        GameButtonSkin.Apply(button, image, label, buttonSprite);
         TMP_Text text = CreateText(buttonObject.transform, label, fontSize, TextAlignmentOptions.Center, foreground);
         Stretch(text.rectTransform);
         return button;
