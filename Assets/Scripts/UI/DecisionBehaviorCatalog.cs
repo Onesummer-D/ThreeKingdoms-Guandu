@@ -55,7 +55,7 @@ public static class DecisionBehaviorCatalog
                 throw new Exception("Unsupported catalog version");
             foreach (Entry e in library.entries)
             {
-                if (e == null || e.nodeId <= 0 || e.optionIndex < 0 || e.nextNodeId <= 0 ||
+                if (e == null || e.nodeId <= 0 || e.optionIndex < 0 || e.nextNodeId < 0 ||
                     string.IsNullOrWhiteSpace(e.action) ||
                     (e.strategy != "" && e.strategy != "稳慎" &&
                      e.strategy != "奇谋" && e.strategy != "果决"))
