@@ -1,0 +1,28 @@
+name: Neutral story choice audio
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/Managers/DialogueSystem.cs'
+      - 'Assets/Scripts/Managers/VisualDirector.cs'
+      - 'Documentation/QA/NeutralChoiceAudioChecks.js'
+      - '.github/workflows/neutral-choice-audio.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/Managers/DialogueSystem.cs'
+      - 'Assets/Scripts/Managers/VisualDirector.cs'
+      - 'Documentation/QA/NeutralChoiceAudioChecks.js'
+      - '.github/workflows/neutral-choice-audio.yml'
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert no loss/failure audio on a valid story choice
+        run: node Documentation/QA/NeutralChoiceAudioChecks.js
