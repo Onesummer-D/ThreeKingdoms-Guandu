@@ -178,7 +178,10 @@ public class DialogueSystem : MonoBehaviour
         visitedNodeIds.Add(nodeId);
         visitedNodeOrder.Add(nodeId);
         if (previousNodeId > 0 && previousNodeId != nodeId)
+        {
+            AudioManager.Instance?.StopArrowRain();
             OnNodeTransition?.Invoke(previousNodeId, nodeId);
+        }
 
         IsShowing = true;
 
@@ -209,10 +212,14 @@ public class DialogueSystem : MonoBehaviour
             Debug.Log($"<color=magenta>播放BGM: {targetBGM.name}</color>");
         }
 
-        // 播放进入音效（500201火烧、500215称号等）
+        // The early high-ladder volley and the IF6 "万箭齐发" use a
+        // cinematic staggered barrage. Other nodes retain single SFX cues.
         if (currentNode.sfxOnEnter != null && AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlaySFX(currentNode.sfxOnEnter);
+            if (nodeId == 100104 || nodeId == 500416)
+                AudioManager.Instance.PlayArrowRain(currentNode.sfxOnEnter);
+            else
+                AudioManager.Instance.PlaySFX(currentNode.sfxOnEnter);
             Debug.Log($"<color=magenta>播放音效: {currentNode.sfxOnEnter.name}</color>");
         }
 
