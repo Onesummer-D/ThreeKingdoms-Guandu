@@ -1,0 +1,30 @@
+name: No-spoiler invitation recap
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/InviteStoryRecapBuilder.cs'
+      - 'Assets/Scripts/UI/CampaignMapUI.cs'
+      - 'Assets/Resources/StoryRecap/**'
+      - 'tests/InviteStoryRecapHarness/**'
+      - '.github/workflows/invite-recap-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/InviteStoryRecapBuilder.cs'
+      - 'Assets/Scripts/UI/CampaignMapUI.cs'
+      - 'Assets/Resources/StoryRecap/**'
+      - 'tests/InviteStoryRecapHarness/**'
+      - '.github/workflows/invite-recap-regression.yml'
+
+jobs:
+  compile-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile real C# builder and test branch scenarios
+        run: dotnet run --configuration Release --project tests/InviteStoryRecapHarness/InviteStoryRecapHarness.csproj
