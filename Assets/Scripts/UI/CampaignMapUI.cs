@@ -1717,8 +1717,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image image = buttonObject.AddComponent<Image>();
         image.color = color;
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        TMP_Text text = CreateText(buttonObject.transform, label, 40f, TextAlignmentOptions.Center, Color.white);
+        GameButtonSkin.Apply(button, image, label);
+        TMP_Text text = CreateText(buttonObject.transform, label, 40f, TextAlignmentOptions.Center, GameButtonSkin.LabelColor);
         Stretch(text.rectTransform);
         return button;
     }
