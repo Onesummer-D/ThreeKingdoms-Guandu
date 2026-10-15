@@ -56,6 +56,7 @@ public class AudioManager : MonoBehaviour
     private float duckUntil;
     private Coroutine currentBGMCoroutine;
     private Coroutine volumeCoroutine;
+    private Coroutine arrowRainCoroutine;
     private readonly Dictionary<AudioClip, float> nextAllowedPlay = new Dictionary<AudioClip, float>();
     private readonly List<float> activeEffectEnds = new List<float>();
 
@@ -238,6 +239,62 @@ public class AudioManager : MonoBehaviour
     public void PlaySFX(AudioClip clip, float volume = 1f)
     {
         PlayControlled(sfxSource, clip, volume, true);
+    }
+
+    // The intro/IF arrow rain is a short multi-shot sequence, not the same
+    // one-shot used for isolated arrows. The individual clip is ~0.4 s; the
+    // staggered volleys give the player time to recognize an incoming barrage.
+    public void PlayArrowRain(AudioClip clip)
+    {
+        StopArrowRain();
+        if (clip == null || sfxSource == null || currentEffectsVolume <= 0f ||
+            AudioListener.volume <= 0.001f) return;
+
+        // Keep the music below the entire volley, not only the first arrow.
+        const float volleyDuration = 2.0f;
+        duckUntil = Mathf.Max(duckUntil, Time.unscaledTime + volleyDuration);
+        effectDuck = Mathf.Min(effectDuck, 0.20f);
+        UpdateMusicMix();
+        arrowRainCoroutine = StartCoroutine(ArrowRainRoutine(clip));
+    }
+
+    private IEnumerator ArrowRainRoutine(AudioClip clip)
+    {
+        // Slightly irregular attacks sound less like a button being pressed
+        // repeatedly. Short overlaps evoke several archers firing at once.
+        float[] intervals = { 0.18f, 0.29f, 0.16f, 0.35f, 0.20f, 0.15f, 0.25f };
+        for (int i = 0; i <= intervals.Length; i++)
+        {
+            if (sfxSource != null && currentEffectsVolume > 0f &&
+                AudioListener.volume > 0.001f)
+                sfxSource.PlayOneShot(clip, i % 3 == 1 ? 0.88f : 1f);
+
+            if (i < intervals.Length)
+                yield return new WaitForSecondsRealtime(intervals[i]);
+        }
+        arrowRainCoroutine = null;
+    }
+
+    public void StopArrowRain()
+    {
+        if (arrowRainCoroutine == null) return;
+        StopCoroutine(arrowRainCoroutine);
+        arrowRainCoroutine = null;
+        // Do not stop the shared SFX source; the last whoosh can decay.
+        // Music returns through its existing smoothing in Update().
+        duckUntil = Mathf.Min(duckUntil, Time.unscaledTime + 0.45f);
+    }
+
+    // Play the result while the grid scene is still visible. Return a
+    // duration computed from the real clip length, never a hard-coded
+    // two-second jump that cuts off a longer success sting.
+    public float PlayGridResultSFX(bool success)
+    {
+        AudioClip result = success ? achievementSFX : alertSFX;
+        if (result == null || sfxSource == null || currentEffectsVolume <= 0f ||
+            AudioListener.volume <= 0.001f) return 0.9f;
+        PlaySFX(result, 1f);
+        return Mathf.Max(0.9f, result.length + 0.3f);
     }
 
     public void PlayUI(AudioClip clip, float volume = 0.9f)
