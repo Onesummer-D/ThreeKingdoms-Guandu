@@ -25,6 +25,7 @@ public class GridGameManager : MonoBehaviour
     private GridTile selectedTile;
     private bool isGameActive = false;
     private bool isStartPositionSelected = false;
+    private Coroutine resultTransition;
 
     // 地图尺寸
     private const int COLUMNS = 5; 
@@ -90,6 +91,12 @@ public class GridGameManager : MonoBehaviour
     // ✅ 修改方法签名，接受回调参数（默认null兼容旧代码）
     public void StartGridGame(System.Action<bool> callback = null)
     {
+        // Avoid an old result timer transitioning a restarted run.
+        if (resultTransition != null)
+        {
+            StopCoroutine(resultTransition);
+            resultTransition = null;
+        }
         onGameFinished = callback; // 保存回调
         Debug.Log("[GridGameManager] 开始走格子游戏！");
 
@@ -227,15 +234,10 @@ public class GridGameManager : MonoBehaviour
         GridTile tile = GetTileAt(row, col);
         if (tile == null) return;
 
-        // 检查是否是敌人
+        // The result cue is now played once in GameOver, while this
+        // grid panel remains visible for the full cue duration.
         if (tile.IsEnemy)
         {
-
-            // ========== 新增：播放警报音 ==========
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayAlert();
-            // ====================================
-
             GameOver(false);
             return;
         }
@@ -266,26 +268,30 @@ public class GridGameManager : MonoBehaviour
 
     void GameOver(bool isWin)
     {
-        if (!isGameActive) return;
+        if (!isGameActive) return; // only one result, sound and callback
         isGameActive = false;
 
-        if (isWin)
-        {
-            if (statusText != null)
-                statusText.text = "🎉 胜利！成功奇袭乌巢！";
-        }
-        else
-        {
-            if (statusText != null)
-                statusText.text = "💀 失败！被敌军发现！";
-        }
+        if (statusText != null)
+            statusText.text = isWin ? "🎉 胜利！成功奇袭乌巢！" : "💀 失败！被敌军发现！";
 
-        StartCoroutine(ReturnToPlot(isWin));
+        // Keep the final square and result visible, but disallow any
+        // further WASD, tile or confirm input until the cue ends.
+        if (player != null) player.FreezeAtResult();
+        if (confirmButton != null) confirmButton.gameObject.SetActive(false);
+        foreach (var tile in manualTiles)
+            if (tile != null) tile.EnableClick(false);
+
+        float holdSeconds = AudioManager.Instance != null
+            ? AudioManager.Instance.PlayGridResultSFX(isWin)
+            : 1.2f;
+        resultTransition = StartCoroutine(ReturnToPlot(isWin, holdSeconds));
     }
 
-    IEnumerator ReturnToPlot(bool isWin)
+    IEnumerator ReturnToPlot(bool isWin, float holdSeconds)
     {
-        yield return new WaitForSeconds(2f);
+        // This is scaled time on purpose: asking the historian pauses the
+        // game and must not switch the story behind the chat window.
+        yield return new WaitForSeconds(Mathf.Max(0.9f, holdSeconds));
 
         Debug.Log("[GridGameManager] 返回剧情界面");
 
@@ -301,7 +307,8 @@ public class GridGameManager : MonoBehaviour
             player.transform.position = new Vector3(-1000, -1000, 0);
         }
 
-        // 3. 只通过启动小游戏时传入的回调返回剧情，避免重复结算。
+        // 3. Only now, after the full cue, return to the story once.
+        resultTransition = null;
         var callback = onGameFinished;
         onGameFinished = null;
         callback?.Invoke(isWin);
