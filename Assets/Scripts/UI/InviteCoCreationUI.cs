@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -27,6 +28,10 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private TMP_Text titleText;
     private TMP_Text statusText;
     private TMP_Text snapshotText;
+    private TMP_Text advisorHistoryHeading;
+    private TMP_Text advisorHistoryText;
+    private Button copyInvitationButton;
+    private Button inviteAgainButton;
     private InviteSnapshotData snapshot;
     private ScrollRect inviteScroll;
     private ScrollRect briefScroll;
@@ -99,28 +104,30 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (!initialized || campaignMapUI == null || inviteOverlay == null) return;
 
         if (!campaignMapUI.TryBuildInviteSnapshot(out snapshot)) return;
-        // Accepted and declined sessions are completed attempts. A new click
-        // on the decision-node invite button must start a clean handoff so a
-        // second advisor never inherits the previous advisor's input/status.
-        if (!inviteSession.Matches(snapshot) ||
-            inviteSession.Status == InviteSessionStatus.Accepted ||
-            inviteSession.Status == InviteSessionStatus.Declined)
+        // Reopening an accepted/declined invitation is a read-only revisit:
+        // do not silently start another cloud session just to view old advice.
+        bool startSession = false;
+        if (!inviteSession.Matches(snapshot))
         {
             inviteSession.Begin(snapshot, GetCurrentOptionTexts());
-            StartPublicAdvisorSession();
+            startSession = true;
         }
         else if (inviteSession.Status == InviteSessionStatus.AwaitingGuest &&
             publicAdvisorClient != null && !publicAdvisorClient.HasSession)
-            StartPublicAdvisorSession();
+        {
+            startSession = true;
+        }
+        if (startSession) ClearAdvisorQr();
         RenderInviteCard();
+        if (startSession) StartPublicAdvisorSession();
         inviteOverlay.SetActive(true);
         inviteOverlay.transform.SetAsLastSibling();
         SetDecisionInviteVisible(false);
         Canvas.ForceUpdateCanvases();
         inviteScroll.verticalNormalizedPosition = 1f;
-        if (inviteSession.Status == InviteSessionStatus.GuestSubmitted ||
-            inviteSession.Status == InviteSessionStatus.Accepted ||
-            inviteSession.Status == InviteSessionStatus.Declined)
+        // Only an unreviewed submission needs the modal decision controls.
+        // Reviewed suggestions remain visible in the history at the bottom.
+        if (inviteSession.Status == InviteSessionStatus.GuestSubmitted)
             ShowAdvisorReviewPanel();
         else
             SetAdvisorReviewVisible(false);
@@ -199,10 +206,67 @@ public sealed class InviteCoCreationUI : MonoBehaviour
                 "　风险 " + snapshot.Risk + "/" + ResourceManager.MAX_RISK.ToString("F0") + "\n\n" +
                 snapshot.DecisionContext;
         }
-        if (statusText != null)
+        if (statusText != null) statusText.text = "";
+        bool completed = inviteSession != null && inviteSession.Matches(snapshot) &&
+            (inviteSession.Status == InviteSessionStatus.Accepted ||
+             inviteSession.Status == InviteSessionStatus.Declined);
+        if (copyInvitationButton != null) copyInvitationButton.gameObject.SetActive(!completed);
+        if (inviteAgainButton != null) inviteAgainButton.gameObject.SetActive(completed);
+        if (completed && advisorQrObject != null) advisorQrObject.SetActive(false);
+        RenderAdvisorHistory();
+    }
+
+    // Uses the run's persisted review decisions, not the ephemeral invite
+    // session or an API call. Earlier advisors are still shown on later nodes
+    // and after loading the same saved run, but never carried to a new run.
+    private void RenderAdvisorHistory()
+    {
+        if (advisorHistoryHeading == null || advisorHistoryText == null) return;
+        RunHistoryTracker tracker = RunHistoryTracker.Instance;
+        RunHistoryData history = tracker != null ? tracker.ExportHistory() : null;
+        List<AdvisorEchoData> echoes = history != null ? history.advisorEchoes : null;
+        bool hasRecords = history != null && !string.IsNullOrWhiteSpace(history.runId) &&
+            echoes != null && echoes.Count > 0;
+        advisorHistoryHeading.gameObject.SetActive(hasRecords);
+        advisorHistoryText.gameObject.SetActive(hasRecords);
+        if (!hasRecords) return;
+
+        advisorHistoryHeading.text = "本局参谋意见（" + echoes.Count + "条）";
+        StringBuilder entries = new StringBuilder();
+        // Recent advice first, since a player nearing the last choice should
+        // find the latest strategic suggestion without scanning older ones.
+        for (int i = echoes.Count - 1; i >= 0; i--)
         {
-            statusText.text = "";
+            AdvisorEchoData echo = echoes[i];
+            if (echo == null) continue;
+            if (entries.Length > 0) entries.Append("\n\n");
+            int chapter = Mathf.Max(0, echo.chapterIndex) + 1;
+            entries.Append("第").Append(echo.sequence > 0 ? echo.sequence : i + 1)
+                .Append("条 · 第").Append(chapter).Append("幕 / 节点 ")
+                .Append(echo.nodeId).Append(" · ")
+                .Append(echo.accepted ? "已采纳" : "未采纳")
+                .Append("\n参谋：").Append(CompactAdvisorText(echo.guestLabel, 40, "未署名"))
+                .Append("\n建议：").Append(CompactAdvisorText(echo.optionText, 180, "未记录"))
+                .Append("\n理由：").Append(CompactAdvisorText(echo.reason, 500, "未填写"));
         }
+        advisorHistoryText.text = entries.ToString();
+    }
+
+    private static string CompactAdvisorText(string value, int limit, string fallback)
+    {
+        string normalized = Regex.Replace(value ?? string.Empty, @"\s+", " ").Trim();
+        if (normalized.Length == 0) return fallback;
+        return normalized.Length <= limit ? normalized : normalized.Substring(0, limit) + "…";
+    }
+
+    private void RestartInvitation()
+    {
+        if (snapshot == null || inviteSession == null) return;
+        inviteSession.Begin(snapshot, GetCurrentOptionTexts());
+        ClearAdvisorQr();
+        RenderInviteCard();
+        StartPublicAdvisorSession();
+        if (inviteScroll != null) inviteScroll.verticalNormalizedPosition = 1f;
     }
 
     private void CopyBattleInvitation()
@@ -270,6 +334,21 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         SetBottomRight(copyButton.GetComponent<RectTransform>(), new Vector2(-18f, 12f),
             new Vector2(290f, 72f));
         copyButton.onClick.AddListener(CopyBattleInvitation);
+        copyInvitationButton = copyButton;
+        inviteAgainButton = CreateButton(invitationActions.transform, "再邀一位参谋",
+            new Vector2(290f, 72f), new Vector2(-18f, 12f),
+            new Color(.44f, .32f, .22f, 1f));
+        SetBottomRight(inviteAgainButton.GetComponent<RectTransform>(), new Vector2(-18f, 12f),
+            new Vector2(290f, 72f));
+        inviteAgainButton.onClick.AddListener(RestartInvitation);
+        inviteAgainButton.gameObject.SetActive(false);
+
+        // History is below the invitation controls, inside the existing scroll.
+        // Keep long responses scrollable instead of covering the current brief.
+        advisorHistoryHeading = CreateWrappedText(content, "本局参谋意见", 44f, accentColor);
+        advisorHistoryText = CreateWrappedText(content, "", 34f, textPrimary);
+        advisorHistoryHeading.gameObject.SetActive(false);
+        advisorHistoryText.gameObject.SetActive(false);
 
         CreateAdvisorPanels();
 
@@ -299,6 +378,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         inviteSession.Reset();
         snapshot = null;
         if (inviteOverlay != null) inviteOverlay.SetActive(false);
+        if (advisorHistoryHeading != null) advisorHistoryHeading.gameObject.SetActive(false);
+        if (advisorHistoryText != null) advisorHistoryText.gameObject.SetActive(false);
         SetAdvisorReviewVisible(false);
         RefreshDecisionInviteButton();
     }
@@ -449,6 +530,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         RunHistoryTracker.Instance.RecordAdvisorEcho(inviteSession.NodeId,
             inviteSession.ChapterIndex, suggestion.optionIndex, suggestion.guestLabel,
             suggestion.optionText, suggestion.reason, accepted, inviteSession.EchoSummary);
+        RenderAdvisorHistory();
     }
 
     private void WithdrawAdvisorInvitation()
