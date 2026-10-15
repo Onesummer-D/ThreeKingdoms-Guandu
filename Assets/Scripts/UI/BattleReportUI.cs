@@ -256,7 +256,7 @@ public sealed class BattleReportUI : MonoBehaviour
         // deployed and *how* the commander evaluated advice. A rejected
         // advisor recommendation is not an incorrect choice.
         GameObject card = CreateCard("Tendency", y, 390f);
-        TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 39f,
+        TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .84f), new Vector2(.97f, .965f));
 
@@ -304,8 +304,8 @@ public sealed class BattleReportUI : MonoBehaviour
     private float CreateTrendCard(float y, RunHistoryData history)
     {
         GameObject card = CreateCard("ResourceTrend", y, 560f);
-        TMP_Text title = CreateText(card.transform, "四项资源趋势 · 真实节点记录", 40f,
-            TextAlignmentOptions.TopLeft, AccentColor, false);
+        TMP_Text title = CreateText(card.transform, "四项资源趋势", 40f,
+            TextAlignmentOptions.Center, AccentColor, false);
         title.enableAutoSizing = true;
         title.fontSizeMin = 32f;
         title.fontSizeMax = 40f;
@@ -340,7 +340,7 @@ public sealed class BattleReportUI : MonoBehaviour
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(2f, -2f);
 
-        TMP_Text title = CreateText(panel.transform, "资源趋势详情 · 决策前后节点", 46f,
+        TMP_Text title = CreateText(panel.transform, "资源趋势详情", 46f,
             TextAlignmentOptions.Left, TextPrimary, false);
         title.enableAutoSizing = true;
         title.fontSizeMin = 36f;
@@ -491,7 +491,7 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         GameObject card = CreateCard("Culture", y, 250f);
         TMP_Text title = CreateText(card.transform, "史官简注", 38f,
-            TextAlignmentOptions.TopLeft, AccentColor, false);
+            TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .76f), new Vector2(.97f, .94f));
         TMP_Text body = CreateText(card.transform, GetCultureNote(campaignMap.GetReachedEndingNodeId()), 34f,
             TextAlignmentOptions.Center, TextPrimary, true);
@@ -512,7 +512,7 @@ public sealed class BattleReportUI : MonoBehaviour
         float height = 190f + Mathf.Min(history.advisorEchoes.Count, 3) * 105f;
         GameObject card = CreateCard("AdvisorEcho", y, height);
         TMP_Text title = CreateText(card.transform, "共谋回声", 38f,
-            TextAlignmentOptions.TopLeft, AccentColor, false);
+            TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .82f), new Vector2(.97f, .95f));
 
         List<string> lines = new List<string>();

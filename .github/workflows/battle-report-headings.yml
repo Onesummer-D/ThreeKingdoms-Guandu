@@ -1,0 +1,28 @@
+name: Battle report headline contract
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/BattleReportUI.cs'
+      - 'Assets/Scripts/UI/BattleReportAnalyzer.cs'
+      - 'Documentation/文案组待改稿汇总.md'
+      - 'Documentation/QA/BattleReportHeadingChecks.js'
+      - '.github/workflows/battle-report-headings.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/BattleReportUI.cs'
+      - 'Assets/Scripts/UI/BattleReportAnalyzer.cs'
+      - 'Documentation/QA/BattleReportHeadingChecks.js'
+
+jobs:
+  check-copy-and-layout-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify report title text and alignment contracts
+        run: node Documentation/QA/BattleReportHeadingChecks.js
