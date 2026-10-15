@@ -6,91 +6,104 @@
       "optionIndex": 0,
       "strategy": "奇谋",
       "action": "以发石车破解高橹压制",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 100201
     },
     {
       "nodeId": 1001,
       "optionIndex": 1,
       "strategy": "奇谋",
       "action": "借地道避开正面交锋",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 100301
     },
     {
       "nodeId": 1001,
       "optionIndex": 2,
       "strategy": "奇谋",
       "action": "以佯退诱敌进入伏击",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 1004
     },
     {
       "nodeId": 2001,
       "optionIndex": 0,
       "strategy": "稳慎",
       "action": "采纳守官渡之议，以固守等待战机",
-      "counsel": "adopt"
+      "counsel": "adopt",
+      "nextNodeId": 200201
     },
     {
       "nodeId": 2001,
       "optionIndex": 1,
       "strategy": "稳慎",
       "action": "考虑粮草压力，决定暂回许都",
-      "counsel": "review"
+      "counsel": "review",
+      "nextNodeId": 200301
     },
     {
       "nodeId": 3001,
       "optionIndex": 0,
       "strategy": "",
       "action": "向许攸坦诚粮情，仍需后续部署才能判断用兵方式",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 300201
     },
     {
       "nodeId": 3001,
       "optionIndex": 1,
       "strategy": "",
       "action": "试探许攸虚实，不据此直接评定用兵方式",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 300301
     },
     {
       "nodeId": 3001,
       "optionIndex": 2,
       "strategy": "果决",
       "action": "当场处置来访谋士，采取迅速而强硬的决定",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 300401
     },
     {
       "nodeId": 4001,
       "optionIndex": 0,
       "strategy": "果决",
       "action": "亲自率军前往乌巢",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 400201
     },
     {
       "nodeId": 4001,
       "optionIndex": 1,
       "strategy": "稳慎",
       "action": "遣部将率精兵行动，主将留守后方",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 400301
     },
     {
       "nodeId": 5001,
       "optionIndex": 0,
       "strategy": "果决",
       "action": "集中主力继续攻占乌巢",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 500201
     },
     {
       "nodeId": 5001,
       "optionIndex": 1,
       "strategy": "稳慎",
       "action": "分兵回援官渡以守住大营",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 500301
     },
     {
       "nodeId": 5001,
       "optionIndex": 2,
       "strategy": "奇谋",
       "action": "舍乌巢转攻袁军本阵，改变进攻目标",
-      "counsel": "none"
+      "counsel": "none",
+      "nextNodeId": 500401
     }
   ]
 }
