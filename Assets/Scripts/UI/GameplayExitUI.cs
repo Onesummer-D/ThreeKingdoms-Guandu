@@ -178,8 +178,8 @@ public sealed class GameplayExitUI : MonoBehaviour
         image.type = buttonSprite != null ? Image.Type.Simple : Image.Type.Sliced;
         image.color = new Color(.44f, .32f, .22f, 1f);
         Button button = obj.AddComponent<Button>();
-        button.targetGraphic = image;
-        TMP_Text text = CreateText(obj.transform, label, 36f, TextAlignmentOptions.Center, TextColor);
+        GameButtonSkin.Apply(button, image, label, buttonSprite);
+        TMP_Text text = CreateText(obj.transform, label, 36f, TextAlignmentOptions.Center, GameButtonSkin.LabelColor);
         Stretch(text.rectTransform);
         return button;
     }

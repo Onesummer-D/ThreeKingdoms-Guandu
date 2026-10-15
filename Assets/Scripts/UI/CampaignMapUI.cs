@@ -673,7 +673,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image background = mapButtonObject.AddComponent<Image>();
         background.color = new Color32(112, 82, 55, 245);
         Button button = mapButtonObject.AddComponent<Button>();
-        button.targetGraphic = background;
+        GameButtonSkin.Apply(button, background, GameButtonSkin.Tone.Secondary);
         button.onClick.AddListener(ToggleMap);
         TMP_Text label = CreateText(mapButtonObject.transform, "剧情回顾", 40f, TextAlignmentOptions.Center, new Color(0.95f, 0.90f, 0.78f, 1f));
         Stretch(label.rectTransform);
@@ -1080,7 +1080,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image image = buttonObject.AddComponent<Image>();
         image.color = new Color(0.30f, 0.24f, 0.15f, 0.96f);
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
+        GameButtonSkin.Apply(button, image, GameButtonSkin.Tone.Secondary);
         int capturedAnchorId = anchorNodeId;
         button.onClick.AddListener(() => OpenHistorianNote(capturedAnchorId));
 
@@ -1717,8 +1717,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image image = buttonObject.AddComponent<Image>();
         image.color = color;
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        TMP_Text text = CreateText(buttonObject.transform, label, 40f, TextAlignmentOptions.Center, Color.white);
+        GameButtonSkin.Apply(button, image, label);
+        TMP_Text text = CreateText(buttonObject.transform, label, 40f, TextAlignmentOptions.Center, GameButtonSkin.LabelColor);
         Stretch(text.rectTransform);
         return button;
     }
