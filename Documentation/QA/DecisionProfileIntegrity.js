@@ -12,7 +12,7 @@ const tracker=read('Assets/Scripts/Managers/RunHistoryTracker.cs');
 let passed=0;
 function check(truth,msg){assert.ok(truth,msg);passed++;console.log('PASS '+msg);}
 check(catalog.version===1&&catalog.entries.length===13,'Stable version and 13 real selected choices');
-const nodeRegex=/^  - nodeId: (\d+)\n([\s\S]*?)(?=^  - nodeId: |$)/gm;
+const nodeRegex=/^  - nodeId: (\d+)\n([\s\S]*?)(?=^  - nodeId: |(?![\\s\\S]))/gm;
 const realChoices=new Map();
 for(const block of asset.matchAll(nodeRegex)){
   const count=(block[2].match(/^    - optionText:/gm)||[]).length;
@@ -25,7 +25,7 @@ for(const row of catalog.entries){
   check(realChoices.has(row.nodeId)&&row.optionIndex>=0&&row.optionIndex<realChoices.get(row.nodeId),
     'Mapped option actually exists: '+key);
   check(!validKeys.has(key),'Unique behavior mapping: '+key);
-  const block=asset.match(new RegExp('^  - nodeId: '+row.nodeId+'\\n([\\s\\S]*?)(?=^  - nodeId: |$)','m'));
+  const block=asset.match(new RegExp('^  - nodeId: '+row.nodeId+'\\n([\\s\\S]*?)(?=^  - nodeId: |(?![\\s\\S]))','m'));
   const destinations=[...block[1].matchAll(/^      nextNodeId: (\d+)/gm)].map(x=>Number(x[1]));
   check(destinations[row.optionIndex]===row.nextNodeId,
     'Mapped choice still leads to the verified real route: '+key);
