@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "A01",
+      "chapter": 1,
+      "triggerNodeId": 100101,
+      "text": "曹袁两军在官渡对峙，营垒相望，战事渐紧。"
+    },
+    {
+      "id": "A02",
+      "chapter": 1,
+      "triggerNodeId": 100104,
+      "text": "袁军据高处放箭，曹营屡受弓弩压制。"
+    },
+    {
+      "id": "A03",
+      "chapter": 1,
+      "triggerNodeId": 100203,
+      "text": "曹军工兵连夜赶制发石战车。"
+    },
+    {
+      "id": "A04",
+      "chapter": 1,
+      "triggerNodeId": 100206,
+      "text": "曹军以发石车轰击袁军高橹，木楼崩塌。"
+    },
+    {
+      "id": "A05",
+      "chapter": 1,
+      "triggerNodeId": 100302,
+      "text": "曹军组织工兵向袁营开挖地道。"
+    },
+    {
+      "id": "A06",
+      "chapter": 1,
+      "triggerNodeId": 100306,
+      "text": "地道行动受阻，曹军工兵遭反击并有伤亡。"
+    },
+    {
+      "id": "A07",
+      "chapter": 1,
+      "triggerNodeId": 100503,
+      "text": "袁军骑兵追击撤退中的曹军。"
+    },
+    {
+      "id": "A08",
+      "chapter": 1,
+      "triggerNodeId": 100604,
+      "text": "曹军后撤失控，袁军营垒逼近原有防线。"
+    },
+    {
+      "id": "B01",
+      "chapter": 2,
+      "triggerNodeId": 200001,
+      "text": "两军久相持，曹军粮草吃紧，军心承压。"
+    },
+    {
+      "id": "B02",
+      "chapter": 2,
+      "triggerNodeId": 200005,
+      "text": "荀彧劝守的书信送至曹营，曹操权衡进退。"
+    },
+    {
+      "id": "B03",
+      "chapter": 2,
+      "triggerNodeId": 200201,
+      "text": "曹操采纳劝守之议，继续坚守官渡。"
+    },
+    {
+      "id": "B04",
+      "chapter": 2,
+      "triggerNodeId": 200310,
+      "text": "曹军撤退途中遭袁军骑兵追击，阵列混乱。"
+    },
+    {
+      "id": "C01",
+      "chapter": 3,
+      "triggerNodeId": 300105,
+      "text": "许攸深夜来到曹营，曹操亲自出迎。"
+    },
+    {
+      "id": "C02",
+      "chapter": 3,
+      "triggerNodeId": 300202,
+      "text": "曹操向许攸坦言军粮仅余不多。"
+    },
+    {
+      "id": "C03",
+      "chapter": 3,
+      "triggerNodeId": 300301,
+      "text": "曹操向许攸隐瞒了实际粮草窘境。"
+    },
+    {
+      "id": "C04",
+      "chapter": 3,
+      "triggerNodeId": 300309,
+      "text": "许攸向曹操透露袁军乌巢粮仓情报。"
+    },
+    {
+      "id": "C05",
+      "chapter": 3,
+      "triggerNodeId": 300408,
+      "text": "许攸遭到处决，营帐外随即归于沉寂。"
+    },
+    {
+      "id": "D01",
+      "chapter": 4,
+      "triggerNodeId": 400101,
+      "text": "夜幕下的官渡大营，曹军筹议下一步部署。"
+    },
+    {
+      "id": "D02",
+      "chapter": 4,
+      "triggerNodeId": 400201,
+      "text": "曹操决定亲自率军奔袭乌巢。"
+    },
+    {
+      "id": "D03",
+      "chapter": 4,
+      "triggerNodeId": 400304,
+      "text": "曹操留守官渡，由部将执行奇袭部署。"
+    },
+    {
+      "id": "E01",
+      "chapter": 5,
+      "triggerNodeId": 500101,
+      "text": "曹军抵近乌巢，完成合围并点燃第一把火。"
+    },
+    {
+      "id": "E02",
+      "chapter": 5,
+      "triggerNodeId": 500201,
+      "text": "曹操拔剑下令，集中兵力攻占乌巢。"
+    },
+    {
+      "id": "E03",
+      "chapter": 5,
+      "triggerNodeId": 500208,
+      "text": "曹军冲入乌巢粮囤，火势蔓延。"
+    },
+    {
+      "id": "E04",
+      "chapter": 5,
+      "triggerNodeId": 500214,
+      "text": "战后发现许都官员与袁绍私下往来的书信。"
+    },
+    {
+      "id": "E05",
+      "chapter": 5,
+      "triggerNodeId": 500306,
+      "text": "曹洪点兵离开乌巢主阵，回援官渡。"
+    },
+    {
+      "id": "E06",
+      "chapter": 5,
+      "triggerNodeId": 500310,
+      "text": "乌巢攻势一度放缓，官渡大营守住了阵地。"
+    },
+    {
+      "id": "E07",
+      "chapter": 5,
+      "triggerNodeId": 500408,
+      "text": "曹操下令转攻袁绍本阵。"
+    },
+    {
+      "id": "E08",
+      "chapter": 5,
+      "triggerNodeId": 500415,
+      "text": "曹军奔袭中体力不支，行军速度放缓。"
+    },
+    {
+      "id": "E09",
+      "chapter": 5,
+      "triggerNodeId": 500417,
+      "text": "曹操陷于袁军包围，倚天剑坠落在地。"
+    }
+  ]
+}
