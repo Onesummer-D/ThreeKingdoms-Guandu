@@ -18,6 +18,7 @@ public sealed class HomeHubUI : MonoBehaviour
 
     private GameObject aboutHomeButton;
     private GameObject settingsHomeButton;
+    private GameObject persistentHud;
     private GameObject muteHomeButton;
     private GameObject aboutOverlay;
     private GameObject settingsOverlay;
@@ -60,16 +61,24 @@ public sealed class HomeHubUI : MonoBehaviour
         }
         aboutHomeButton = CreateMenuButton(startMenuPanel.transform, "关于游戏",
             new Vector2(330f, -320f), OpenAbout);
-        settingsHomeButton = CreateIconHomeButton(startMenuPanel.transform, "SettingsIconButton",
-            RuntimeIconGraphic.IconKind.Gear, new Vector2(-34f, -30f), OpenSettings, out _);
-        muteHomeButton = CreateIconHomeButton(startMenuPanel.transform, "GlobalMuteButton",
-            RuntimeIconGraphic.IconKind.Speaker, new Vector2(-124f, -30f), ToggleGlobalMute, out muteIcon);
+        // One HUD on the root Canvas survives the home, dialogue, intro,
+        // mini-game and ending panels. No duplicate menu-only controls.
+        persistentHud = CreateUIObject("PersistentHUD", uiRoot);
+        Stretch(persistentHud.GetComponent<RectTransform>());
+        Canvas hudCanvas = persistentHud.AddComponent<Canvas>();
+        hudCanvas.overrideSorting = true;
+        hudCanvas.sortingOrder = 40;
+        persistentHud.AddComponent<GraphicRaycaster>();
+        settingsHomeButton = CreateIconHomeButton(persistentHud.transform, "SettingsIconButton",
+            RuntimeIconGraphic.IconKind.Gear, new Vector2(-54f, -48f), OpenSettings, out _);
+        muteHomeButton = CreateIconHomeButton(persistentHud.transform, "GlobalMuteButton",
+            RuntimeIconGraphic.IconKind.Speaker, new Vector2(-142f, -48f), ToggleGlobalMute, out muteIcon);
         AudioListener.volume = PlayerPrefs.GetInt("GlobalMuted", 0) == 1 ? 0f : 1f;
         RefreshMuteIcon();
 
         CreateBrightnessOverlay(uiRoot);
-        CreateAboutOverlay(uiRoot);
-        CreateSettingsOverlay(uiRoot);
+        CreateAboutOverlay(persistentHud.transform);
+        CreateSettingsOverlay(persistentHud.transform);
         ApplySavedDisplaySettings();
     }
 
@@ -99,6 +108,7 @@ public sealed class HomeHubUI : MonoBehaviour
         if (aboutHomeButton != null) Destroy(aboutHomeButton);
         if (settingsHomeButton != null) Destroy(settingsHomeButton);
         if (muteHomeButton != null) Destroy(muteHomeButton);
+        if (persistentHud != null) Destroy(persistentHud);
         if (aboutOverlay != null) Destroy(aboutOverlay);
         if (settingsOverlay != null) Destroy(settingsOverlay);
         if (brightnessOverlay != null) Destroy(brightnessOverlay.gameObject);
@@ -166,10 +176,10 @@ public sealed class HomeHubUI : MonoBehaviour
 
         float bgm = AudioManager.Instance != null
             ? AudioManager.Instance.GetBGMVolume()
-            : PlayerPrefs.GetFloat("BGMVolume", 1f);
+            : PlayerPrefs.GetFloat("BGMVolume", .75f);
         float effects = AudioManager.Instance != null
             ? AudioManager.Instance.GetEffectsVolume()
-            : PlayerPrefs.GetFloat("EffectsVolume", .6f);
+            : PlayerPrefs.GetFloat("EffectsVolume", .9f);
         float brightness = PlayerPrefs.GetFloat("DisplayBrightness", 1f);
 
         CreateSliderRow(panel.transform, "背景音乐", .67f, 0f, 1f, bgm, value =>

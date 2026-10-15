@@ -15,6 +15,7 @@ public sealed class HistorianChatUI : MonoBehaviour
     public bool IsOpen { get; private set; }
     private GameObject gameplayPanel;
     private GameObject launcher;
+    private GameObject launcherLayer;
     private GameObject surface;
     private RectTransform content;
     private ScrollRect scroll;
@@ -48,19 +49,30 @@ public sealed class HistorianChatUI : MonoBehaviour
         font = Resources.Load<TMP_FontAsset>("Fonts & Materials/SC-Regular SDF") ?? TMP_Settings.defaultFontAsset;
         icon = Resources.Load<Sprite>("Historian/AskHistorian");
         knowledge.Load();
-        CreateLauncher(panel.transform);
+        CreateLauncher(panel.transform.root);
         CreateSurface(panel.transform.root);
         ResetConversation();
     }
 
     private void CreateLauncher(Transform parent)
     {
-        launcher = Object("AskHistorianIcon", parent);
+        // Keep the entry outside GameInterfacePanel: the latter disappears
+        // during background introductions, mini-games and transitions.
+        launcherLayer = Object("HistorianLauncherLayer", parent);
+        Anchors(launcherLayer.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
+        Canvas launcherCanvas = launcherLayer.AddComponent<Canvas>();
+        launcherCanvas.overrideSorting = true;
+        launcherCanvas.sortingOrder = 35;
+        launcherLayer.AddComponent<GraphicRaycaster>();
+        launcher = Object("AskHistorianIcon", launcherLayer.transform);
         RectTransform rect = launcher.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(1f, .46f);
-        rect.pivot = new Vector2(1f, .5f);
-        rect.anchoredPosition = new Vector2(-28f, 0f);
-        rect.sizeDelta = new Vector2(180f, 180f);
+        // Align below the character portrait along the left edge rather than
+        // beneath the top-right resources. Reference coordinates are relative
+        // to the root Canvas and remain stable across game panels.
+        rect.anchorMin = rect.anchorMax = new Vector2(.11f, .55f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(148f, 148f);
         Image image = launcher.AddComponent<Image>();
         image.sprite = icon;
         image.preserveAspect = true;
@@ -69,6 +81,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         button.targetGraphic = image;
         button.onClick.AddListener(Open);
         if (icon == null) Anchors(Text(launcher.transform, "问史官", 30f, Gold).rectTransform, Vector2.zero, Vector2.one);
+        launcher.SetActive(false);
     }
 
     private void CreateSurface(Transform root)
@@ -207,7 +220,7 @@ public sealed class HistorianChatUI : MonoBehaviour
 
     public void Open()
     {
-        if (surface == null || gameplayPanel == null || !gameplayPanel.activeInHierarchy) return;
+        if (surface == null || !ShouldShowLauncher()) return;
         SyncRun();
         if (IsOpen) return;
         IsOpen = true;
@@ -232,8 +245,19 @@ public sealed class HistorianChatUI : MonoBehaviour
             if (entry.Key != null) entry.Key.alpha = entry.Value;
         coveredStoryText.Clear();
         if (ownsPause) { Time.timeScale = previousTimeScale; ownsPause = false; }
-        if (launcher != null) launcher.SetActive(true);
+        if (launcher != null) launcher.SetActive(ShouldShowLauncher());
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    private bool ShouldShowLauncher()
+    {
+        // "Throughout the game" means active gameplay, including intro,
+        // mini-games and ending screens; not the home menu before a run.
+        if (gameplayPanel == null || LocalSaveManager.Instance == null ||
+            string.IsNullOrEmpty(LocalSaveManager.Instance.CurrentRunId))
+            return false;
+        FinalUIManager ui = FinalUIManager.Instance;
+        return ui == null || ui.startMenuPanel == null || !ui.startMenuPanel.activeInHierarchy;
     }
 
     private void CoverStoryText()
@@ -259,8 +283,9 @@ public sealed class HistorianChatUI : MonoBehaviour
     {
         if (surface == null) return;
         SyncRun();
+        if (launcher != null && !IsOpen) launcher.SetActive(ShouldShowLauncher());
         if (!IsOpen) return;
-        if (gameplayPanel == null || !gameplayPanel.activeInHierarchy) { Close(); return; }
+        if (!ShouldShowLauncher()) { Close(); return; }
         bool composing = !string.IsNullOrEmpty(Input.compositionString);
         if (Input.GetKeyDown(KeyCode.Escape) && !composing && !imeWasComposing) { Close(); return; }
         if (input.isFocused && !composing && !imeWasComposing &&
@@ -275,7 +300,7 @@ public sealed class HistorianChatUI : MonoBehaviour
     {
         generation++;
         Close();
-        if (launcher != null) Destroy(launcher);
+        if (launcherLayer != null) Destroy(launcherLayer);
         if (surface != null) Destroy(surface);
         if (Instance == this) Instance = null;
     }

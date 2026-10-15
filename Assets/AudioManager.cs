@@ -35,7 +35,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip errorSFX;              // 错误
     public AudioClip achievementSFX;        // 达成成就（走格子胜利用）
     public AudioClip craftSuccessSFX;       // 打造成功（拼图完成用）
-    public AudioClip fireWuchaoSFX;         // 火烧乌巢音效（SFX）
+    public AudioClip fireWuchaoSFX;         // 预留专用燃烧SFX：素材库暂无合适音频，禁止误用箭矢音。火烧动画已另配BGM。
 
     [Header("挖地道专用音效")]
     public AudioClip digTunnelDiggingSFX;    // 园艺-用铲子（挖掘中）
@@ -44,11 +44,16 @@ public class AudioManager : MonoBehaviour
     public AudioClip gridStepSFX;
 
     [Header("音量控制")]
-    [Range(0f, 1f)] public float bgmVolume = 1f;
+    [Range(0f, 1f)] public float bgmVolume = 0.75f;
 
-    private float originalBGMVolume = 1f;
-    private float currentBGMVolume = 1f;
-    private float currentEffectsVolume = 0.6f;
+    // Keep the music fader, gameplay ducking and individual volume sliders
+    // independent, so changing a slider never unexpectedly cancels a cue.
+    private float currentBGMVolume = 0.75f;
+    private float currentEffectsVolume = 0.9f;
+    private float transitionGain = 1f;
+    private float gameplayDuck = 1f;
+    private float effectDuck = 1f;
+    private float duckUntil;
     private Coroutine currentBGMCoroutine;
     private Coroutine volumeCoroutine;
     private readonly Dictionary<AudioClip, float> nextAllowedPlay = new Dictionary<AudioClip, float>();
@@ -56,59 +61,63 @@ public class AudioManager : MonoBehaviour
 
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-
-            // 自动创建音频源
-            if (bgmSource == null) bgmSource = gameObject.AddComponent<AudioSource>();
-            if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
-            if (uiSource == null) uiSource = gameObject.AddComponent<AudioSource>();
-
-            bgmSource.loop = true;
-            sfxSource.playOnAwake = false;
-            uiSource.playOnAwake = false;
-
-            currentEffectsVolume = PlayerPrefs.GetFloat("EffectsVolume", 0.6f);
-            sfxSource.volume = currentEffectsVolume;
-            uiSource.volume = currentEffectsVolume;
-
-            // ✅ 强制清空缓存
-            if (bgmSource != null)
-            {
-                bgmSource.clip = null; // 清空缓存
-                bgmSource.Stop();
-            }
-
-            // 加载保存的音量（如果没有保存过则默认为1）
-            currentBGMVolume = PlayerPrefs.GetFloat("BGMVolume", 1f);
-            originalBGMVolume = currentBGMVolume;
-            bgmVolume = currentBGMVolume;
-
-            // 立即应用音量
-            if (bgmSource != null) bgmSource.volume = currentBGMVolume;
-
-            // 首页立即播放BGM
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 0 ||
-                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.Contains("Menu"))
-            {
-                if (warBackgroundBGM != null)
-                {
-                    bgmSource.clip = warBackgroundBGM;
-                    bgmSource.loop = true;
-                    bgmSource.volume = currentBGMVolume;
-                    bgmSource.Play();
-                }
-            }
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        if (bgmSource == null) bgmSource = gameObject.AddComponent<AudioSource>();
+        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+        if (uiSource == null) uiSource = gameObject.AddComponent<AudioSource>();
+
+        bgmSource.playOnAwake = false;
+        bgmSource.loop = true;
+        sfxSource.playOnAwake = false;
+        uiSource.playOnAwake = false;
+        // Stereo UI and narrative sounds must not attenuate with 3D distance.
+        bgmSource.spatialBlend = 0f;
+        sfxSource.spatialBlend = 0f;
+        uiSource.spatialBlend = 0f;
+
+        currentBGMVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("BGMVolume", 0.75f));
+        currentEffectsVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("EffectsVolume", 0.9f));
+        bgmVolume = currentBGMVolume;
+        sfxSource.volume = currentEffectsVolume;
+        uiSource.volume = currentEffectsVolume;
+        bgmSource.Stop();
+        bgmSource.clip = null;
+        UpdateMusicMix();
+
+        // Start music only on a dedicated opening/menu scene. The story
+        // selects its track through DialogueSystem on the first shown node.
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if ((scene.buildIndex == 0 || scene.name.Contains("Menu")) && warBackgroundBGM != null)
+        {
+            bgmSource.clip = warBackgroundBGM;
+            bgmSource.Play();
         }
     }
 
-    // 播放BGM（带过渡效果：淡出→停顿→淡入）
+    void Update()
+    {
+        // Duck for the audible portion of an important narrative SFX, then
+        // release slowly to avoid an abrupt music jump between story nodes.
+        float target = Time.unscaledTime < duckUntil ? 0.28f : 1f;
+        float seconds = target < effectDuck ? 0.10f : 0.48f;
+        effectDuck = Mathf.MoveTowards(effectDuck, target,
+            Time.unscaledDeltaTime * (1f - 0.28f) / seconds);
+        UpdateMusicMix();
+    }
+
+    private void UpdateMusicMix()
+    {
+        if (bgmSource == null) return;
+        bgmSource.volume = Mathf.Clamp01(currentBGMVolume * transitionGain * gameplayDuck * effectDuck);
+    }
+
     public void PlayBGM(AudioClip clip, bool loop = true, bool stopPrevious = true)
     {
         if (clip == null)
@@ -117,109 +126,102 @@ public class AudioManager : MonoBehaviour
             return;
         }
         if (bgmSource.clip == clip && bgmSource.isPlaying) return;
-
-        if (currentBGMCoroutine != null)
-            StopCoroutine(currentBGMCoroutine);
-        if (volumeCoroutine != null) StopCoroutine(volumeCoroutine);
-
+        if (currentBGMCoroutine != null) StopCoroutine(currentBGMCoroutine);
         currentBGMCoroutine = StartCoroutine(PlayBGMWithTransition(clip, loop, stopPrevious));
     }
 
     private IEnumerator PlayBGMWithTransition(AudioClip newClip, bool loop, bool stopPrevious)
     {
-        // 短淡出与较缓淡入，避免章节配乐突切。
-        float fadeOut = 0.35f;
-        float pauseTime = 0f;    // 原来0.1→0（不停顿！）
-        float fadeIn = 0.65f;
-
-        // 1. 淡出旧BGM
         if (stopPrevious && bgmSource.isPlaying)
         {
-            float startVolume = bgmSource.volume;
-            for (float t = 0; t < fadeOut; t += Time.unscaledDeltaTime)
+            float start = transitionGain;
+            const float fadeOut = 0.28f;
+            for (float elapsed = 0f; elapsed < fadeOut; elapsed += Time.unscaledDeltaTime)
             {
-                bgmSource.volume = Mathf.Lerp(startVolume, 0, t / fadeOut);
+                transitionGain = Mathf.Lerp(start, 0f, elapsed / fadeOut);
+                UpdateMusicMix();
                 yield return null;
             }
             bgmSource.Stop();
         }
 
-        // 2. 不停顿，直接播新的
-        yield return new WaitForSeconds(pauseTime); // 这行可以删掉，但留着也没事
-
-        // 3. 淡入新BGM
         bgmSource.clip = newClip;
         bgmSource.loop = loop;
-        bgmSource.volume = 0;
+        transitionGain = 0f;
+        UpdateMusicMix();
         bgmSource.Play();
 
-        for (float t = 0; t < fadeIn; t += Time.unscaledDeltaTime)
+        const float fadeIn = 0.65f;
+        for (float elapsed = 0f; elapsed < fadeIn; elapsed += Time.unscaledDeltaTime)
         {
-            bgmSource.volume = Mathf.Lerp(0, currentBGMVolume, t / fadeIn);
+            transitionGain = Mathf.Clamp01(elapsed / fadeIn);
+            UpdateMusicMix();
             yield return null;
         }
-        bgmSource.volume = currentBGMVolume;
+        transitionGain = 1f;
+        UpdateMusicMix();
+        currentBGMCoroutine = null;
     }
 
-    // 停止BGM
     public void StopBGM()
     {
-        if (bgmSource != null)
-            bgmSource.Stop();
+        if (currentBGMCoroutine != null) StopCoroutine(currentBGMCoroutine);
+        currentBGMCoroutine = null;
+        transitionGain = 1f;
+        if (bgmSource != null) bgmSource.Stop();
     }
 
-    // 暂停BGM
     public void PauseBGM()
     {
-        if (bgmSource != null && bgmSource.isPlaying)
-            bgmSource.Pause();
+        if (bgmSource != null && bgmSource.isPlaying) bgmSource.Pause();
     }
 
-    // 恢复BGM
     public void ResumeBGM()
     {
-        if (bgmSource != null && bgmSource.clip != null)
-            bgmSource.UnPause();
+        if (bgmSource != null && bgmSource.clip != null) bgmSource.UnPause();
     }
 
-    // 降低BGM音量（小游戏用）
+    // Mini-game mix is separate from the temporary effect duck.
     public void ReduceBGMVolume(float targetVolume = 0.2f)
     {
-        if (volumeCoroutine != null) StopCoroutine(volumeCoroutine);
-        if (currentBGMCoroutine != null) StopCoroutine(currentBGMCoroutine);
-        volumeCoroutine = StartCoroutine(FadeVolume(bgmSource.volume, currentBGMVolume * Mathf.Clamp01(targetVolume), 0.3f));
+        FadeGameplayDuck(Mathf.Clamp01(targetVolume));
     }
 
-    // 恢复BGM音量
     public void RestoreBGMVolume()
     {
+        FadeGameplayDuck(1f);
+    }
+
+    private void FadeGameplayDuck(float target)
+    {
         if (volumeCoroutine != null) StopCoroutine(volumeCoroutine);
-        if (currentBGMCoroutine != null) StopCoroutine(currentBGMCoroutine);
-        volumeCoroutine = StartCoroutine(FadeVolume(bgmSource.volume, currentBGMVolume, 0.3f));
+        volumeCoroutine = StartCoroutine(FadeGameplayDuckRoutine(target));
+    }
+
+    private IEnumerator FadeGameplayDuckRoutine(float target)
+    {
+        float initial = gameplayDuck;
+        const float duration = 0.30f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            gameplayDuck = Mathf.Lerp(initial, target, elapsed / duration);
+            UpdateMusicMix();
+            yield return null;
+        }
+        gameplayDuck = target;
+        UpdateMusicMix();
+        volumeCoroutine = null;
     }
 
     public void SetBGMVolume(float volume)
     {
         currentBGMVolume = Mathf.Clamp01(volume);
-        originalBGMVolume = currentBGMVolume;
-
-        if (volumeCoroutine != null) StopCoroutine(volumeCoroutine);
-        if (currentBGMCoroutine != null)
-            StopCoroutine(currentBGMCoroutine);
-
-        if (bgmSource != null)
-        {
-            bgmSource.volume = currentBGMVolume;
-        }
-
-        PlayerPrefs.SetFloat("BGMVolume", currentBGMVolume);
         bgmVolume = currentBGMVolume;
+        PlayerPrefs.SetFloat("BGMVolume", currentBGMVolume);
+        UpdateMusicMix();
     }
 
-    public float GetBGMVolume()
-    {
-        return currentBGMVolume;
-    }
+    public float GetBGMVolume() { return currentBGMVolume; }
 
     public void SetEffectsVolume(float volume)
     {
@@ -229,87 +231,72 @@ public class AudioManager : MonoBehaviour
         PlayerPrefs.SetFloat("EffectsVolume", currentEffectsVolume);
     }
 
-    public float GetEffectsVolume()
-    {
-        return currentEffectsVolume;
-    }
+    public float GetEffectsVolume() { return currentEffectsVolume; }
 
-    private IEnumerator FadeVolume(float from, float to, float duration)
-    {
-        for (float t = 0; t < duration; t += Time.unscaledDeltaTime)
-        {
-            bgmSource.volume = Mathf.Lerp(from, to, t / duration);
-            yield return null;
-        }
-        bgmSource.volume = to;
-    }
-
-    // ✅ 播放剧情音效（默认60%音量）
-    public void PlaySFX(AudioClip clip, float volume = 0.6f)
+    // Callers provide a relative cue emphasis; master effects slider provides
+    // the actual gain. Old defaults multiplied 0.6 * 0.3 and buried cues.
+    public void PlaySFX(AudioClip clip, float volume = 1f)
     {
         PlayControlled(sfxSource, clip, volume, true);
     }
 
-    // ✅ 播放UI音效（默认50%音量）
-    public void PlayUI(AudioClip clip, float volume = 0.5f)
+    public void PlayUI(AudioClip clip, float volume = 0.9f)
     {
         if (clip == null) clip = defaultButtonClick;
         PlayControlled(uiSource, clip, volume, false);
     }
 
-    // ✅ 数值变化音效（50%音量）
     public void PlayValueChange(float change)
     {
-        if (change > 0 && valueChangeUpSFX != null)
-            PlayControlled(uiSource, valueChangeUpSFX, 0.4f, true);
-        else if (change < 0 && valueChangeDownSFX != null)
-            PlayControlled(uiSource, valueChangeDownSFX, 0.35f, true);
+        if (change > 0f && valueChangeUpSFX != null)
+            PlayControlled(uiSource, valueChangeUpSFX, 0.9f, true);
+        else if (change < 0f && valueChangeDownSFX != null)
+            PlayControlled(uiSource, valueChangeDownSFX, 0.9f, true);
     }
 
-    // 挖地道挖掘音效（60%音量）
     public void PlayDigging()
     {
-        if (digTunnelDiggingSFX != null)
-            PlaySFX(digTunnelDiggingSFX, 0.35f);
+        if (digTunnelDiggingSFX != null) PlaySFX(digTunnelDiggingSFX, 0.95f);
     }
 
-    // 挖地道成功音效 - 改用达成成就音效（保持100%，因为这个重要）
     public void PlayDigSuccess()
     {
-        PlaySFX(digTunnelSuccessSFX != null ? digTunnelSuccessSFX : achievementSFX, 0.5f);
+        PlaySFX(digTunnelSuccessSFX != null ? digTunnelSuccessSFX : achievementSFX, 1f);
     }
 
-    // ✅ 播放达成成就音效（走格子胜利用）- 保持100%不变
     public void PlayAchievement()
     {
-        if (achievementSFX != null)
-            PlaySFX(achievementSFX, 0.5f);
+        if (achievementSFX != null) PlaySFX(achievementSFX, 1f);
     }
 
-    // ✅ 播放打造成功音效（拼图用）- 60%音量
     public void PlayCraftSuccess()
     {
-        if (craftSuccessSFX != null)
-            PlaySFX(craftSuccessSFX, 0.8f);
+        if (craftSuccessSFX != null) PlaySFX(craftSuccessSFX, 1f);
     }
 
-    // 小游戏快捷接口（60%音量）
-    public void PlayPuzzleCorrect() => PlaySFX(puzzleCorrectSFX, 0.3f);
-    public void PlayPuzzleMove() => PlayControlled(sfxSource, gridStepSFX != null ? gridStepSFX : puzzleMoveSFX, 0.45f, false);
-    public void PlayPaperTurn() => PlayControlled(uiSource, paperTurnSFX, 0.75f, false);
-    public void PlayAlert() => PlaySFX(alertSFX, 0.3f);
-    public void PlayError() => PlaySFX(errorSFX, 0.4f);
+    public void PlayPuzzleCorrect() => PlaySFX(puzzleCorrectSFX, 0.95f);
+    public void PlayPuzzleMove() => PlayControlled(sfxSource,
+        gridStepSFX != null ? gridStepSFX : puzzleMoveSFX, 0.9f, false);
+    public void PlayPaperTurn() => PlayControlled(uiSource, paperTurnSFX, 0.9f, false);
+    public void PlayAlert() => PlaySFX(alertSFX, 1f);
+    public void PlayError() => PlaySFX(errorSFX, 0.95f);
 
     private void PlayControlled(AudioSource source, AudioClip clip, float volume, bool waitForClip)
     {
         if (source == null || clip == null || currentEffectsVolume <= 0f) return;
         float now = Time.unscaledTime;
-        float allowed;
-        if (nextAllowedPlay.TryGetValue(clip, out allowed) && now < allowed) return;
+        if (nextAllowedPlay.TryGetValue(clip, out float allowed) && now < allowed) return;
         activeEffectEnds.RemoveAll(end => end <= now);
-        if (activeEffectEnds.Count >= 4) return;
-        nextAllowedPlay[clip] = now + (waitForClip ? Mathf.Max(0.15f, clip.length) : 0.15f);
+        // Prioritize story cues over incidental UI clicks in busy frames.
+        if (source == uiSource && activeEffectEnds.Count >= 8) return;
+        nextAllowedPlay[clip] = now + (waitForClip ? Mathf.Max(0.15f, clip.length) : 0.12f);
         activeEffectEnds.Add(now + clip.length);
+        if (source == sfxSource)
+        {
+            duckUntil = Mathf.Max(duckUntil, now + Mathf.Max(0.25f, clip.length));
+            effectDuck = Mathf.Min(effectDuck, 0.45f);
+            UpdateMusicMix();
+        }
         source.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
 }
