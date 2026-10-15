@@ -32,6 +32,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
     private TMP_Text advisorHistoryText;
     private Button copyInvitationButton;
     private Button inviteAgainButton;
+    private TMP_Text advisorQrHint;
     private InviteSnapshotData snapshot;
     private ScrollRect inviteScroll;
     private ScrollRect briefScroll;
@@ -213,6 +214,10 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         if (copyInvitationButton != null) copyInvitationButton.gameObject.SetActive(!completed);
         if (inviteAgainButton != null) inviteAgainButton.gameObject.SetActive(completed);
         if (completed && advisorQrObject != null) advisorQrObject.SetActive(false);
+        if (advisorQrHint != null)
+            advisorQrHint.text = completed
+                ? "如需新的参谋建议，请先点击「再邀一位参谋」。下方可回看已收到的意见。"
+                : "邀请朋友扫描二维码，进入战局";
         RenderAdvisorHistory();
     }
 
@@ -311,7 +316,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         CreateWrappedText(content, "如何邀请", 44f, accentColor);
         CreateWrappedText(content,
             "复制战局邀请 → 粘贴到微信发给朋友 → 回到游戏作出决定", 38f, textPrimary);
-        CreateWrappedText(content, "邀请朋友扫描二维码，进入战局", 38f, textPrimary);
+        advisorQrHint = CreateWrappedText(content, "邀请朋友扫描二维码，进入战局", 38f, textPrimary);
 
         GameObject invitationActions = CreateUIObject("InvitationActions", content);
         invitationActions.AddComponent<LayoutElement>().preferredHeight = 330f;
