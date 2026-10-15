@@ -1,0 +1,29 @@
+name: Advisor history in invitation
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/InviteCoCreationUI.cs'
+      - 'Assets/Scripts/UI/InviteSessionState.cs'
+      - 'Assets/Scripts/Managers/RunHistoryTracker.cs'
+      - 'Documentation/QA/AdvisorHistoryInInviteChecks.js'
+      - 'Documentation/文案组待改稿汇总.md'
+      - '.github/workflows/advisor-history-invite.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/InviteCoCreationUI.cs'
+      - 'Documentation/QA/AdvisorHistoryInInviteChecks.js'
+      - '.github/workflows/advisor-history-invite.yml'
+
+jobs:
+  invitation-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate saved advisor history and revisit behavior
+        run: node Documentation/QA/AdvisorHistoryInInviteChecks.js
