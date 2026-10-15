@@ -251,23 +251,10 @@ public class DialogueSystem : MonoBehaviour
 
         ApplyResourceEffects(selectedOption);
 
-        // 播放数值变化音效
-        if (AudioManager.Instance != null)
-        {
-            float[] outcomes = { selectedOption.troopEffect, selectedOption.foodEffect,
-                                 selectedOption.strategyEffect, -selectedOption.riskEffect };
-            bool gain = false, loss = false;
-            foreach (float outcome in outcomes)
-            {
-                gain |= outcome > 0f;
-                loss |= outcome < 0f;
-            }
-            float totalChange = gain == loss ? 0f : (gain ? 1f : -1f);
-            if (totalChange != 0)
-            {
-                AudioManager.Instance.PlayValueChange(totalChange);
-            }
-        }
+        // Narrative options are not right/wrong quiz answers. A cost or
+        // increased risk is a strategic trade-off, not a failed operation.
+        // The neutral click above confirms the choice; resource deltas
+        // remain visible in UI without separate positive/negative SFX.
 
         OnOptionSelected?.Invoke(optionIndex, selectedOption);
         return true;
