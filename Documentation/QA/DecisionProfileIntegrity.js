@@ -25,6 +25,10 @@ for(const row of catalog.entries){
   check(realChoices.has(row.nodeId)&&row.optionIndex>=0&&row.optionIndex<realChoices.get(row.nodeId),
     'Mapped option actually exists: '+key);
   check(!validKeys.has(key),'Unique behavior mapping: '+key);
+  const block=asset.match(new RegExp('(?m)^  - nodeId: '+row.nodeId+'\\n([\\s\\S]*?)(?=^  - nodeId: |$)','m'));
+  const destinations=[...block[1].matchAll(/^      nextNodeId: (\d+)/gm)].map(x=>Number(x[1]));
+  check(destinations[row.optionIndex]===row.nextNodeId,
+    'Mapped choice still leads to the verified real route: '+key);
   validKeys.add(key);
 }
 check([...realChoices].every(([id,count])=>Array.from({length:count},(_,i)=>id+':'+i).every(key=>validKeys.has(key))),
