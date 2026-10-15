@@ -673,7 +673,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image background = mapButtonObject.AddComponent<Image>();
         background.color = new Color32(112, 82, 55, 245);
         Button button = mapButtonObject.AddComponent<Button>();
-        button.targetGraphic = background;
+        GameButtonSkin.Apply(button, background, GameButtonSkin.Tone.Secondary);
         button.onClick.AddListener(ToggleMap);
         TMP_Text label = CreateText(mapButtonObject.transform, "剧情回顾", 40f, TextAlignmentOptions.Center, new Color(0.95f, 0.90f, 0.78f, 1f));
         Stretch(label.rectTransform);
