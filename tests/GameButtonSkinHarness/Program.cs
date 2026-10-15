@@ -66,6 +66,13 @@ namespace UnityEngine
             components.TryGetValue(typeof(T),out var component);
             return component as T;
         }
+        public T[] GetComponentsInChildren<T>(bool includeInactive) where T:Component {
+            List<T> results=new List<T>();
+            T own=GetComponent<T>();
+            if(own!=null)results.Add(own);
+            results.AddRange(transform.GetComponentsInChildren<T>(includeInactive));
+            return results.ToArray();
+        }
     }
 }
 namespace UnityEngine.UI
