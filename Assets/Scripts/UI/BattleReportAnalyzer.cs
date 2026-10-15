@@ -45,6 +45,11 @@ public static class BattleReportAnalyzer
                 out DecisionBehaviorCatalog.Entry tagged))
                 continue;
 
+            // A script rewrite can reorder routes without changing the
+            // visible label. Refuse incompatible recorded destinations rather
+            // than silently assigning the wrong behavior.
+            if (choice.nextNodeId > 0 && tagged.nextNodeId != choice.nextNodeId)
+                continue;
             if (tagged.counsel == "adopt") narrativeAccepted++;
             if (tagged.counsel == "review") narrativeReviewed++;
             if (string.IsNullOrEmpty(tagged.strategy) || !scores.ContainsKey(tagged.strategy)) continue;
@@ -103,7 +108,9 @@ public static class BattleReportAnalyzer
         {
             int implemented = 0;
             int decidedIndependently = 0;
-            string lastEvidence = "";
+            string implementedEvidence = "";
+            string independentEvidence = "";
+            string pendingEvidence = "";
             for (int i = 0; i < advisors.Count; i++)
             {
                 AdvisorEchoData advisor = advisors[i];
@@ -122,18 +129,20 @@ public static class BattleReportAnalyzer
                     "参谋「" + Compact(advisor.guestLabel, 12) + "」";
                 if (acted == null)
                 {
-                    lastEvidence = who + "提出建议，尚无该节点的正式决策记录";
+                    pendingEvidence = who + "提出建议，尚无该节点的正式决策记录";
                     continue;
                 }
                 if (advisor.accepted && acted.optionIndex == advisor.optionIndex)
                 {
                     implemented++;
-                    lastEvidence = who + "的建议经认可并落实为实际选择";
+                    implementedEvidence = who + "的建议经认可并落实为实际选择";
                 }
                 else
                 {
                     decidedIndependently++;
-                    lastEvidence = who + "参与军议，主将最终另作决断";
+                    independentEvidence = !advisor.accepted && acted.optionIndex == advisor.optionIndex
+                        ? who + "的建议未获认可，但后续选择恰与建议相同"
+                        : who + "参与军议，主将最终另作决断";
                 }
             }
             if (implemented > 0)
@@ -151,7 +160,9 @@ public static class BattleReportAnalyzer
                 report.consultationLabel = "议而未决";
                 report.consultationSummary = "参谋已提出建议，但尚无对应决策记录，不推断建议是否得到执行。";
             }
-            if (!string.IsNullOrWhiteSpace(lastEvidence)) report.evidence.Add(lastEvidence);
+            string relevantEvidence = implemented > 0 ? implementedEvidence :
+                decidedIndependently > 0 ? independentEvidence : pendingEvidence;
+            if (!string.IsNullOrWhiteSpace(relevantEvidence)) report.evidence.Add(relevantEvidence);
             return;
         }
 
