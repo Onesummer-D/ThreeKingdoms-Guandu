@@ -1,0 +1,33 @@
+name: Runtime Button Skin
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/**'
+      - 'tests/GameButtonSkinHarness/**'
+      - 'Documentation/QA/RuntimeButtonSkinChecks.js'
+      - '.github/workflows/runtime-button-skin.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/**'
+      - 'tests/GameButtonSkinHarness/**'
+      - 'Documentation/QA/RuntimeButtonSkinChecks.js'
+      - '.github/workflows/runtime-button-skin.yml'
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Runtime UI button factory checks
+        run: node Documentation/QA/RuntimeButtonSkinChecks.js
+      - name: Compile and execute real shared button C#
+        run: dotnet run -c Release --project tests/GameButtonSkinHarness/GameButtonSkinHarness.csproj
