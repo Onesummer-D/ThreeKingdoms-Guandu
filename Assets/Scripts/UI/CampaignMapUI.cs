@@ -586,7 +586,11 @@ public sealed class CampaignMapUI : MonoBehaviour
             if (!alreadyChosen && options.Count > 0)
                 snapshot.DecisionContext = "正在考虑：" + current.dialogueText + "\n" + string.Join("\n", options);
         }
-        snapshot.StoryRecap = BuildInviteStoryRecap(visited);
+        // Public invitation: only factual events that were already visited and
+        // left. Unlike the story-gallery's five static chapter summaries,
+        // these cards cannot preview an unresolved branch or future ending.
+        snapshot.StoryRecap = InviteStoryRecapBuilder.Build(
+            DialogueSystem.Instance.visitedNodeOrder, currentNodeId);
         return true;
     }
 
@@ -602,21 +606,6 @@ public sealed class CampaignMapUI : MonoBehaviour
     }
 
     public void InvokeInviteAction() { inviteAction?.Invoke(); }
-
-    private string BuildInviteStoryRecap(HashSet<int> visited)
-    {
-        List<string> summaries = new List<string>();
-        for (int i = 0; i < Chapters.Length; i++)
-        {
-            bool reached = visited.Contains(Chapters[i].anchorNodeId);
-            if (!reached)
-                for (int j = 0; j < Chapters[i].beatNodeIds.Length; j++)
-                    if (visited.Contains(Chapters[i].beatNodeIds[j])) { reached = true; break; }
-            if (reached)
-                summaries.Add(CompactText(Chapters[i].storySummary, 52));
-        }
-        return summaries.Count == 0 ? "暂无已走剧情" : string.Join("\n", summaries.ToArray());
-    }
 
     private void HandleNodeShown(int nodeId)
     {
