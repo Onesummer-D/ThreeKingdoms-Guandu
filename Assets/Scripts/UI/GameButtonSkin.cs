@@ -66,6 +66,11 @@ public static class GameButtonSkin
                 ? Image.Type.Sliced : Image.Type.Simple;
             background.preserveAspect = false;
         }
+        else
+        {
+            background.sprite = null;
+            background.type = Image.Type.Simple;
+        }
 
         background.color = Fill(tone);
         background.raycastTarget = true;
@@ -89,12 +94,6 @@ public static class GameButtonSkin
             : new Color(.82f, .63f, .34f, .52f);
         outline.effectDistance = new Vector2(1.4f, -1.4f);
         outline.useGraphicAlpha = true;
-        Shadow shadow = background.GetComponent<Shadow>();
-        if (shadow == null)
-        {
-            // Outline derives from Shadow, so this check may return the
-            // outline itself. A distinct drop shadow is optional.
-        }
     }
 
     public static void Apply(Button button, Image background, string label, Sprite preferredSprite = null)
@@ -106,11 +105,11 @@ public static class GameButtonSkin
     {
         switch (tone)
         {
-            case Tone.Primary:   return new Color(.69f, .49f, .29f, 1f);
-            case Tone.Caution:   return new Color(.57f, .30f, .26f, 1f);
-            case Tone.Quiet:     return new Color(.48f, .41f, .34f, 1f);
-            case Tone.Highlight: return new Color(.87f, .65f, .34f, 1f);
-            default:             return new Color(.59f, .46f, .32f, 1f);
+            case Tone.Primary:   return new Color(.57f, .38f, .22f, 1f);
+            case Tone.Caution:   return new Color(.51f, .26f, .24f, 1f);
+            case Tone.Quiet:     return new Color(.36f, .32f, .28f, 1f);
+            case Tone.Highlight: return new Color(.68f, .44f, .19f, 1f);
+            default:             return new Color(.46f, .35f, .25f, 1f);
         }
     }
 
