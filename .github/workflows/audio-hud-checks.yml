@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'Assets/AudioManager.cs'
+      - 'Assets/Scripts/Managers/DialogueSystem.cs'
+      - 'Assets/Scripts/Managers/FinalUIManager.cs'
+      - 'Assets/Scripts/MiniGames/GridGame/**'
+      - 'Documentation/QA/ArrowRainGridTimingChecks.js'
       - 'Assets/Audio/output_sfx/箭矢破空音.ogg.meta'
       - 'Assets/Scripts/Data/GuanduDialogueData.asset'
       - 'Assets/Scripts/UI/HomeHubUI.cs'
@@ -14,6 +18,10 @@ on:
     branches: [main]
     paths:
       - 'Assets/AudioManager.cs'
+      - 'Assets/Scripts/Managers/DialogueSystem.cs'
+      - 'Assets/Scripts/Managers/FinalUIManager.cs'
+      - 'Assets/Scripts/MiniGames/GridGame/**'
+      - 'Documentation/QA/ArrowRainGridTimingChecks.js'
       - 'Assets/Audio/output_sfx/箭矢破空音.ogg.meta'
       - 'Assets/Scripts/Data/GuanduDialogueData.asset'
       - 'Assets/Scripts/UI/HomeHubUI.cs'
@@ -32,6 +40,8 @@ jobs:
           node-version: '22'
       - name: Check sound cue and UI contracts
         run: node Documentation/QA/AudioHudStaticChecks.js
+      - name: Check volley rhythm and grid result timing
+        run: node Documentation/QA/ArrowRainGridTimingChecks.js
       - name: Audit every story sound reference
         run: node Documentation/QA/NarrativeAudioAuditChecks.js
       - name: Install FFmpeg for audible-asset diagnostics
