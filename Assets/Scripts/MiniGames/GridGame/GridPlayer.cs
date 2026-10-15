@@ -115,6 +115,15 @@ public class GridPlayer : MonoBehaviour
         Debug.Log($"[GridPlayer] 起点设置完成: 第{x + 1}行, 第{y + 1}列，Player已激活");
     }
 
+    // End on the destination tile instead of leaving a half-finished
+    // tween moving behind the success/failure overlay.
+    public void FreezeAtResult()
+    {
+        transform.position = targetPosition;
+        isMoving = false;
+        isActive = false;
+    }
+
     public void ResetPlayer()
     {
         isActive = false;

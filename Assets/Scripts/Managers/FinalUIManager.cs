@@ -1508,15 +1508,13 @@ public class FinalUIManager : MonoBehaviour
                 Debug.Log("<color=red>【走格子失败】被敌军发现！兵力减少20！</color>");
             }
 
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayAlert();
+            // The failure alert already played on the still-visible grid
+            // before this callback; never re-trigger it after changing panels.
         }
         else
         {
             Debug.Log("<color=green>【走格子胜利】成功避开敌军！</color>");
-            // ✅ 新增：胜利播放达成成就音效
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayAchievement();
+            // Likewise, the success sting was completed inside GridGameManager.
         }
 
         int targetNodeId = success
