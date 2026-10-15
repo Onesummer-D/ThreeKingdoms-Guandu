@@ -1,0 +1,21 @@
+name: CC0 imported sound integrity
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Audio/ImportedCC0/**'
+      - 'Assets/Scripts/Data/GuanduDialogueData.asset'
+      - 'Documentation/QA/CC0ImportedAudio*'
+      - '.github/workflows/cc0-sfx-qa.yml'
+
+jobs:
+  check-audio-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check file, license and scene references
+        run: node Documentation/QA/CC0ImportedAudioChecks.js
