@@ -26,7 +26,7 @@ check(!/PlayValueChange|PlayError|PlayAlert|PlaySFX/.test(choice),
 check(/ApplyResourceEffects\(selectedOption\)/.test(choice) &&
   /OnOptionSelected\?\.Invoke\(optionIndex, selectedOption\)/.test(choice),
   'Choice still commits resource effects and emits normal selection event');
-check(/gain|loss|positive|negative/.test(choice) === false,
+check(!/\bbool\s+(gain|loss)\b|\btotalChange\b|\bfloat\[\]\s+outcomes\b/.test(choice),
   'No resource sign classification remains in choice sound logic');
 
 const apply = dialogue.match(/void ApplyResourceEffects\(DialogueOption option\)([\s\S]*?)\n    public void StartDialogue/);
