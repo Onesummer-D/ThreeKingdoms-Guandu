@@ -307,13 +307,10 @@ public sealed class VisualDirector : MonoBehaviour
             RunHistoryTracker.Instance.RecordSceneState(target.tier.ToString(),
                 "资源压力=" + target.sceneIntensity.ToString("F2"));
 
-        if (AudioManager.Instance != null)
-        {
-            if (target.tier == VisualTier.Crisis)
-                AudioManager.Instance.PlayAlert();
-            else if (target.tier == VisualTier.Alert)
-                AudioManager.Instance.PlayValueChange(-1f);
-        }
+        // Resource pressure is a visual narrative cue, not an audio verdict.
+        // Do not trigger an "error", loss sound or alarm when an otherwise
+        // valid story choice crosses the Alert/Crisis thresholds. True
+        // gameplay failures continue to use explicit event-specific SFX.
 
         if (target.cameraShake > 0f && responseCamera != null)
         {
