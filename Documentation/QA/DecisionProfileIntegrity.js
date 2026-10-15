@@ -12,11 +12,13 @@ const tracker=read('Assets/Scripts/Managers/RunHistoryTracker.cs');
 let passed=0;
 function check(truth,msg){assert.ok(truth,msg);passed++;console.log('PASS '+msg);}
 check(catalog.version===1&&catalog.entries.length===19,'Stable version and 19 classified/political choice records');
-const nodeRegex=/^  - nodeId: (\d+)\n([\s\S]*?)(?=^  - nodeId: |(?![\\s\\S]))/gm;
+const nodeBlocks=asset.split(/(?=^  - nodeId: [0-9]+\n)/gm);
 const realChoices=new Map();
-for(const block of asset.matchAll(nodeRegex)){
-  const count=(block[2].match(/^    - optionText:/gm)||[]).length;
-  if(count)realChoices.set(+block[1],count);
+for(const section of nodeBlocks) {
+  const id=/^  - nodeId: (\d+)/.exec(section);
+  if(!id) continue;
+  const count=(section.match(/^    - optionText:/gm)||[]).length;
+  if(count) realChoices.set(Number(id[1]),count);
 }
 check(realChoices.size===9,'Script has nine option nodes including the confirm-only utility node');
 let validKeys=new Set();
@@ -25,8 +27,9 @@ for(const row of catalog.entries){
   check(realChoices.has(row.nodeId)&&row.optionIndex>=0&&row.optionIndex<realChoices.get(row.nodeId),
     'Mapped option actually exists: '+key);
   check(!validKeys.has(key),'Unique behavior mapping: '+key);
-  const block=asset.match(new RegExp('^  - nodeId: '+row.nodeId+'\\n([\\s\\S]*?)(?=^  - nodeId: |(?![\\s\\S]))','m'));
-  const destinations=[...block[1].matchAll(/^      nextNodeId: (\d+)/gm)].map(x=>Number(x[1]));
+  const block=nodeBlocks.find(section=>section.startsWith('  - nodeId: '+row.nodeId+'\n'));
+  check(!!block,'Found actual node body for mapped option: '+key);
+  const destinations=[...block.matchAll(/^      nextNodeId: (\d+)/gm)].map(x=>Number(x[1]));
   check(destinations[row.optionIndex]===row.nextNodeId,
     'Mapped choice still leads to the verified real route: '+key);
   validKeys.add(key);
