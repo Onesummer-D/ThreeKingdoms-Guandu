@@ -104,6 +104,54 @@
       "action": "舍乌巢转攻袁军本阵，改变进攻目标",
       "counsel": "none",
       "nextNodeId": 500401
+    },
+    {
+      "nodeId": 400204,
+      "optionIndex": 0,
+      "nextNodeId": 0,
+      "strategy": "果决",
+      "action": "选择五千精骑轻装疾进",
+      "counsel": "none"
+    },
+    {
+      "nodeId": 400204,
+      "optionIndex": 1,
+      "nextNodeId": 0,
+      "strategy": "稳慎",
+      "action": "选择一万步骑稳步推进",
+      "counsel": "none"
+    },
+    {
+      "nodeId": 400306,
+      "optionIndex": 0,
+      "nextNodeId": 0,
+      "strategy": "果决",
+      "action": "遣五千精骑轻装速进",
+      "counsel": "none"
+    },
+    {
+      "nodeId": 400306,
+      "optionIndex": 1,
+      "nextNodeId": 0,
+      "strategy": "稳慎",
+      "action": "遣一万步骑稳扎稳打",
+      "counsel": "none"
+    },
+    {
+      "nodeId": 500214,
+      "optionIndex": 0,
+      "nextNodeId": 500215,
+      "strategy": "",
+      "action": "当众焚毁通敌书信",
+      "counsel": "none"
+    },
+    {
+      "nodeId": 500214,
+      "optionIndex": 1,
+      "nextNodeId": 500217,
+      "strategy": "",
+      "action": "保留通敌书信，不当众焚毁",
+      "counsel": "none"
     }
   ]
 }
