@@ -14,6 +14,8 @@ import zipfile
 ASSETS = [
     ("fire_crackle", "https://opengameart.org/sites/default/files/fire-1_0.ogg",
      "https://opengameart.org/content/fire-crackling", "AntumDeluge", "CC0"),
+    ("fire_loop", "https://opengameart.org/sites/default/files/fire.wav",
+     "https://opengameart.org/content/fireplace-sound-loop", "PagDev", "CC0"),
     ("crowd", "https://opengameart.org/sites/default/files/crowd_shouting_0.ogg",
      "https://opengameart.org/content/crowd-shoutingspeaking-ambience", "StarNinjas", "CC0"),
     ("sword_clash", "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip",
