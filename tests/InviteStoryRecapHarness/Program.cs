@@ -100,14 +100,14 @@ internal static class Program
         Excludes(revealBefore, cardText["C04"], "Intelligence not shown before leaving reveal node");
         string revealAfter = Recap(400101, 100101, 100104, 200001, 300105,
             300202, 300309, 400101);
-        Contains(revealAfter, "透露袁军乌巢粮仓", "Intelligence appears after actual reveal");
+        Contains(revealAfter, cardText["C04"], "Intelligence appears after actual reveal");
 
         string executionBefore = Recap(300408, 100101, 200001, 300105, 300401, 300408);
         Excludes(executionBefore, cardText["C05"], "Current execution scene withheld until left");
         string executionAfter = Recap(300411, 100101, 200001,
             300105, 300401, 300408, 300411);
         Contains(executionAfter, cardText["C05"], "Actual execution may be recalled once past");
-        Excludes(executionAfter, "透露袁军乌巢粮仓", "Execution route does not inherit intelligence from a different branch");
+        Excludes(executionAfter, cardText["C04"], "Execution route does not inherit intelligence from a different branch");
 
         string retreat = Recap(200314, 100101, 100104, 200001, 200005, 200310, 200314);
         Contains(retreat, cardText["B04"], "Retreat-only events included when visited");
@@ -127,7 +127,7 @@ internal static class Program
         Excludes(fireBefore, cardText["E01"], "Fire event cannot be added while being shown");
         string fireAfter = Recap(500201, 100101, 200001, 300105,
             300309, 400101, 500101, 500201);
-        Contains(fireAfter, "第一把火", "Fire event appears only after visiting and leaving the event node");
+        Contains(fireAfter, cardText["E01"], "Fire event appears only after visiting and leaving the event node");
         Excludes(fireAfter, cardText["E02"], "Next battle strategy still undecided");
 
         string defend = Recap(500310, 100101, 200001,
