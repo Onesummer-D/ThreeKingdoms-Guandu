@@ -740,9 +740,9 @@ public sealed class BattleReportUI : MonoBehaviour
         image.type = buttonSprite != null ? Image.Type.Sliced : Image.Type.Simple;
         image.color = ButtonColor;
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
+        GameButtonSkin.Apply(button, image, label, buttonSprite);
         TMP_Text text = CreateText(buttonObject.transform, label, fontSize,
-            TextAlignmentOptions.Center, TextPrimary, false);
+            TextAlignmentOptions.Center, GameButtonSkin.LabelColor, false);
         Stretch(text.rectTransform);
         return button;
     }
