@@ -100,6 +100,7 @@ public static class InviteStoryRecapBuilder
             return "暂无已走剧情";
 
         List<RecapEvent>[] byChapter = new List<RecapEvent>[ChapterNames.Length];
+        int latestReachedChapter = -1;
         HashSet<string> emitted = new HashSet<string>();
         for (int i = 0; i < shownNodeOrder.Count; i++)
         {
@@ -112,6 +113,7 @@ public static class InviteStoryRecapBuilder
                 RecapEvent item = candidates[j];
                 if (!emitted.Add(item.id)) continue;
                 int chapterIndex = item.chapter - 1;
+                latestReachedChapter = chapterIndex;
                 if (byChapter[chapterIndex] == null)
                     byChapter[chapterIndex] = new List<RecapEvent>();
                 byChapter[chapterIndex].Add(item);
@@ -126,11 +128,13 @@ public static class InviteStoryRecapBuilder
             if (result.Length > 0) result.Append('\n');
             result.Append(ChapterNames[i]).Append("：");
 
-            // Keep the earliest grounded chapter context, plus up to two
-            // latest events in that chapter. No long 30-card timeline in
-            // the invited advisor's small mobile scroll area.
+            // Keep one opening fact and the most recent two facts for past
+            // chapters. The latest reached chapter gets three recent facts
+            // so a major decision isn't squeezed out by its consequences.
+            // Never fill a gap with an unvisited event or an ending preview.
             result.Append(cards[0].text.Trim());
-            int firstRecent = Math.Max(1, cards.Count - 2);
+            int recentLimit = i == latestReachedChapter ? 3 : 2;
+            int firstRecent = Math.Max(1, cards.Count - recentLimit);
             for (int j = firstRecent; j < cards.Count; j++)
                 result.Append(' ').Append(cards[j].text.Trim());
         }
