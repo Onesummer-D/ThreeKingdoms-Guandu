@@ -1080,7 +1080,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image image = buttonObject.AddComponent<Image>();
         image.color = new Color(0.30f, 0.24f, 0.15f, 0.96f);
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
+        GameButtonSkin.Apply(button, image, GameButtonSkin.Tone.Secondary);
         int capturedAnchorId = anchorNodeId;
         button.onClick.AddListener(() => OpenHistorianNote(capturedAnchorId));
 
