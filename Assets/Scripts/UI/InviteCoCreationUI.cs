@@ -901,9 +901,9 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         Image image = buttonObject.AddComponent<Image>();
         image.color = color;
         Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
+        GameButtonSkin.Apply(button, image, label);
         TMP_Text text = CreateText(buttonObject.transform, label, 38f,
-            TextAlignmentOptions.Center, Color.white);
+            TextAlignmentOptions.Center, GameButtonSkin.LabelColor);
         Stretch(text.rectTransform);
         return button;
     }
