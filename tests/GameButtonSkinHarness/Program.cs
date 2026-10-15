@@ -29,6 +29,7 @@ namespace UnityEngine
     public class Component
     {
         public GameObject gameObject;
+        public string name => gameObject.name;
         public T GetComponent<T>() where T:Component => gameObject.GetComponent<T>();
     }
     public class Transform : Component
