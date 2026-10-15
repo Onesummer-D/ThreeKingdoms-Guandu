@@ -229,13 +229,25 @@ public static class BattleReportAnalyzer
                 MiniGameTraceData game = history.miniGames[i];
                 if (game == null || !game.completed) continue;
                 report.outcomeEvidence.Add("小游戏「" +
-                    Compact(game.gameType, 20) + "」：" + (game.success ? "成功" : "失败"));
+                    FriendlyMiniGameName(game.gameType) + "」：" + (game.success ? "成功" : "失败"));
                 break; // Most recent completed game, not an invented composite
             }
         }
         if (history.completed && history.ending != null &&
             !string.IsNullOrWhiteSpace(history.ending.endingName))
             report.outcomeEvidence.Add("本局结局：" + Compact(history.ending.endingName, 36));
+    }
+
+    private static string FriendlyMiniGameName(string gameType)
+    {
+        switch ((gameType ?? "").ToLowerInvariant())
+        {
+            case "puzzle": return "战术拼图";
+            case "digtunnel": return "地道攻防";
+            case "slider": return "伏击布阵";
+            case "grid": return "夜袭行军";
+            default: return "战术挑战";
+        }
     }
 
     private static void AddLast(List<string> output, List<string> input, int maximum)
