@@ -12,7 +12,7 @@ using UnityEngine;
 public static class InviteStoryRecapBuilder
 {
     [Serializable]
-    private sealed class RecapEvent
+    public sealed class RecapEvent
     {
         public string id;
         public int chapter;
@@ -21,7 +21,7 @@ public static class InviteStoryRecapBuilder
     }
 
     [Serializable]
-    private sealed class RecapEventLibrary
+    public sealed class RecapEventLibrary
     {
         public RecapEvent[] events;
     }
