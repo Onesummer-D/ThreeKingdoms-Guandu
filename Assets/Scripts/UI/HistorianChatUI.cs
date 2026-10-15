@@ -629,8 +629,8 @@ public sealed class HistorianChatUI : MonoBehaviour
         Image image = value.AddComponent<Image>();
         image.color = new Color(.34f, .28f, .17f, .85f);
         Button button = value.AddComponent<Button>();
-        button.targetGraphic = image;
-        TMP_Text text = Text(value.transform, label, size, Paper);
+        GameButtonSkin.Apply(button, image, label);
+        TMP_Text text = Text(value.transform, label, size, GameButtonSkin.LabelColor);
         text.alignment = TextAlignmentOptions.Center;
         text.enableAutoSizing = true;
         text.fontSizeMin = 16f;
