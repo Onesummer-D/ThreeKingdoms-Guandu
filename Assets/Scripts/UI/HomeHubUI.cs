@@ -172,6 +172,7 @@ public sealed class HomeHubUI : MonoBehaviour
     {
         settingsOverlay = CreateModalRoot("SettingsOverlay", root);
         GameObject panel = CreatePanel(settingsOverlay.transform, "SettingsPanel");
+        DecorateSettingsPanel(panel);
         CreateHeader(panel.transform, "设置", CloseSettings);
 
         float bgm = AudioManager.Instance != null
@@ -182,30 +183,39 @@ public sealed class HomeHubUI : MonoBehaviour
             : PlayerPrefs.GetFloat("EffectsVolume", .9f);
         float brightness = PlayerPrefs.GetFloat("DisplayBrightness", 1f);
 
-        CreateSliderRow(panel.transform, "背景音乐", .67f, 0f, 1f, bgm, value =>
+        CreateSliderRow(panel.transform, "背景音乐", SettingsGlyphKind.Lyre, .66f, 0f, 1f, bgm, value =>
         {
             if (AudioManager.Instance != null) AudioManager.Instance.SetBGMVolume(value);
             else PlayerPrefs.SetFloat("BGMVolume", value);
         });
-        CreateSliderRow(panel.transform, "音效音量", .52f, 0f, 1f, effects, value =>
+        CreateSliderRow(panel.transform, "音效音量", SettingsGlyphKind.Drum, .51f, 0f, 1f, effects, value =>
         {
             if (AudioManager.Instance != null) AudioManager.Instance.SetEffectsVolume(value);
             else PlayerPrefs.SetFloat("EffectsVolume", value);
         });
-        CreateSliderRow(panel.transform, "画面亮度", .37f, .45f, 1f, brightness, value =>
+        CreateSliderRow(panel.transform, "画面亮度", SettingsGlyphKind.Sun, .36f, .45f, 1f, brightness, value =>
         {
             PlayerPrefs.SetFloat("DisplayBrightness", value);
             ApplyBrightness(value);
         });
 
-        Button quality = CreateButton(panel.transform, "", 44f, new Vector2(320f, 66f));
-        SetAnchored(quality.GetComponent<RectTransform>(), new Vector2(.55f, .20f), new Vector2(.88f, .29f));
+        Button quality = CreateButton(panel.transform, "", 38f, new Vector2(380f, 70f));
+        SetAnchored(quality.GetComponent<RectTransform>(), new Vector2(.49f, .19f), new Vector2(.84f, .285f));
+        Image qualityPlate = quality.GetComponent<Image>();
+        if (qualityPlate != null)
+        {
+            qualityPlate.sprite = SettingsMetalSprites.Rail;
+            qualityPlate.type = Image.Type.Sliced;
+            qualityPlate.color = new Color(.90f, .86f, .79f, 1f);
+            quality.targetGraphic = qualityPlate;
+        }
         qualityButtonLabel = quality.GetComponentInChildren<TMP_Text>(true);
         if (qualityButtonLabel != null)
         {
-            qualityButtonLabel.fontSize = 44f;
+            qualityButtonLabel.fontSize = 38f;
+            qualityButtonLabel.color = new Color(.98f, .82f, .56f, 1f);
             qualityButtonLabel.enableAutoSizing = false;
-            qualityButtonLabel.overflowMode = TextOverflowModes.Overflow;
+            qualityButtonLabel.overflowMode = TextOverflowModes.Ellipsis;
             qualityButtonLabel.alignment = TextAlignmentOptions.Center;
         }
         RefreshQualityLabel();
@@ -472,58 +482,232 @@ public sealed class HomeHubUI : MonoBehaviour
         return null;
     }
 
-    private void CreateSliderRow(Transform parent, string label, float anchorY,
-        float min, float max, float value, UnityEngine.Events.UnityAction<float> changed)
+    private void DecorateSettingsPanel(GameObject panel)
     {
-        TMP_Text name = CreateText(parent, label, 40f, TextAlignmentOptions.Left, TextPrimary, false);
-        SetAnchored(name.rectTransform, new Vector2(.12f, anchorY), new Vector2(.34f, anchorY + .10f));
+        // The panel intentionally stays a single focusable modal.  Every
+        // ornament is raycast-transparent so sliders and the close button work.
+        Image background = panel.GetComponent<Image>();
+        background.color = new Color(.085f, .082f, .087f, .995f);
+        Shadow shadow = panel.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, .72f);
+        shadow.effectDistance = new Vector2(10f, -10f);
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = new Color(.49f, .39f, .27f, 1f);
+        outline.effectDistance = new Vector2(2.5f, -2.5f);
 
-        Slider slider = CreateSlider(parent, min, max, value);
-        SetAnchored(slider.GetComponent<RectTransform>(), new Vector2(.36f, anchorY + .015f), new Vector2(.78f, anchorY + .085f));
+        AddSettingsFrameStroke(panel.transform, "UpperBronzeTrim",
+            new Vector2(.014f, .986f), new Vector2(.986f, .990f),
+            new Color(.55f, .44f, .31f));
+        AddSettingsFrameStroke(panel.transform, "LowerBronzeTrim",
+            new Vector2(.014f, .010f), new Vector2(.986f, .014f),
+            new Color(.55f, .44f, .31f));
+        AddSettingsFrameStroke(panel.transform, "LeftBronzeTrim",
+            new Vector2(.010f, .014f), new Vector2(.014f, .986f),
+            new Color(.55f, .44f, .31f));
+        AddSettingsFrameStroke(panel.transform, "RightBronzeTrim",
+            new Vector2(.986f, .014f), new Vector2(.990f, .986f),
+            new Color(.55f, .44f, .31f));
+        AddSettingsFrameStroke(panel.transform, "UpperInnerTrim",
+            new Vector2(.030f, .964f), new Vector2(.970f, .966f),
+            new Color(.32f, .27f, .21f));
+        AddSettingsFrameStroke(panel.transform, "LowerInnerTrim",
+            new Vector2(.030f, .034f), new Vector2(.970f, .036f),
+            new Color(.32f, .27f, .21f));
 
-        TMP_Text amount = CreateText(parent, Mathf.RoundToInt(value * 100f) + "%", 44f,
-            TextAlignmentOptions.Center, TextMuted, false);
-        amount.overflowMode = TextOverflowModes.Overflow;
-        SetAnchored(amount.rectTransform, new Vector2(.80f, anchorY), new Vector2(.96f, anchorY + .10f));
-        slider.onValueChanged.AddListener(current => amount.text = Mathf.RoundToInt(current * 100f) + "%");
-        slider.onValueChanged.AddListener(changed);
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject corner = CreateUIObject("SettingsOrnamentCorner" + i, panel.transform);
+            RectTransform rect = corner.GetComponent<RectTransform>();
+            float x = (i % 2 == 0) ? .016f : .984f;
+            float y = (i < 2) ? .984f : .016f;
+            rect.anchorMin = rect.anchorMax = new Vector2(x, y);
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.sizeDelta = new Vector2(92f, 92f);
+            rect.localEulerAngles = new Vector3(0f, 0f, i == 0 ? 0f : i == 1 ? -90f : i == 2 ? 90f : 180f);
+            SettingsGlyphGraphic ornament = corner.AddComponent<SettingsGlyphGraphic>();
+            ornament.Kind = SettingsGlyphKind.Corner;
+            ornament.color = new Color(.59f, .47f, .34f, .70f);
+            ornament.raycastTarget = false;
+        }
     }
 
-    private Slider CreateSlider(Transform parent, float min, float max, float value)
+    private static void AddSettingsFrameStroke(Transform parent, string name,
+        Vector2 min, Vector2 max, Color color)
+    {
+        GameObject segment = CreateUIObject(name, parent);
+        SetAnchored(segment.GetComponent<RectTransform>(), min, max);
+        Image image = segment.AddComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+    }
+
+    private void CreateSliderRow(Transform parent, string label, SettingsGlyphKind motif,
+        float anchorY, float min, float max, float value,
+        UnityEngine.Events.UnityAction<float> changed)
+    {
+        GameObject icon = CreateUIObject(label + "Motif", parent);
+        SetAnchored(icon.GetComponent<RectTransform>(),
+            new Vector2(.036f, anchorY + .006f), new Vector2(.106f, anchorY + .11f));
+        SettingsGlyphGraphic glyph = icon.AddComponent<SettingsGlyphGraphic>();
+        glyph.Kind = motif;
+        glyph.color = new Color(.87f, .67f, .36f, 1f);
+        glyph.raycastTarget = false;
+
+        TMP_Text name = CreateText(parent, label, 36f, TextAlignmentOptions.MidlineLeft,
+            new Color(.91f, .84f, .68f), false);
+        SetAnchored(name.rectTransform, new Vector2(.117f, anchorY),
+            new Vector2(.333f, anchorY + .12f));
+
+        Slider slider = CreateSlider(parent, motif, min, max, value);
+        SetAnchored(slider.GetComponent<RectTransform>(),
+            new Vector2(.405f, anchorY + .032f), new Vector2(.776f, anchorY + .093f));
+        slider.gameObject.name = label + "Slider";
+
+        CreateStepButton(parent, label + "Decrease", .348f, anchorY + .03f, false,
+            () => slider.value = Mathf.Clamp(Mathf.Round((slider.value - .05f) * 100f) / 100f, min, max));
+        CreateStepButton(parent, label + "Increase", .785f, anchorY + .03f, true,
+            () => slider.value = Mathf.Clamp(Mathf.Round((slider.value + .05f) * 100f) / 100f, min, max));
+
+        TMP_Text amount = CreateText(parent, Mathf.RoundToInt(value * 100f) + "%", 42f,
+            TextAlignmentOptions.Center, new Color(.91f, .85f, .69f), false);
+        amount.overflowMode = TextOverflowModes.Overflow;
+        SetAnchored(amount.rectTransform, new Vector2(.846f, anchorY),
+            new Vector2(.966f, anchorY + .12f));
+
+        // Percentages are displayed as the saved absolute setting values.
+        // The brightness slider starts at 45%, NOT at 0%.
+        SettingsSliderFeedback feedback = slider.GetComponent<SettingsSliderFeedback>();
+        slider.onValueChanged.AddListener(current => amount.text =
+            Mathf.RoundToInt(current * 100f) + "%");
+        slider.onValueChanged.AddListener(changed);
+        if (feedback != null) slider.onValueChanged.AddListener(feedback.Refresh);
+        slider.SetValueWithoutNotify(Mathf.Clamp(value, min, max));
+        if (feedback != null) feedback.Refresh(slider.value);
+    }
+
+    private void CreateStepButton(Transform parent, string name, float anchorX,
+        float anchorY, bool increase, UnityEngine.Events.UnityAction click)
+    {
+        GameObject go = CreateUIObject(name, parent);
+        SetAnchored(go.GetComponent<RectTransform>(),
+            new Vector2(anchorX, anchorY), new Vector2(anchorX + .051f, anchorY + .07f));
+        Image plate = go.AddComponent<Image>();
+        plate.sprite = SettingsMetalSprites.Arrow;
+        plate.type = Image.Type.Simple;
+        plate.color = Color.white;
+        Button button = go.AddComponent<Button>();
+        button.targetGraphic = plate;
+        ColorBlock colors = button.colors;
+        colors.highlightedColor = new Color(1f, .91f, .74f);
+        colors.pressedColor = new Color(.69f, .55f, .39f);
+        button.colors = colors;
+        button.onClick.AddListener(click);
+
+        GameObject icon = CreateUIObject("BronzeArrow", go.transform);
+        SetAnchored(icon.GetComponent<RectTransform>(), new Vector2(.18f, .18f), new Vector2(.82f, .82f));
+        SettingsGlyphGraphic graphic = icon.AddComponent<SettingsGlyphGraphic>();
+        graphic.Kind = increase ? SettingsGlyphKind.ArrowRight : SettingsGlyphKind.ArrowLeft;
+        graphic.color = new Color(.98f, .79f, .50f);
+        graphic.raycastTarget = false;
+    }
+
+    private Slider CreateSlider(Transform parent, SettingsGlyphKind motif,
+        float min, float max, float value)
     {
         GameObject root = CreateUIObject("Slider", parent);
         Slider slider = root.AddComponent<Slider>();
         slider.minValue = min;
         slider.maxValue = max;
-        slider.value = value;
+        slider.wholeNumbers = false;
+        slider.value = Mathf.Clamp(value, min, max);
 
-        GameObject background = CreateUIObject("Background", root.transform);
-        RectTransform backgroundRect = background.GetComponent<RectTransform>();
-        SetAnchored(backgroundRect, new Vector2(0f, .36f), new Vector2(1f, .64f));
-        background.AddComponent<Image>().color = new Color(.20f, .27f, .29f, 1f);
+        GameObject bed = CreateUIObject("RecessedMetalTrack", root.transform);
+        SetAnchored(bed.GetComponent<RectTransform>(), new Vector2(0f, .22f), new Vector2(1f, .78f));
+        Image background = bed.AddComponent<Image>();
+        background.sprite = SettingsMetalSprites.Rail;
+        background.type = Image.Type.Sliced;
+        background.color = Color.white;
+        background.raycastTarget = false;
 
         GameObject fillArea = CreateUIObject("Fill Area", root.transform);
-        SetAnchored(fillArea.GetComponent<RectTransform>(), new Vector2(.02f, .36f), new Vector2(.98f, .64f));
-        GameObject fill = CreateUIObject("Fill", fillArea.transform);
+        SetAnchored(fillArea.GetComponent<RectTransform>(), new Vector2(.025f, .29f), new Vector2(.975f, .71f));
+        GameObject fill = CreateUIObject("BrushedGoldFill", fillArea.transform);
         Stretch(fill.GetComponent<RectTransform>());
         Image fillImage = fill.AddComponent<Image>();
-        fillImage.color = AccentColor;
+        fillImage.sprite = SettingsMetalSprites.Fill;
+        fillImage.type = Image.Type.Sliced;
+        fillImage.color = Color.white;
+        fillImage.raycastTarget = false;
 
         GameObject handleArea = CreateUIObject("Handle Slide Area", root.transform);
-        SetAnchored(handleArea.GetComponent<RectTransform>(), new Vector2(.02f, 0f), new Vector2(.98f, 1f));
-        GameObject handle = CreateUIObject("Handle", handleArea.transform);
+        SetAnchored(handleArea.GetComponent<RectTransform>(), new Vector2(.025f, 0f), new Vector2(.975f, 1f));
+        GameObject handle = CreateUIObject("EngravedKnob", handleArea.transform);
         RectTransform handleRect = handle.GetComponent<RectTransform>();
-        handleRect.anchorMin = handleRect.anchorMax = new Vector2(.5f, .5f);
-        handleRect.pivot = new Vector2(.5f, .5f);
+        handleRect.anchorMin = handleRect.anchorMax = handleRect.pivot = Vector2.one * .5f;
         handleRect.anchoredPosition = Vector2.zero;
-        handleRect.sizeDelta = new Vector2(18f, 18f);
+        handleRect.sizeDelta = new Vector2(72f, 72f);
         Image handleImage = handle.AddComponent<Image>();
-        handleImage.color = TextPrimary;
+        handleImage.sprite = SettingsMetalSprites.Knob;
+        handleImage.color = Color.white;
+        handleImage.raycastTarget = false;
+
+        GameObject handleGlyph = CreateUIObject("KnobMotif", handle.transform);
+        SetAnchored(handleGlyph.GetComponent<RectTransform>(), new Vector2(.23f, .23f), new Vector2(.77f, .77f));
+        SettingsGlyphGraphic ornament = handleGlyph.AddComponent<SettingsGlyphGraphic>();
+        ornament.Kind = motif;
+        ornament.color = new Color(.94f, .75f, .40f);
+        ornament.raycastTarget = false;
+
+        GameObject bubble = CreateUIObject("DraggedValue", handle.transform);
+        RectTransform bubbleRect = bubble.GetComponent<RectTransform>();
+        bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(.5f, 1f);
+        bubbleRect.pivot = new Vector2(.5f, 0f);
+        bubbleRect.anchoredPosition = new Vector2(0f, 4f);
+        bubbleRect.sizeDelta = new Vector2(98f, 48f);
+        Image bubbleBg = bubble.AddComponent<Image>();
+        bubbleBg.sprite = SettingsMetalSprites.Rail;
+        bubbleBg.type = Image.Type.Sliced;
+        bubbleBg.color = new Color(1f, .91f, .70f);
+        bubbleBg.raycastTarget = false;
+        TMP_Text bubbleText = CreateText(bubble.transform,
+            Mathf.RoundToInt(value * 100f) + "%", 29f, TextAlignmentOptions.Center,
+            new Color(.99f, .89f, .72f), false);
+        Stretch(bubbleText.rectTransform);
+        bubble.SetActive(false);
 
         slider.fillRect = fill.GetComponent<RectTransform>();
         slider.handleRect = handleRect;
         slider.targetGraphic = handleImage;
         slider.direction = Slider.Direction.LeftToRight;
+
+        // Low-contrast reference ticks; they do not snap the value.
+        GameObject tickRoot = CreateUIObject("NonSnappingTickMarks", root.transform);
+        SetAnchored(tickRoot.GetComponent<RectTransform>(), new Vector2(.025f, -.57f), new Vector2(.975f, -.05f));
+        for (int i = 0; i < 5; i++)
+        {
+            float t = i / 4f;
+            GameObject mark = CreateUIObject("Tick" + i, tickRoot.transform);
+            RectTransform markRect = mark.GetComponent<RectTransform>();
+            markRect.anchorMin = markRect.anchorMax = new Vector2(t, .96f);
+            markRect.pivot = new Vector2(.5f, 1f);
+            markRect.anchoredPosition = Vector2.zero;
+            markRect.sizeDelta = new Vector2(2f, 8f);
+            Image markImage = mark.AddComponent<Image>();
+            markImage.color = new Color(.71f, .62f, .48f, .75f);
+            markImage.raycastTarget = false;
+            int tickPercent = i == 4 ? Mathf.RoundToInt(max * 100f) :
+                Mathf.RoundToInt((min + (max - min) * t) * 100f);
+            TMP_Text legend = CreateText(tickRoot.transform, tickPercent.ToString(),
+                19f, TextAlignmentOptions.Center, new Color(.67f, .62f, .54f), false);
+            RectTransform legendRect = legend.rectTransform;
+            legendRect.anchorMin = legendRect.anchorMax = new Vector2(t, .30f);
+            legendRect.pivot = new Vector2(.5f, .5f);
+            legendRect.anchoredPosition = Vector2.zero;
+            legendRect.sizeDelta = new Vector2(68f, 27f);
+        }
+
+        SettingsSliderFeedback feedback = root.AddComponent<SettingsSliderFeedback>();
+        feedback.Initialize(handleRect, handleImage, bubble, bubbleText);
         return slider;
     }
 
