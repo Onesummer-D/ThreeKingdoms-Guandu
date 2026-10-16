@@ -33,8 +33,10 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         CreateEditButton(mainMenu);
         CreateIdentityOverlay(canvasRoot);
         RefreshLabel();
-        overlay.SetActive(!PlayerIdentityState.HasId);
-        if (overlay.activeSelf) overlay.transform.SetAsLastSibling();
+        if (!PlayerIdentityState.HasId)
+            ShowEditor(); // Focus the actual TMP field on first launch too.
+        else
+            overlay.SetActive(false);
     }
 
     public void ShowEditor()
