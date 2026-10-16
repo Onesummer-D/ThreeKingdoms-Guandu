@@ -60,6 +60,7 @@ public class FinalUIManager : MonoBehaviour
     private LocalSaveManager localSaveManager;
     private SaveArchiveUI saveArchiveUI;
     private HomeHubUI homeHubUI;
+    private PlayerIdentityUI playerIdentityUI;
     private GameplayExitUI gameplayExitUI;
     private RunHistoryTracker runHistoryTracker;
     private BattleReportUI battleReportUI;
@@ -242,6 +243,11 @@ public class FinalUIManager : MonoBehaviour
             homeHubUI.Initialize(this, startMenuPanel, gameInterfacePanel.transform.root,
                 caocaoLeft, xuyouLeft, yuanshaoLeft);
 
+        playerIdentityUI = GetComponent<PlayerIdentityUI>();
+        if (playerIdentityUI == null) playerIdentityUI = gameObject.AddComponent<PlayerIdentityUI>();
+        if (startMenuPanel != null && gameInterfacePanel != null)
+            playerIdentityUI.Initialize(gameInterfacePanel.transform.root, startMenuPanel.transform);
+
         gameplayExitUI = GetComponent<GameplayExitUI>();
         if (gameplayExitUI == null) gameplayExitUI = gameObject.AddComponent<GameplayExitUI>();
         if (gameInterfacePanel != null)
@@ -372,6 +378,11 @@ public class FinalUIManager : MonoBehaviour
 
     public void StartGame()
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            playerIdentityUI?.ShowEditor();
+            return;
+        }
         if (inviteCoCreationUI != null && inviteCoCreationUI.ShowPlayerBrief(BeginNewRun)) return;
         BeginNewRun();
     }
@@ -388,6 +399,11 @@ public class FinalUIManager : MonoBehaviour
 
     private void BeginNewRun()
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            playerIdentityUI?.ShowEditor();
+            return;
+        }
         Debug.Log("开始游戏");
 
         ResetRunState();
@@ -701,6 +717,12 @@ public class FinalUIManager : MonoBehaviour
 
     public bool LoadRunFromSlot(string slotId, out string message)
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            message = "请先设置主将 ID，再读取本机存档。";
+            playerIdentityUI?.ShowEditor();
+            return false;
+        }
         if (localSaveManager == null)
         {
             message = "存档系统尚未准备完成。";
