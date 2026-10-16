@@ -3,104 +3,368 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#30231b">
   <title>官渡之战 · 参谋邀约</title>
   <style>
     @font-face { font-family:Guandu; src:url('/assets/game-font.ttf') format('truetype'); font-display:swap; }
-    :root { font-family:Guandu,'Noto Serif SC',serif; color:#f0ead9; background:#49392e; }
+    :root {
+      color-scheme:light;
+      --ink:#3d291b; --rust:#784c30; --gold:#bd9055; --light:#f3e6ca;
+      --paper:#f0dfbc; --paper-deep:#d8b88b; --wood:#815731;
+      font-family:Guandu,"Noto Serif SC","Songti SC",serif;
+    }
     * { box-sizing:border-box; }
-    body { margin:0; padding:40px 24px 56px; min-height:100vh; }
-    body::before { content:''; position:fixed; inset:0; z-index:-1; background:linear-gradient(#241c19b0,#241c1970),url('/assets/battlefield.png') center/cover; }
-    main { max-width:760px; margin:auto; }
-    h1 { margin:0 0 14px; font-size:32px; font-weight:400; color:#ead09a; text-align:center; }
-    h2, .field-title { display:block; margin:30px 0 12px; font-size:22px; font-weight:400; color:#ead09a; line-height:1.5; }
-    #context { white-space:pre-wrap; line-height:1.9; font-size:19px; }
-    #decision { white-space:pre-wrap; line-height:1.9; font-size:19px; }
-    .resources { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:28px 0; text-align:center; }
-    .resources[hidden] { display:none; }
-    .resource { margin:0; min-width:0; }
-    .resource-ring { position:relative; width:min(100%,112px); aspect-ratio:1; margin:0 auto 10px; }
-    .resource-ring svg { width:100%; height:100%; display:block; transform:rotate(-90deg); }
-    .resource-track { fill:none; stroke:#f0ead92b; stroke-width:7; }
-    .resource-fill { fill:none; stroke:var(--resource-color); stroke-width:7; stroke-linecap:round; }
-    .resource-value { position:absolute; inset:0; display:grid; place-content:center; font-size:26px; color:#f0ead9; }
-    .resource-value small { display:block; font-size:12px; color:#e4d6c0; }
-    .resource figcaption { font-size:19px; color:#ead09a; }
-    button, input, textarea { font:inherit; }
-    .option { display:block; width:100%; text-align:left; padding:18px 34px; margin:14px 0; border:0; border-radius:0; background:url('/assets/option.png') center/100% 100% no-repeat; color:#493a2b; font-size:19px; line-height:1.6; cursor:pointer; }
-    .option.selected { background-image:url('/assets/option-selected.png'); }
-    .option:focus-visible, button.submit:focus-visible { outline:2px solid #f1d08b; outline-offset:4px; }
-    input, textarea { width:100%; border:1px solid #bca77d; border-radius:0; background:#efe7d6ee; color:#493a2b; padding:14px 16px; font-size:19px; margin:0; }
-    input::placeholder, textarea::placeholder { color:#827568; }
-    textarea { min-height:100px; resize:vertical; }
-    button.submit { display:block; width:260px; max-width:100%; margin:32px auto 0; padding:18px 30px; border:0; border-radius:0; background:url('/assets/option.png') center/100% 100% no-repeat; color:#493a2b; font-size:22px; cursor:pointer; }
-    button:disabled { opacity:.65; cursor:default; }
-    #status { margin-top:16px; color:#f0ead9; min-height:24px; text-align:center; line-height:1.7; }
-    @media (max-width:480px) { body { padding:28px 20px 40px; } h1 { font-size:28px; } #context,#decision,.option,input,textarea { font-size:17px; } h2,.field-title { font-size:21px; } .option { padding:16px 25px; } .resources { gap:10px; } .resource-value { font-size:22px; } .resource figcaption { font-size:17px; } }
-    @media (max-width:350px) { .resources { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; } }
+    html { background:#2b201b; }
+    body { margin:0; color:var(--ink); font-size:16px; }
+    button,input,textarea { font:inherit; }
+    button { touch-action:manipulation; cursor:pointer; }
+    button:disabled { cursor:default; }
+    button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,
+    a:focus-visible { outline:3px solid #b56429; outline-offset:3px; }
+    [hidden] { display:none !important; }
+    .page {
+      max-width:540px; min-height:100vh; min-height:100dvh; margin:0 auto;
+      padding-bottom:calc(24px + env(safe-area-inset-bottom));
+      background:
+        radial-gradient(ellipse at 12% 73%, #bba37b42,transparent 41%),
+        linear-gradient(180deg,#30231b 0 22%,#e7d2a6 48%,#f1dfbb 100%);
+      box-shadow:0 0 48px #0006; overflow:hidden;
+    }
+    .masthead {
+      position:relative; height:clamp(144px,38vw,208px); overflow:hidden;
+      background:linear-gradient(#2c201525,#30211620 48%,#473022),url('/assets/battlefield.png') center 45%/cover no-repeat;
+    }
+    .masthead::after {
+      content:""; position:absolute; inset:0;
+      background:linear-gradient(180deg,#25171122,#432d1950 74%,#49301db3);
+      pointer-events:none;
+    }
+    .masthead-title {
+      position:absolute;z-index:1;inset:auto 0 13px;text-align:center;
+      color:#f7e5bc;text-shadow:0 2px 4px #2c1b12,0 0 16px #1e130f;
+    }
+    .masthead-title h1 {font-size:clamp(26px,6.9vw,36px);font-weight:600;letter-spacing:.18em;margin:0;}
+    .masthead-title p {margin:3px 0 0;font-size:12px;letter-spacing:.2em;color:#d4bd94;}
+    .scroll-paper {
+      position:relative;z-index:2;margin:-5px 18px 0;
+      border:3px solid #bc9464;border-radius:13px;
+      background:
+        radial-gradient(ellipse at 68% 1%,#fff6de,#fff6de00 44%),
+        repeating-linear-gradient(12deg,#9c724607 0 1px,transparent 1px 9px),
+        linear-gradient(125deg,#e5c995,#f7ead0 23%,#f5e5c7 73%,#dac092);
+      box-shadow:0 6px 18px #2b1b1790,inset 0 0 0 3px #f6e5c2,inset 0 0 0 6px #bfa079;
+      padding:16px 22px 20px;
+    }
+    .scroll-paper::before,.scroll-paper::after {
+      content:"";position:absolute;z-index:-1;top:9px;bottom:9px;width:15px;
+      border:1px solid #9a6b41; border-radius:9px;
+      background:linear-gradient(90deg,#704526,#e5bf80 44%,#a57347 70%,#5f381e);
+      box-shadow:0 2px 3px #4c2b1f66;
+    }
+    .scroll-paper::before {left:-13px;} .scroll-paper::after{right:-13px;}
+    .paper-heading {
+      display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 12px;
+      font-size:clamp(22px,5.5vw,28px);font-weight:600;white-space:nowrap;color:#51331d;
+    }
+    .paper-heading::before,.paper-heading::after{
+      content:"❧";font-size:17px;color:#a78453;opacity:.8;
+    }
+    .recap {font-size:clamp(15px,3.9vw,18px);line-height:1.7;white-space:pre-line;overflow-wrap:anywhere;}
+    .recap.collapsed {max-height:8.35em;overflow:hidden;mask-image:linear-gradient(black 76%,transparent);}
+    .recap-toggle {
+      display:block;margin:5px auto 7px;padding:7px 14px;border:0;
+      background:#e4caa27d;color:#704922;border-radius:999px;font-size:13px;
+    }
+    .resource-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:16px;}
+    .resource {text-align:center;min-width:0;}
+    .medallion {width:min(100%,92px);aspect-ratio:1;margin:auto;position:relative;
+      border:3px solid #6a452e;border-radius:50%;
+      background:radial-gradient(circle at 30% 24%,#ffffff62,#0000 31%),linear-gradient(145deg,#a78154,#463329);
+      box-shadow:inset 0 0 0 2px #c6a47b,0 3px 4px #70513870;}
+    .medallion svg {position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);transform:rotate(-90deg);}
+    .track {fill:none;stroke:#d4bc985c;stroke-width:9;}
+    .progress {fill:none;stroke:var(--meter);stroke-width:9;stroke-linecap:round;}
+    .medallion-content {position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+      align-items:center;gap:0;color:#fff4e0;text-shadow:0 2px 2px #2a1a13b0;}
+    .medallion-icon {font-size:19px;line-height:1;}
+    .medallion-number {font-size:clamp(19px,4.8vw,26px);line-height:1.25;}
+    .resource-label {color:#51351f;font-size:clamp(13px,3.5vw,17px);margin-top:5px;}
+    .resource-note {font-size:10px;color:#7f664e;}
+    .question {
+      margin:13px 15px 0;padding:14px 16px;min-height:93px;display:flex;align-items:center;
+      border:4px ridge #9b7045;border-radius:9px;
+      box-shadow:inset 0 0 0 2px #d2a66d,0 6px 12px #32231c50;
+      color:#f2dfbd;font-size:clamp(18px,4.4vw,22px);line-height:1.45;
+      background:linear-gradient(90deg,#4b2d22ed 0%,#503124e8 67%,#513021a6 100%),url('/assets/battlefield.png') 79% 63%/cover;
+    }
+    .question-label {display:block;color:#cfac6f;font-size:13px;letter-spacing:.2em;margin-bottom:6px;}
+    .choice-label {text-align:center;margin:17px 12px 9px;color:#54371f;letter-spacing:.12em;font-size:18px;}
+    .options {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 11px;}
+    .option {
+      position:relative;min-width:0;min-height:clamp(77px,20vw,115px);
+      padding:12px 9px 15px;border:0;background:url('/assets/option.png') center/100% 100% no-repeat;
+      color:#4b2b17;font-size:clamp(12px,3.2vw,17px);line-height:1.45;overflow-wrap:anywhere;
+      text-shadow:0 1px #fff0d36b;transition:transform .15s,filter .15s;
+    }
+    .option:active {transform:translateY(2px);}
+    .option.selected {background-image:url('/assets/option-selected.png');filter:drop-shadow(0 2px 5px #93582f70);}
+    .option.selected::after {
+      content:"已择";position:absolute;right:4px;bottom:3px;transform:rotate(-12deg);
+      font-size:11px;color:#fff0dd;background:#9e3825;border:1px solid #cf9478;
+      padding:2px 5px;border-radius:2px;
+    }
+    .option:disabled {opacity:.83;}
+    .form-panel {margin:15px 17px 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px;}
+    .paper-field {
+      min-width:0;background:linear-gradient(140deg,#f7ead1,#e5cfab);
+      border:4px ridge #9d7653;border-radius:4px;box-shadow:inset 0 0 0 2px #ddc09b,0 3px 7px #38251a3b;
+      padding:7px 9px;
+    }
+    .paper-field label{display:block;font-size:15px;color:#684023;margin:0 0 4px;}
+    .paper-field input,.paper-field textarea {
+      width:100%;border:0;outline:0;background:transparent;color:#332015;display:block;
+      resize:vertical;padding:4px;font-size:16px;line-height:1.35;min-height:40px;
+    }
+    .paper-field textarea{min-height:58px;max-height:180px;}
+    .paper-field input::placeholder,.paper-field textarea::placeholder{color:#8f7b66;}
+    .paper-field:focus-within {outline:2px solid #b77139;outline-offset:2px;}
+    .submit {
+      position:relative;display:block;width:min(65%,260px);min-height:56px;margin:14px auto 0;padding:10px 42px 10px 12px;
+      color:#f1e9d9;font-size:clamp(20px,5vw,26px);letter-spacing:.13em;
+      background:linear-gradient(#879291,#506467);border:3px ridge #c1b49a;border-radius:12px;
+      box-shadow:0 5px 10px #38281c77,inset 0 1px #e7e9df66;
+    }
+    .submit::after {
+      content:"呈";position:absolute;right:10px;top:50%;transform:translateY(-50%) rotate(-15deg);
+      width:36px;height:36px;border-radius:6px;display:grid;place-items:center;
+      background:#a3392c;color:#f3c3aa;border:2px double #eaa58e;font-size:21px;
+      box-shadow:0 2px 4px #321d1788;
+    }
+    .submit:disabled {filter:saturate(.48);opacity:.79;}
+    .status {min-height:26px;margin:12px 17px 0;text-align:center;font-size:14px;line-height:1.5;color:#714224;}
+    .status.error {color:#a22e20;font-weight:600;}
+    .success-panel {margin:14px 17px 0;background:#f2e2c1;border:2px solid #9b7346;
+      padding:18px;border-radius:8px;text-align:center;color:#53371f;}
+    .success-panel .seal {display:inline-block;margin-bottom:8px;border:3px double #ad382b;
+      color:#a83b2c;padding:8px 14px;transform:rotate(-6deg);font-size:24px;}
+    .footer-actions {display:flex;justify-content:center;gap:11px;margin:15px 16px 0;}
+    .footer-action {
+      flex:1;max-width:230px;min-height:44px;border:2px solid #a27e55;border-radius:9px;
+      display:flex;justify-content:center;align-items:center;text-align:center;padding:7px 10px;
+      background:linear-gradient(#f9edcf,#e4c89b);color:#57351e;text-decoration:none;font-size:16px;
+      box-shadow:0 2px 7px #634e3560;
+    }
+    .footer-action.dark {background:linear-gradient(#6c4a33,#35241b);color:#f3d9ac;border-color:#8e6a43;}
+    .footer-note {margin:11px 18px 0;font-size:12px;text-align:center;color:#725d44;line-height:1.6;}
+    @media (max-width:370px) {
+      .scroll-paper {margin-left:14px;margin-right:14px;padding:13px 17px;}
+      .options{padding:0 8px;gap:4px;}
+      .option{padding:9px 5px 12px;min-height:90px;}
+      .medallion-icon{font-size:15px;}
+      .form-panel{margin-left:12px;margin-right:12px;gap:5px;}
+      .paper-field{padding:5px;}
+      .paper-field label{font-size:13px;}
+    }
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;}}
   </style>
 </head>
 <body>
-<main>
-  <h1>官渡之战 · 军议邀约</h1>
-  <h2>当前战局</h2><div id="context">正在读取战局……</div>
-  <div id="resources" class="resources" aria-label="当前资源" hidden></div>
-  <div id="decision"></div>
-  <h2>你的建议</h2><div id="options"></div>
-  <label class="field-title" for="guest">参谋昵称</label><input id="guest" maxlength="40" placeholder="例如：仲达">
-  <label class="field-title" for="reason">一句理由</label><textarea id="reason" maxlength="500" placeholder="我建议这样做，因为……"></textarea>
-  <button class="submit" id="submit">提交建议</button>
-  <div id="status"></div>
+<main class="page">
+  <header class="masthead" aria-label="军帐战场背景">
+    <div class="masthead-title"><h1>官渡之战 · 军议邀约</h1><p>军前问策　·　共谋此局</p></div>
+  </header>
+
+  <section class="scroll-paper" aria-labelledby="situation-heading">
+    <h2 class="paper-heading" id="situation-heading">当前战局</h2>
+    <div id="context" class="recap" aria-live="polite">正在读取已走剧情……</div>
+    <button id="recapToggle" class="recap-toggle" type="button" aria-controls="context" aria-expanded="false" hidden>展开完整战局 ▾</button>
+    <div id="resources" class="resource-grid" aria-label="当前资源" hidden></div>
+  </section>
+
+  <section class="question" aria-labelledby="decision-label">
+    <div><span id="decision-label" class="question-label">军议之题</span>
+      <div id="decision">正在读取主将的问题……</div>
+    </div>
+  </section>
+  <h2 class="choice-label">请选择一策</h2>
+  <div class="options" id="options" role="group" aria-label="参谋建议选项"></div>
+
+  <section class="form-panel" aria-label="参谋献策">
+    <div class="paper-field"><label for="guest">参谋名号</label>
+      <input id="guest" maxlength="40" autocomplete="nickname" placeholder="尊姓大名"></div>
+    <div class="paper-field"><label for="reason">献策缘由（选填）</label>
+      <textarea id="reason" maxlength="500" rows="2" placeholder="为何选此策？"></textarea></div>
+  </section>
+  <button id="submit" class="submit" type="button">呈递军议</button>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <div id="successPanel" class="success-panel" hidden>
+    <div class="seal">献策已呈</div>
+    <div>你的建议已送达主将，是否采纳由主将最终决定。</div>
+  </div>
+  <div class="footer-actions">
+    <button id="shareBtn" type="button" class="footer-action" hidden>转发此邀约 ↗</button>
+    <a id="joinGame" class="footer-action dark" href="#" target="_blank" rel="noopener noreferrer" hidden>了解《官渡之战》 ↗</a>
+  </div>
+  <p id="footerNote" class="footer-note">本次军议仅接收一份有效建议；提交不代表主将采纳。</p>
 </main>
 <script>
+  // Session/token are injected as JSON string literals by server.js.
   const sessionId = __SESSION_ID__;
   const joinToken = __JOIN_TOKEN__;
-  let snapshot = null, selected = -1;
+  const gameEntryUrl = __GAME_ENTRY_URL__;
   const $ = id => document.getElementById(id);
-  function show(message) { $('status').textContent = message; }
-  async function load() {
-    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}?token=${encodeURIComponent(joinToken)}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || '会话已过期');
-    snapshot = data;
-    const question = (data.snapshot.question || '').trim();
-    // Older game clients included the question in context too.
-    const context = (data.snapshot.context || '').split(question || '\u0000').join('').trim();
-    const resources = data.snapshot.resources || {};
-    $('context').textContent = context;
-    $('decision').textContent = question || '请根据当前战况给出建议';
-    $('resources').replaceChildren();
-    const resourceDefinitions = [['troop','兵力','#da7766'],['food','粮草','#e0b75b'],
-      ['strategy','计策','#7bc4ab'],['risk','风险','#b69acf']];
-    resourceDefinitions.forEach(([key, label, color]) => {
-      const known = resources[key] != null && Number.isFinite(Number(resources[key]));
-      const value = known ? Math.min(100, Math.max(0, Math.round(Number(resources[key])))) : 0;
-      const figure = document.createElement('figure'); figure.className = 'resource';
-      figure.style.setProperty('--resource-color', color);
-      figure.setAttribute('aria-label', known ? `${label} ${value}/100` : `${label}暂无记录`);
-      figure.innerHTML = `<div class="resource-ring" aria-hidden="true"><svg viewBox="0 0 100 100"><circle class="resource-track" cx="50" cy="50" r="43"/><circle class="resource-fill" cx="50" cy="50" r="43" pathLength="100" stroke-dasharray="${value} 100" ${value === 0 ? 'visibility="hidden"' : ''}/></svg><span class="resource-value">${known ? value : '—'}<small>${known ? '/ 100' : '暂无记录'}</small></span></div><figcaption>${label}</figcaption>`;
-      $('resources').appendChild(figure);
+  let snapshot = null, selected = -1, submitted = false, inFlight = false;
+  let retryId = '', expirationTimer = null, expiresAt = 0;
+  const iconByResource = {troop:'⚔', food:'粮', strategy:'羽', risk:'!'};
+  const fields = [['troop','兵力','#cf7368'],['food','粮草','#e6bd5d'],
+    ['strategy','计策','#75c2ae'],['risk','风险','#b491d2']];
+
+  function show(message, isError) {
+    $('status').textContent = message || '';
+    $('status').classList.toggle('error', Boolean(isError));
+  }
+  function setUnavailable(message) {
+    submitted = true;
+    $('submit').disabled = true;
+    $('options').querySelectorAll('button').forEach(btn => btn.disabled = true);
+    $('shareBtn').hidden = true;
+    if (message) show(message, true);
+  }
+  function renderResources(values) {
+    const root = $('resources');
+    root.replaceChildren();
+    fields.forEach(item => {
+      const key = item[0], label = item[1], tint = item[2];
+      const raw = values && values[key] != null ? Number(values[key]) : NaN;
+      const known = Number.isFinite(raw);
+      const n = known ? Math.min(100, Math.max(0, Math.round(raw))) : 0;
+      const card = document.createElement('div');
+      card.className = 'resource';
+      card.style.setProperty('--meter', tint);
+      card.setAttribute('aria-label',known ? label+' '+n+'/100':label+'暂无记录');
+      const coin = document.createElement('div');
+      coin.className='medallion';
+      // Only validated numbers and fixed resource labels enter this markup.
+      coin.innerHTML = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="39"/><circle class="progress" cx="50" cy="50" r="39" pathLength="100" stroke-dasharray="'+n+' 100"/></svg>';
+      const display=document.createElement('div'); display.className='medallion-content';
+      const icon=document.createElement('span'); icon.className='medallion-icon'; icon.textContent=iconByResource[key];
+      const number=document.createElement('span'); number.className='medallion-number'; number.textContent=known?String(n):'—';
+      display.append(icon, number); coin.appendChild(display);
+      const caption=document.createElement('div');caption.className='resource-label';caption.textContent=label;
+      card.append(coin,caption);root.appendChild(card);
     });
-    $('resources').hidden = false;
-    $('options').innerHTML = '';
-    data.options.forEach((option, index) => {
-      const button = document.createElement('button'); button.className = 'option'; button.textContent = `${index + 1}. ${option}`;
-      button.setAttribute('aria-pressed', 'false');
-      button.onclick = () => { selected = index; document.querySelectorAll('.option').forEach((item, i) => { item.classList.toggle('selected', i === selected); item.setAttribute('aria-pressed', String(i === selected)); }); };
-      $('options').appendChild(button);
+    root.hidden=false;
+  }
+  function renderOptions(values) {
+    const root=$('options');root.replaceChildren();
+    (Array.isArray(values)?values:[]).forEach((value,index)=>{
+      const button=document.createElement('button');
+      button.type='button';button.className='option';
+      button.textContent=(index+1)+'. '+String(value);
+      button.setAttribute('aria-pressed','false');
+      button.addEventListener('click',()=>{
+        if(submitted||inFlight)return;
+        selected=index;retryId='';
+        root.querySelectorAll('button').forEach((item,i)=>{
+          item.classList.toggle('selected',i===index);
+          item.setAttribute('aria-pressed',String(i===index));
+        });
+        show('');
+      });
+      root.appendChild(button);
     });
   }
-  $('submit').onclick = async () => {
-    if (!snapshot || selected < 0) return show('请先选择一个建议。');
-    const guestLabel = $('guest').value.trim(); if (!guestLabel) return show('请填写参谋昵称。');
-    $('submit').disabled = true; show('正在提交……');
+  function renderRecap(text) {
+    const content=String(text||'').trim()||'暂无已走剧情';
+    $('context').textContent=content;
+    const toggle=$('recapToggle');
+    const isLong=content.length>105 || content.split('\n').length>4;
+    toggle.hidden=!isLong;
+    $('context').classList.toggle('collapsed',isLong);
+    toggle.setAttribute('aria-expanded','false');
+    toggle.textContent='展开完整战局 ▾';
+  }
+  $('recapToggle').addEventListener('click',()=>{
+    const collapsed=$('context').classList.toggle('collapsed');
+    $('recapToggle').textContent=collapsed?'展开完整战局 ▾':'收起战局简报 ▴';
+    $('recapToggle').setAttribute('aria-expanded',String(!collapsed));
+  });
+  function countdown() {
+    if (!expiresAt || submitted)return;
+    const seconds=Math.max(0,Math.ceil((expiresAt-Date.now())/1000));
+    if (seconds===0){setUnavailable('本次军议已到期，请向主将索取新邀约。');return;}
+    const minutes=Math.floor(seconds/60);
+    $('decision-label').textContent='军议之题 · 邀约预计剩余 '+minutes+':'+String(seconds%60).padStart(2,'0');
+  }
+  async function load(){
+    const res=await fetch('/api/sessions/'+encodeURIComponent(sessionId)+'?token='+encodeURIComponent(joinToken),
+      {cache:'no-store'});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||'邀约无法读取');
+    snapshot=data;
+    const snap=data.snapshot||{};
+    const question=String(snap.question||'').trim();
+    const context=String(snap.context||'').split(question||'\u0000').join('').trim();
+    renderRecap(context);
+    renderResources(snap.resources||{});
+    $('decision').textContent=question||'请根据当前战局，献上一策。';
+    renderOptions(data.options);
+    expiresAt=Number(data.expiresAt)||0;
+    if(data.state!=='awaiting_guest')setUnavailable('本局军议已有结果或已结束，无法重复献策。');
+    else{
+      $('shareBtn').hidden=false;
+      countdown();
+      expirationTimer=setInterval(countdown,1000);
+    }
+  }
+  function validGameUrl(value) {
     try {
-      const requestId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-      const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/suggestions`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ joinToken, guestLabel, optionIndex:selected, reason:$('reason').value, clientRequestId:requestId }) });
-      const data = await res.json(); if (!res.ok) throw new Error(data.message || '提交失败');
-      show('建议已送达主将，请等待主将审核。'); $('submit').textContent = '已提交';
-    } catch (err) { show(err.message); $('submit').disabled = false; }
-  };
-  load().catch(err => show(err.message));
+      const url=new URL(value,location.origin);
+      return url.protocol==='https:' || (url.protocol==='http:' && url.hostname==='localhost');
+    }catch(_){return false;}
+  }
+  if(gameEntryUrl && validGameUrl(gameEntryUrl)){
+    $('joinGame').href=gameEntryUrl;$('joinGame').hidden=false;
+  }
+  $('shareBtn').addEventListener('click',async()=>{
+    if(submitted)return;
+    const shareData={title:'官渡之战 · 军议邀约',text:'主将邀你共议官渡之局（仅首位参谋可提交）。',url:location.href};
+    try{
+      if(navigator.share){await navigator.share(shareData);show('已打开分享菜单。');}
+      else if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(location.href);show('邀约链接已复制；本次仅可提交一份建议。');
+      }else{show('请使用浏览器的“分享”功能转发此邀约。');}
+    }catch(err){if(err.name!=='AbortError')show('分享暂不可用，可尝试使用浏览器分享功能。',true);}
+  });
+  $('submit').addEventListener('click',async()=>{
+    if(!snapshot||submitted||inFlight)return;
+    if(selected<0)return show('请先选择一条计策。',true);
+    const guestLabel=$('guest').value.trim();
+    if(!guestLabel)return show('请填写参谋名号。',true);
+    if(expiresAt && Date.now()>=expiresAt)return setUnavailable('邀约已到期，请索取新邀约。');
+    inFlight=true;$('submit').disabled=true;
+    if(!retryId) retryId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2);
+    show('军议呈递中……');
+    try{
+      const res=await fetch('/api/sessions/'+encodeURIComponent(sessionId)+'/suggestions',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({joinToken,guestLabel,optionIndex:selected,reason:$('reason').value,
+          clientRequestId:retryId})});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.message||'呈递失败');
+      submitted=true;clearInterval(expirationTimer);
+      $('submit').textContent='已呈递';$('shareBtn').hidden=true;
+      $('guest').disabled=true;$('reason').disabled=true;
+      $('options').querySelectorAll('button').forEach(item=>item.disabled=true);
+      $('successPanel').hidden=false;show('');
+      $('successPanel').scrollIntoView({block:'nearest',behavior:'smooth'});
+    }catch(err){
+      show(err.message||'网络暂不可用，请重试。',true);
+      // Preserve requestId for idempotent retry in case the first POST succeeded.
+      $('submit').disabled=false;
+    }finally{inFlight=false;}
+  });
+  load().catch(err=>setUnavailable(err.message||'加载军议失败，请检查邀约链接。'));
 </script>
 </body>
 </html>
