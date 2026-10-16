@@ -32,7 +32,7 @@
     }
     .masthead {
       position:relative; height:clamp(144px,38vw,208px); overflow:hidden;
-      background:linear-gradient(#2c201525,#30211620 48%,#473022),url('/assets/battlefield.png') center 45%/cover no-repeat;
+      background:linear-gradient(#2c201525,#30211620 48%,#473022),url('/assets/battle-hero.png') center 54%/cover no-repeat;
     }
     .masthead::after {
       content:""; position:absolute; inset:0;
@@ -86,8 +86,14 @@
     .progress {fill:none;stroke:var(--meter);stroke-width:9;stroke-linecap:round;}
     .medallion-content {position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
       align-items:center;gap:0;color:#fff4e0;text-shadow:0 2px 2px #2a1a13b0;}
-    .medallion-icon {font-size:19px;line-height:1;}
-    .medallion-number {font-size:clamp(19px,4.8vw,26px);line-height:1.25;}
+    .resource-photo {position:absolute;inset:4px;overflow:hidden;border-radius:50%;z-index:0;}
+    .resource-photo img {position:absolute;left:-7%;top:-5%;height:110%;width:auto;max-width:none;}
+    .resource-photo::after {content:"";position:absolute;inset:28% 0 0;
+      background:linear-gradient(transparent 0%,#24181018 36%,#20150cb8 94%);}
+    .medallion svg {z-index:2;pointer-events:none;}
+    .medallion-content {z-index:3;justify-content:flex-end;padding-bottom:12%;pointer-events:none;}
+    .medallion-number {font-weight:bold;font-size:clamp(20px,5.1vw,27px);line-height:1.15;color:#fff0d2;
+      text-shadow:0 2px 4px #1b0b07,0 1px #1b0b07;}
     .resource-label {color:#51351f;font-size:clamp(13px,3.5vw,17px);margin-top:5px;}
     .resource-note {font-size:10px;color:#7f664e;}
     .question {
@@ -95,19 +101,22 @@
       border:4px ridge #9b7045;border-radius:9px;
       box-shadow:inset 0 0 0 2px #d2a66d,0 6px 12px #32231c50;
       color:#f2dfbd;font-size:clamp(18px,4.4vw,22px);line-height:1.45;
-      background:linear-gradient(90deg,#4b2d22ed 0%,#503124e8 67%,#513021a6 100%),url('/assets/battlefield.png') 79% 63%/cover;
+      background:linear-gradient(90deg,#4b2d22ed 0%,#503124e8 67%,#513021a6 100%),url('/assets/battle-hero.png') 79% 63%/cover;
     }
     .question-label {display:block;color:#cfac6f;font-size:13px;letter-spacing:.2em;margin-bottom:6px;}
     .choice-label {text-align:center;margin:17px 12px 9px;color:#54371f;letter-spacing:.12em;font-size:18px;}
     .options {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 11px;}
     .option {
-      position:relative;min-width:0;min-height:clamp(77px,20vw,115px);
-      padding:12px 9px 15px;border:0;background:url('/assets/option.png') center/100% 100% no-repeat;
+      position:relative;min-width:0;min-height:clamp(82px,22vw,119px);
+      padding:12px 9px;border:0;background:none;
       color:#4b2b17;font-size:clamp(12px,3.2vw,17px);line-height:1.45;overflow-wrap:anywhere;
       text-shadow:0 1px #fff0d36b;transition:transform .15s,filter .15s;
     }
+    .option-art {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;
+      filter:drop-shadow(0 3px 3px #44291655);}
+    .option-text {position:relative;z-index:1;display:block;}
     .option:active {transform:translateY(2px);}
-    .option.selected {background-image:url('/assets/option-selected.png');filter:drop-shadow(0 2px 5px #93582f70);}
+    .option.selected .option-art {filter:drop-shadow(0 3px 6px #93582f77);}
     .option.selected::after {
       content:"已择";position:absolute;right:4px;bottom:3px;transform:rotate(-12deg);
       font-size:11px;color:#fff0dd;background:#9e3825;border:1px solid #cf9478;
@@ -135,18 +144,19 @@
       box-shadow:0 5px 10px #38281c77,inset 0 1px #e7e9df66;
     }
     .submit::after {
-      content:"呈";position:absolute;right:10px;top:50%;transform:translateY(-50%) rotate(-15deg);
-      width:36px;height:36px;border-radius:6px;display:grid;place-items:center;
-      background:#a3392c;color:#f3c3aa;border:2px double #eaa58e;font-size:21px;
-      box-shadow:0 2px 4px #321d1788;
+      content:"";position:absolute;right:8px;top:50%;transform:translateY(-50%) rotate(-11deg);
+      width:42px;height:42px;background:url('/assets/seal-present.png') center/contain no-repeat;
+      filter:drop-shadow(0 2px 3px #321d1788);pointer-events:none;
     }
     .submit:disabled {filter:saturate(.48);opacity:.79;}
     .status {min-height:26px;margin:12px 17px 0;text-align:center;font-size:14px;line-height:1.5;color:#714224;}
     .status.error {color:#a22e20;font-weight:600;}
     .success-panel {margin:14px 17px 0;background:#f2e2c1;border:2px solid #9b7346;
       padding:18px;border-radius:8px;text-align:center;color:#53371f;}
-    .success-panel .seal {display:inline-block;margin-bottom:8px;border:3px double #ad382b;
-      color:#a83b2c;padding:8px 14px;transform:rotate(-6deg);font-size:24px;}
+    .success-panel .seal {display:flex;flex-direction:column;align-items:center;gap:4px;
+      margin:0 auto 9px;color:#92372d;font-size:19px;}
+    .success-panel .seal::before {content:"";display:block;width:76px;height:76px;
+      background:url('/assets/seal-present.png') center/contain no-repeat;transform:rotate(-6deg);}
     .footer-actions {display:flex;justify-content:center;gap:11px;margin:15px 16px 0;}
     .footer-action {
       flex:1;max-width:230px;min-height:44px;border:2px solid #a27e55;border-radius:9px;
@@ -160,7 +170,7 @@
       .scroll-paper {margin-left:14px;margin-right:14px;padding:13px 17px;}
       .options{padding:0 8px;gap:4px;}
       .option{padding:9px 5px 12px;min-height:90px;}
-      .medallion-icon{font-size:15px;}
+      .medallion-number{font-size:18px;}
       .form-panel{margin-left:12px;margin-right:12px;gap:5px;}
       .paper-field{padding:5px;}
       .paper-field label{font-size:13px;}
@@ -215,9 +225,10 @@
   const $ = id => document.getElementById(id);
   let snapshot = null, selected = -1, submitted = false, inFlight = false;
   let retryId = '', expirationTimer = null, expiresAt = 0;
-  const iconByResource = {troop:'⚔', food:'粮', strategy:'羽', risk:'!'};
-  const fields = [['troop','兵力','#cf7368'],['food','粮草','#e6bd5d'],
-    ['strategy','计策','#75c2ae'],['risk','风险','#b491d2']];
+  const fields = [['troop','兵力','#cf7368','/assets/resource-troop.png'],
+    ['food','粮草','#e6bd5d','/assets/resource-food.png'],
+    ['strategy','计策','#75c2ae','/assets/resource-strategy.png'],
+    ['risk','风险','#b491d2','/assets/resource-risk.png']];
 
   function show(message, isError) {
     $('status').textContent = message || '';
@@ -234,7 +245,7 @@
     const root = $('resources');
     root.replaceChildren();
     fields.forEach(item => {
-      const key = item[0], label = item[1], tint = item[2];
+      const key = item[0], label = item[1], tint = item[2], picture = item[3];
       const raw = values && values[key] != null ? Number(values[key]) : NaN;
       const known = Number.isFinite(raw);
       const n = known ? Math.min(100, Math.max(0, Math.round(raw))) : 0;
@@ -246,10 +257,12 @@
       coin.className='medallion';
       // Only validated numbers and fixed resource labels enter this markup.
       coin.innerHTML = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="39"/><circle class="progress" cx="50" cy="50" r="39" pathLength="100" stroke-dasharray="'+n+' 100"/></svg>';
+      const photo=document.createElement('div'); photo.className='resource-photo';
+      const img=document.createElement('img');img.src=picture;img.alt='';img.loading='lazy';img.decoding='async';
+      photo.appendChild(img);
       const display=document.createElement('div'); display.className='medallion-content';
-      const icon=document.createElement('span'); icon.className='medallion-icon'; icon.textContent=iconByResource[key];
       const number=document.createElement('span'); number.className='medallion-number'; number.textContent=known?String(n):'—';
-      display.append(icon, number); coin.appendChild(display);
+      display.append(number);coin.prepend(photo);coin.appendChild(display);
       const caption=document.createElement('div');caption.className='resource-label';caption.textContent=label;
       card.append(coin,caption);root.appendChild(card);
     });
@@ -260,14 +273,31 @@
     (Array.isArray(values)?values:[]).forEach((value,index)=>{
       const button=document.createElement('button');
       button.type='button';button.className='option';
-      button.textContent=(index+1)+'. '+String(value);
+      // The game texture is a 1920×1080 sheet. Inline SVG viewBox
+      // crops its tiny nontransparent center without stretching a blank canvas.
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('class','option-art');
+      svg.setAttribute('viewBox','752 460 500 107');
+      svg.setAttribute('preserveAspectRatio','none');
+      svg.setAttribute('aria-hidden','true');
+      const artwork=document.createElementNS('http://www.w3.org/2000/svg','image');
+      artwork.setAttribute('href','/assets/option.png');
+      artwork.setAttribute('width','1920');artwork.setAttribute('height','1080');
+      svg.appendChild(artwork);
+      const label=document.createElement('span');label.className='option-text';
+      label.textContent=(index+1)+'. '+String(value);
+      button.append(svg,label);
       button.setAttribute('aria-pressed','false');
       button.addEventListener('click',()=>{
         if(submitted||inFlight)return;
         selected=index;retryId='';
         root.querySelectorAll('button').forEach((item,i)=>{
-          item.classList.toggle('selected',i===index);
-          item.setAttribute('aria-pressed',String(i===index));
+          const active=i===index;
+          item.classList.toggle('selected',active);
+          const image=item.querySelector('svg image'), frame=item.querySelector('svg');
+          image.setAttribute('href',active?'/assets/option-selected.png':'/assets/option.png');
+          frame.setAttribute('viewBox',active?'747 318 511 118':'752 460 500 107');
+          item.setAttribute('aria-pressed',String(active));
         });
         show('');
       });
