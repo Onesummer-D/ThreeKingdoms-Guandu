@@ -615,6 +615,11 @@ public sealed class HomeHubUI : MonoBehaviour
         float min, float max, float value)
     {
         GameObject root = CreateUIObject("Slider", parent);
+        // Sliders must expose a generous pointer hit area, not just a thin
+        // decorative track, especially for WebGL touch input.
+        Image hitArea = root.AddComponent<Image>();
+        hitArea.color = new Color(0f, 0f, 0f, 0f);
+        hitArea.raycastTarget = true;
         Slider slider = root.AddComponent<Slider>();
         slider.minValue = min;
         slider.maxValue = max;
