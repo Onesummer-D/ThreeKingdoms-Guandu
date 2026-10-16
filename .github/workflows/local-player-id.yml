@@ -1,0 +1,35 @@
+name: Local Player ID and Poster Signature
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Scripts/UI/PlayerIdentity*'
+      - 'Assets/Scripts/UI/BattleReportUI.cs'
+      - 'Assets/Scripts/Managers/FinalUIManager.cs'
+      - 'tests/PlayerIdHarness/**'
+      - 'Documentation/QA/PlayerIdentityPosterChecks.js'
+      - '.github/workflows/local-player-id.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Assets/Scripts/UI/PlayerIdentity*'
+      - 'Assets/Scripts/UI/BattleReportUI.cs'
+      - 'Assets/Scripts/Managers/FinalUIManager.cs'
+      - 'tests/PlayerIdHarness/**'
+
+jobs:
+  identity-and-poster:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Check startup, UI input, export and QR wiring
+        run: node Documentation/QA/PlayerIdentityPosterChecks.js
+      - name: Execute actual local ID C# validation
+        run: dotnet run --configuration Release --project tests/PlayerIdHarness/PlayerIdHarness.csproj
