@@ -16,8 +16,24 @@ check(/class="scroll-paper"/.test(html)&&/class="masthead"/.test(html),
   'Mobile military-camp hero and parchment briefing exist');
 check(/class="question"/.test(html)&&/class="options"/.test(html),
   'Question and wooden-choice sections separated');
-check(html.includes("url('/assets/option.png')")&&html.includes("url('/assets/option-selected.png')"),
-  'Existing wooden option artwork reused');
+check(html.includes("artwork.setAttribute('href','/assets/option.png')") &&
+      html.includes("active?'/assets/option-selected.png':'/assets/option.png'") &&
+      html.includes("frame.setAttribute('viewBox',active?"),
+  'Original Unity 1920x1080 wooden sprites are cropped in SVG and selected art switches');
+check(html.includes("url('/assets/battle-hero.png')"),
+  'Selected wartime illustration C is mounted as mobile masthead');
+check(['resource-troop.png','resource-food.png','resource-strategy.png','resource-risk.png']
+      .every(file=>html.includes('/assets/'+file)) &&
+      html.includes('resource-photo') && html.includes('photo.appendChild(img)'),
+  'Original four resource textures are clipped to icons and values stay dynamic');
+check(html.includes("url('/assets/seal-present.png')") &&
+      html.includes('献策已呈'),
+  'Provided red seal texture appears on submit control and successful submission');
+for (const file of ['battle-hero.png','resource-troop.png','resource-food.png','resource-strategy.png',
+                    'resource-risk.png','seal-present.png']) {
+  check(server.includes("'"+file+"':'image/png'") &&
+    fs.existsSync(path.join(root,'public/assets',file)),file+' is present and served by server whitelist');
+}
 check(/id="recapToggle"/.test(html)&&/function renderRecap/.test(html),
   'Long visited-event history can be expanded without early spoilers');
 check(/function renderResources/.test(html)&&/Number.isFinite\(raw\)/.test(html),
