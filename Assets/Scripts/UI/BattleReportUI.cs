@@ -34,6 +34,9 @@ public sealed class BattleReportUI : MonoBehaviour
     public Sprite cultureCardBadge;
     public Sprite advisorEchoCardBadge;
 
+    [Header("游戏正式上线后选填：包含最终 HTTPS 访问地址的二维码贴图")]
+    public Sprite gameEntryQrSprite;
+
     private CampaignMapUI campaignMap;
     private RunHistoryTracker historyTracker;
     private GameObject overlay;
@@ -64,6 +67,7 @@ public sealed class BattleReportUI : MonoBehaviour
         if (advisorEchoCardBadge == null) advisorEchoCardBadge = Resources.Load<Sprite>("BattleReport/AdvisorEcho");
         if (resourceTrendCardBadge == null) resourceTrendCardBadge = Resources.Load<Sprite>("BattleReport/ResourceTrend");
         if (cultureCardBadge == null) cultureCardBadge = Resources.Load<Sprite>("BattleReport/Culture");
+        if (gameEntryQrSprite == null) gameEntryQrSprite = Resources.Load<Sprite>("BattleReport/GameEntryQR");
         CreateOverlay(root);
     }
 
@@ -570,7 +574,9 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         // Render an isolated copy of all report content, outside the scroll mask.
         float width = content.rect.width;
-        float height = content.rect.height;
+        const float signatureHeight = 160f;
+        float bodyHeight = content.rect.height;
+        float height = bodyHeight + signatureHeight;
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
         float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
         int pixelWidth = Mathf.Max(1, Mathf.CeilToInt(width * scale));
@@ -596,7 +602,8 @@ public sealed class BattleReportUI : MonoBehaviour
             copy.anchorMax = new Vector2(1f, 1f);
             copy.pivot = new Vector2(.5f, 1f);
             copy.anchoredPosition = Vector2.zero;
-            copy.sizeDelta = new Vector2(0f, height);
+            copy.sizeDelta = new Vector2(0f, bodyHeight);
+            CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
             // The graph's generated children are copied; prevent a data-less
             // cloned component from rebuilding them before the export.
             foreach (MonoBehaviour component in copy.GetComponentsInChildren<MonoBehaviour>())
@@ -638,6 +645,63 @@ public sealed class BattleReportUI : MonoBehaviour
             Destroy(cameraObject);
             Destroy(canvasObject);
         }
+    }
+
+    /// <summary>
+    /// Render a footer only into the exported PNG; never into a scrollable
+    /// report card. Optional QR must contain the final published game URL.
+    /// Unconfigured QR is omitted instead of generating a nonfunctional code.
+    /// </summary>
+    private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight, float footerHeight)
+    {
+        GameObject footer = CreateUIObject("PosterSignatureFooter", canvasRect);
+        RectTransform rect = footer.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
+        rect.pivot = new Vector2(.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -bodyHeight);
+        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x, footerHeight);
+        Image background = footer.AddComponent<Image>();
+        background.color = PanelColor;
+        background.raycastTarget = false;
+
+        GameObject line = CreateUIObject("GoldRule", footer.transform);
+        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .87f), new Vector2(.955f, .885f));
+        line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
+
+        TMP_Text maker = CreateText(footer.transform, "《三国·官渡之战》　·　战绩留影",
+            27f, TextAlignmentOptions.MidlineLeft, AccentColor, false);
+        SetAnchored(maker.rectTransform, new Vector2(.05f, .17f), new Vector2(.49f, .83f));
+
+        string id = PlayerIdentityState.CurrentId;
+        TMP_Text sign = CreateText(footer.transform,
+            "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
+            31f, TextAlignmentOptions.MidlineRight, TextPrimary, false);
+        bool hasQr = gameEntryQrSprite != null;
+        SetAnchored(sign.rectTransform,
+            new Vector2(.50f, .16f), new Vector2(hasQr ? .83f : .94f, .82f));
+        sign.enableAutoSizing = true;
+        sign.fontSizeMin = 22f;
+        sign.fontSizeMax = 31f;
+
+        if (!hasQr) return;
+
+        // A clean white square and intact quiet zone are critical for
+        // reliable scanning in a poster circulated on mobile messengers.
+        GameObject frame = CreateUIObject("GameEntryQR", footer.transform);
+        RectTransform frameRect = frame.GetComponent<RectTransform>();
+        frameRect.anchorMin = frameRect.anchorMax = new Vector2(1f, .5f);
+        frameRect.pivot = new Vector2(.5f, .5f);
+        frameRect.anchoredPosition = new Vector2(-100f, 0f);
+        frameRect.sizeDelta = new Vector2(122f, 122f);
+        frame.AddComponent<Image>().color = Color.white;
+        GameObject imageObject = CreateUIObject("QRImage", frame.transform);
+        RectTransform qrRect = imageObject.GetComponent<RectTransform>();
+        SetAnchored(qrRect, new Vector2(.07f, .07f), new Vector2(.93f, .93f));
+        Image qr = imageObject.AddComponent<Image>();
+        qr.sprite = gameEntryQrSprite;
+        qr.color = Color.white;
+        qr.preserveAspect = true;
+        qr.raycastTarget = false;
     }
 
     private static string GetPosterDirectory()
