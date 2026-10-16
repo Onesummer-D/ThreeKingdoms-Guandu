@@ -146,7 +146,11 @@ async function handle(req, res) {
     return json(res, 200, { ok: true, service: 'public-advisor', now: now() });
 
   const assetTypes = { 'battlefield.png':'image/png', 'option.png':'image/png',
-    'option-selected.png':'image/png', 'game-font.ttf':'font/ttf' };
+    'option-selected.png':'image/png', 'game-font.ttf':'font/ttf',
+    'battle-hero.png':'image/png',
+    'resource-troop.png':'image/png', 'resource-food.png':'image/png',
+    'resource-strategy.png':'image/png', 'resource-risk.png':'image/png',
+    'seal-present.png':'image/png' };
   if (req.method === 'GET' && parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
     const assetPath = path.join(publicDir, 'assets', parts[1]);
     if (!fs.existsSync(assetPath)) return error(res, 404, '资源不存在');
