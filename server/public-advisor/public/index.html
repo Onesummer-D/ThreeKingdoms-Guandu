@@ -137,7 +137,8 @@
     }
     .paper-field textarea{min-height:58px;max-height:180px;}
     .paper-field input::placeholder,.paper-field textarea::placeholder{color:#8f7b66;}
-    .paper-field:focus-within {outline:2px solid #b77139;outline-offset:2px;}
+    /* No outer rectangular focus box: the scroll artwork already separates the two writing fields. */
+    .paper-field:focus-within {outline:none;box-shadow:none;}
     .submit {
       position:relative;display:block;width:min(78%,330px);
       min-height:70px;margin:7px auto 0;padding:12px 62px 12px 25px;
@@ -184,10 +185,10 @@
     button,input,textarea {font-family:var(--reading-font);}
     .sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;
       overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
-    .masthead {height:clamp(155px,40vw,215px);}
-    .masthead-title {inset:auto 0 25px;z-index:1;display:flex;justify-content:center;
+    .masthead {height:clamp(205px,55vw,285px);}
+    .masthead-title {inset:auto 0 6px;z-index:1;display:flex;justify-content:center;
       align-items:center;pointer-events:none;}
-    .title-art {width:min(98%,525px);height:auto;display:block;object-fit:contain;
+    .title-art {width:min(96%,515px);height:auto;max-height:calc(100% - 8px);display:block;object-fit:contain;
       filter:drop-shadow(0 2px 3px #170c07a6);}
     .paper-heading {font-size:clamp(25px,5.8vw,31px);font-weight:700;color:#392314;}
     .recap {font-size:clamp(17px,4.3vw,20px);line-height:1.66;color:#302015;}
@@ -221,7 +222,10 @@
     .paper-field input::placeholder,.paper-field textarea::placeholder {
       color:#69492e;opacity:1;font-weight:400;
     }
-    .paper-field:focus-within {outline:2px solid #a76a36;outline-offset:2px;border-radius:3px;}
+    .paper-field:focus-within {outline:none;box-shadow:none;border:0;}
+    .paper-field input:focus-visible,.paper-field textarea:focus-visible {
+      outline:none;outline-offset:0;box-shadow:none;
+    }
     .submit {font-size:clamp(20px,5vw,26px);font-weight:700;color:#fff2d8;}
     .status {font-size:16px;color:#43291b;}
     .success-panel {font-size:18px;color:#3b2417;}
@@ -239,7 +243,7 @@
 <body>
 <main class="page">
   <header class="masthead" aria-label="军帐战场背景">
-    <div class="masthead-title"><img class="title-art" src="/assets/advisor-gold-title.webp" alt="" aria-hidden="true"><h1 class="sr-only">官渡之战 · 军议邀约</h1></div>
+    <div class="masthead-title"><img class="title-art" src="/assets/advisor-gold-title-v2.webp" alt="" aria-hidden="true"><h1 class="sr-only">官渡之战 · 军议邀约</h1></div>
   </header>
 
   <section class="scroll-paper" aria-labelledby="situation-heading">
