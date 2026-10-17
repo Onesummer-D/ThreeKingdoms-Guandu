@@ -204,9 +204,17 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         GameObject card = CreateCard("Ending", y, 170f, false);
         Sprite sprite = portraitSprite != null ? portraitSprite : campaignMap.GetReachedEndingSprite();
-        // Portrait and all five report badges share the same column width
-        // and a rounded, masked frame. Height adapts to the card.
-        CreateCardBadgeSlot(card.transform, "Ending", 170f, sprite);
+        // The ending portrait already contains its own circular frame.
+        // Do not reuse the square/rounded-rectangle cover crop: it clips
+        // Cao Cao's head and destroys the original circle.
+        GameObject portrait = CreateUIObject("EndingPortrait", card.transform);
+        RectTransform portraitRect = portrait.GetComponent<RectTransform>();
+        SetAnchored(portraitRect, new Vector2(.018f, .10f), new Vector2(CardBadgeRight, .90f));
+        Image portraitImage = portrait.AddComponent<Image>();
+        portraitImage.sprite = sprite;
+        portraitImage.color = Color.white;
+        portraitImage.preserveAspect = true;
+        portraitImage.raycastTarget = false;
         TMP_Text title = CreateText(card.transform, "恭喜通关 · " + campaignMap.GetReachedEndingLabel(), 46f,
             TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(.23f, .62f), new Vector2(.96f, .92f));
@@ -257,30 +265,26 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateTendencyCard(float y, DecisionTendencyResult tendency)
     {
-        // An exportable summary: the detailed event evidence is accessible
-        // from the in-game overlay, never burnt into the shared PNG.
-        const float cardHeight = 260f;
+        // Keep the shareable report concise. The second dimension's name
+        // and detailed chronology belong in the "查看依据" popup only.
+        const float cardHeight = 240f;
         GameObject card = CreateCard("Tendency", y, cardHeight);
         TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .80f), new Vector2(.97f, .965f));
-
-        TMP_Text counsel = CreateText(card.transform, "谋议方式 · " + tendency.consultationLabel, 33f,
-            TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(counsel.rectTransform, new Vector2(CardTextLeft, .64f), new Vector2(.97f, .82f));
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .75f), new Vector2(.97f, .96f));
 
         TMP_Text strategy = CreateText(card.transform, tendency.summary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .38f), new Vector2(.97f, .64f));
+        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .43f), new Vector2(.97f, .76f));
 
-        TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 26f,
+        TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .14f), new Vector2(.97f, .38f));
+        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .16f), new Vector2(.97f, .47f));
 
         Button evidenceButton = CreateButton(card.transform, "查看依据", 23f);
         evidenceButton.gameObject.name = "EvidenceDetailOpenButton";
         SetAnchored(evidenceButton.GetComponent<RectTransform>(),
-            new Vector2(.78f, .025f), new Vector2(.96f, .15f));
+            new Vector2(.78f, .02f), new Vector2(.96f, .155f));
         evidenceButton.onClick.AddListener(() =>
         {
             if (evidenceDetailOverlay == null) return;
@@ -297,8 +301,10 @@ public sealed class BattleReportUI : MonoBehaviour
         List<string> lines = new List<string>();
         lines.Add("用兵风格：" + tendency.label);
         lines.Add("谋议方式：" + tendency.consultationLabel);
+        if (!string.IsNullOrWhiteSpace(tendency.consultationSummary))
+            lines.Add(tendency.consultationSummary);
         lines.Add("");
-        lines.Add("本局已发生的行为依据：");
+        lines.Add("本局已发生的行为依据（按决策发生顺序）：");
         if (tendency.evidence == null || tendency.evidence.Count == 0)
             lines.Add("暂无足够的行为记录。");
         else
