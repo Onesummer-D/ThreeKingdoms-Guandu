@@ -33,6 +33,13 @@ check(state.includes('ResetForNewLaunch') &&
   state.includes('RuntimeInitializeLoadType.SubsystemRegistration') &&
   state.includes('confirmedThisLaunch &&'),
   'Session gate resets even if Unity disables domain reload');
+check(entry.includes('idInput.richText = true') &&
+  entry.includes('idInput.isRichTextEditingAllowed = false') &&
+  entry.includes('inputText.richText = true'),
+  'Chinese IME composition remains visible without permitting markup edits');
+check(entry.includes('Anchor(intro.rectTransform, new Vector2(.06f, .65f)') &&
+  !entry.includes('new Vector2(.06f, .57f)'),
+  'Introduction is visibly closer to the commander title');
 check(!state.includes('PlayerPrefs.GetString')&&!state.includes('PlayerPrefs.Save()') &&
       !state.includes('UnityWebRequest') &&
       state.includes('currentId = string.Empty;'),
