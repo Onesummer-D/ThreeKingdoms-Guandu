@@ -24,13 +24,13 @@ check(html.includes("background:url('/assets/advisor-option-paper.webp')") &&
 check(html.includes("url('/assets/battle-hero.png')"),
   'Selected wartime illustration C is mounted as mobile masthead');
 
-check(html.includes('src="/assets/advisor-gold-title-v2.webp"') &&
+check(html.includes('src="/assets/advisor-gold-title-v3.webp"') &&
       html.includes('class="sr-only">官渡之战 · 军议邀约</h1>') &&
-      server.includes("'advisor-gold-title-v2.webp':'image/webp'") &&
-      fs.existsSync(path.join(root,'public/assets/advisor-gold-title-v2.webp')),
-  'User-provided second gold title image replaces previous headline and retains accessible heading');
+      server.includes("'advisor-gold-title-v3.webp':'image/webp'") &&
+      fs.existsSync(path.join(root,'public/assets/advisor-gold-title-v3.webp')),
+  'Latest user-provided gold title image replaces previous headline and retains accessible heading');
 {
-  const file=fs.readFileSync(path.join(root,'public/assets/advisor-gold-title-v2.webp'));
+  const file=fs.readFileSync(path.join(root,'public/assets/advisor-gold-title-v3.webp'));
   check(file.length>10000 && file.toString('ascii',0,4)==='RIFF' &&
         file.toString('ascii',8,12)==='WEBP',
     'New uploaded gold title is a real image, not an HTML/CSS imitation');
