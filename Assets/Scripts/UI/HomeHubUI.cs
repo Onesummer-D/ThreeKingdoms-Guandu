@@ -569,6 +569,11 @@ public sealed class HomeHubUI : MonoBehaviour
         SetAnchored(slider.GetComponent<RectTransform>(),
             new Vector2(.405f, anchorY + .021f), new Vector2(.782f, anchorY + .114f));
         slider.gameObject.name = label + "Slider";
+        // Draw the scale as a SIBLING of the Slider, with panel-relative
+        // anchors.  The previous graphic had oversized transparent padding,
+        // while the brightness-only scale could lose its labels below the
+        // slider's own bounds.
+        CreateSettingsScale(parent, label, anchorY, min, max);
 
         CreateStepButton(parent, label + "Decrease", .348f, anchorY + .026f, false,
             () => slider.value = Mathf.Clamp(Mathf.Round((slider.value - .05f) * 100f) / 100f, min, max));
@@ -718,46 +723,51 @@ public sealed class HomeHubUI : MonoBehaviour
         slider.onValueChanged.AddListener(current =>
             fillImage.fillAmount = Mathf.InverseLerp(min, max, current));
 
-        GameObject tickRoot = CreateUIObject("SettingsScale", root.transform);
-        SetAnchored(tickRoot.GetComponent<RectTransform>(),
-            new Vector2(0f, -.76f), new Vector2(1f, -.04f));
-        if (Mathf.Approximately(min, 0f) && Mathf.Approximately(max, 1f) &&
-            SettingsArtAtlas.Get("ticks") != null)
-        {
-            Image ticks = tickRoot.AddComponent<Image>();
-            ticks.sprite = SettingsArtAtlas.Get("ticks");
-            ticks.type = Image.Type.Simple;
-            ticks.raycastTarget = false;
-        }
-        else
-        {
-            // Brightness does not accept 0-44%; don't display the artwork's 0-100% labels.
-            for (int i = 0; i < 5; i++)
-            {
-                float t = i / 4f;
-                GameObject mark = CreateUIObject("Tick" + i, tickRoot.transform);
-                RectTransform markRect = mark.GetComponent<RectTransform>();
-                markRect.anchorMin = markRect.anchorMax = new Vector2(t, .96f);
-                markRect.pivot = new Vector2(.5f, 1f);
-                markRect.anchoredPosition = Vector2.zero;
-                markRect.sizeDelta = new Vector2(3f, 11f);
-                Image markImage = mark.AddComponent<Image>();
-                markImage.color = new Color(.80f, .64f, .38f);
-                markImage.raycastTarget = false;
-                int percent = Mathf.RoundToInt(Mathf.Lerp(min, max, t) * 100f);
-                TMP_Text legend = CreateText(tickRoot.transform, percent.ToString(),
-                    21f, TextAlignmentOptions.Center, new Color(.80f, .70f, .52f), false);
-                RectTransform legendRect = legend.rectTransform;
-                legendRect.anchorMin = legendRect.anchorMax = new Vector2(t, .33f);
-                legendRect.pivot = new Vector2(.5f, .5f);
-                legendRect.anchoredPosition = Vector2.zero;
-                legendRect.sizeDelta = new Vector2(78f, 30f);
-            }
-        }
-
         SettingsSliderFeedback feedback = root.AddComponent<SettingsSliderFeedback>();
         feedback.Initialize(slider, handleRect, feedbackImage, bubble, bubbleText);
         return slider;
+    }
+
+    /// <summary>
+    /// Align five ticks and their labels immediately below the actual rail.
+    /// Labels are not children of the Slider: this keeps the third
+    /// (brightness) scale visible even when its minimum is 45%, and prevents
+    /// transparent margins in the supplied scale atlas from adding gaps.
+    /// </summary>
+    private void CreateSettingsScale(Transform panel, string label, float anchorY,
+        float min, float max)
+    {
+        const float left = .421f;
+        const float right = .769f;
+        const int tickCount = 5;
+        for (int i = 0; i < tickCount; i++)
+        {
+            float fraction = i / (tickCount - 1f);
+            float x = Mathf.Lerp(left, right, fraction);
+            GameObject tick = CreateUIObject(label + "ScaleTick" + i, panel);
+            RectTransform tickRect = tick.GetComponent<RectTransform>();
+            tickRect.anchorMin = tickRect.anchorMax = new Vector2(x, anchorY + .035f);
+            tickRect.pivot = new Vector2(.5f, 1f);
+            tickRect.anchoredPosition = Vector2.zero;
+            tickRect.sizeDelta = new Vector2(i == 0 || i == tickCount - 1 ? 2.5f : 2f, 8f);
+            Image line = tick.AddComponent<Image>();
+            line.color = new Color(.81f, .67f, .42f, .94f);
+            line.raycastTarget = false;
+
+            // Volume shows 0/25/50/75/100. Brightness reflects its real
+            // 45-100% domain instead of deceptively labeling 45% as 0%.
+            int percent = Mathf.RoundToInt(Mathf.Lerp(min, max, fraction) * 100f);
+            TMP_Text number = CreateText(panel, percent.ToString(), 21f,
+                TextAlignmentOptions.Center, new Color(.91f, .80f, .59f, 1f), false);
+            number.gameObject.name = label + "ScaleLabel" + i;
+            number.enableAutoSizing = false;
+            number.overflowMode = TextOverflowModes.Overflow;
+            RectTransform labelRect = number.rectTransform;
+            labelRect.anchorMin = labelRect.anchorMax = new Vector2(x, anchorY + .007f);
+            labelRect.pivot = new Vector2(.5f, .5f);
+            labelRect.anchoredPosition = Vector2.zero;
+            labelRect.sizeDelta = new Vector2(66f, 30f);
+        }
     }
 
     private Button CreateCardButton(Transform parent, string title, string body, Vector2 min, Vector2 max)
