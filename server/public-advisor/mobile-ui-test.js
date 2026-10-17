@@ -31,8 +31,8 @@ check(html.includes('src="/assets/advisor-gold-title.webp"') &&
   'Uploaded transparent gold headline replaces CSS text without losing accessible heading');
 check(html.includes('--reading-font:') &&
       html.includes('font-family:var(--reading-font)') &&
-      html.includes('color:#29180e') &&
-      html.includes('opacity:1;font-weight:400') === false,
+      html.includes('color:#28180d') &&
+      html.includes('color:#69492e;opacity:1;font-weight:400'),
   'Reference-style readable Song typography and dark input contrast are configured');
 check(html.includes('padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px)') &&
       html.includes('grid-template-rows:minmax(0,1fr) minmax(0,1fr)') &&
