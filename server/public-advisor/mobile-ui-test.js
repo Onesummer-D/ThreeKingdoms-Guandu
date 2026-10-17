@@ -16,24 +16,47 @@ check(/class="scroll-paper"/.test(html)&&/class="masthead"/.test(html),
   'Mobile military-camp hero and parchment briefing exist');
 check(/class="question"/.test(html)&&/class="options"/.test(html),
   'Question and wooden-choice sections separated');
-check(html.includes("artwork.setAttribute('href','/assets/option.png')") &&
-      html.includes("active?'/assets/option-selected.png':'/assets/option.png'") &&
-      html.includes("frame.setAttribute('viewBox',active?"),
-  'Original Unity 1920x1080 wooden sprites are cropped in SVG and selected art switches');
+check(html.includes("background:url('/assets/advisor-option-paper.webp')") &&
+      html.includes("item.classList.toggle('selected',active)") &&
+      html.includes("item.setAttribute('aria-pressed',String(active))") &&
+      !html.includes('setAttribute(\'viewBox\',active?'),
+  'Real parchment UI replaces white option cards; selected/keyboard state is kept');
 check(html.includes("url('/assets/battle-hero.png')"),
   'Selected wartime illustration C is mounted as mobile masthead');
 check(['resource-troop.png','resource-food.png','resource-strategy.png','resource-risk.png']
       .every(file=>html.includes('/assets/'+file)) &&
       html.includes('resource-photo') && html.includes('photo.appendChild(img)'),
   'Original four resource textures are clipped to icons and values stay dynamic');
-check(html.includes("url('/assets/seal-present.png')") &&
+check(html.includes("url('/assets/advisor-submit-stone.webp')") &&
+      html.includes("url('/assets/seal-present.png')") &&
       html.includes('献策已呈'),
-  'Provided red seal texture appears on submit control and successful submission');
+  'User stone submission UI is shown with a truthful submitted state');
 for (const file of ['battle-hero.png','resource-troop.png','resource-food.png','resource-strategy.png',
                     'resource-risk.png','seal-present.png']) {
   check(server.includes("'"+file+"':'image/png'") &&
     fs.existsSync(path.join(root,'public/assets',file)),file+' is present and served by server whitelist');
 }
+const customAssets = ['advisor-wood-briefing.webp','advisor-double-parchment.webp',
+  'advisor-submit-stone.webp','advisor-vertical-scroll.webp',
+  'advisor-question-panel.webp','advisor-option-paper.webp'];
+for (const file of customAssets) {
+  const contents = fs.readFileSync(path.join(root,'public/assets',file));
+  check(server.includes("'"+file+"':'image/webp'") &&
+        html.includes('/assets/'+file) &&
+        contents.length > 4096 &&
+        contents.toString('ascii',0,4) === 'RIFF' &&
+        contents.toString('ascii',8,12) === 'WEBP',
+    'Provided original artwork '+file+' is actually present and served as WebP');
+}
+check(!/<p>军前问策/.test(html) &&
+      /\.masthead-title h1\s*\{font-size:clamp\(32px,8\.2vw,45px\)/.test(html) &&
+      html.includes('inset:auto 0 33px'),
+  'Header is larger, raised, and has no old subtitle');
+check(html.includes("advisor-vertical-scroll.webp") &&
+      html.includes('border-image:') &&
+      html.includes("advisor-question-panel.webp") &&
+      html.includes("advisor-double-parchment.webp"),
+  'Situation is a stretchable vertical scroll; question and writing fields use the exact supplied frames');
 check(/id="recapToggle"/.test(html)&&/function renderRecap/.test(html),
   'Long visited-event history can be expanded without early spoilers');
 check(/function renderResources/.test(html)&&/Number.isFinite\(raw\)/.test(html),
@@ -48,8 +71,9 @@ check(/setUnavailable/.test(html)&&/data.state!=='awaiting_guest'/.test(html),
   'Expired/closed invitation disables submission');
 check(/expiresAt=Number\(data.expiresAt\)/.test(html)&&/setInterval\(countdown,1000\)/.test(html),
   'Real server deadline drives expiry display');
-check(/仅接收一份有效建议/.test(html)&&/shareBtn/.test(html),
-  'Forwarding discloses one-submission limitation');
+check(!html.includes('本次军议仅接收一份有效建议；提交不代表主将采纳。') &&
+      !html.includes('id="footerNote"') && html.includes('shareBtn'),
+  'Requested bottom disclaimer removed without changing share API rules');
 check(/joinGame/.test(html)&&/validGameUrl/.test(html),
   'Game CTA hidden until official URL configured');
 check(server.includes(".replace('__GAME_ENTRY_URL__', inlineJson(PUBLIC_GAME_ENTRY_URL))"),
