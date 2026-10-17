@@ -53,8 +53,12 @@ check(analyzer.includes('审议自决')&&!analyzer.includes('不听劝')&&!analy
 check(/history\.miniGames/.test(analyzer)&&/history\.completed && history\.ending/.test(analyzer),
   'Real minigames and endings are outcome evidence, not strategy score');
 check(/谋议方式 ·/.test(ui)&&/tendency\.consultationLabel/.test(ui)&&
-  /tendency\.evidence/.test(ui)&&/tendency\.outcomeEvidence/.test(ui),
-  'Battle report renders two dimensions and actual evidence');
+  /tendency\.evidence/.test(ui)&&/BuildEvidenceDetailText/.test(ui),
+  'Battle report renders independent dimensions with factual evidence in a separate view');
+check(/EvidenceDetailOpenButton/.test(ui)&&/item\.gameObject\.SetActive\(false\)/.test(ui),
+  'Interactive evidence control is excluded from PNG export');
+check(!/战局记录 · /.test(ui),
+  'Unrelated minigame outcomes and repeated ending are absent from the report card');
 check(!ui.includes('实际资源变化与战局记录可供追溯'),
   'No empty claim of traceability');
 check(ui.includes('CreateResourceSummary(')&&ui.includes('OpenTrendDetail(timeline)'),
