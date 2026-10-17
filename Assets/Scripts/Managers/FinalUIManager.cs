@@ -330,7 +330,7 @@ public class FinalUIManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning("GridGameManager未赋值，直接继续剧情");
-                    OnMiniGameFinished(true, nextNodeId);
+                    OnMiniGameUnavailable(nextNodeId, "GridGameManager 未绑定");
                 }
                 break;
 
@@ -343,7 +343,7 @@ public class FinalUIManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning("DigTunnelPanel未赋值，直接跳转");
-                    OnMiniGameFinished(true, nextNodeId);
+                    OnMiniGameUnavailable(nextNodeId, "DigTunnelPanel 未绑定");
                 }
                 break;
 
@@ -1424,7 +1424,7 @@ public class FinalUIManager : MonoBehaviour
         else
         {
             Debug.LogError("ValueInputPanel未赋值！");
-            OnMiniGameFinished(true, nextNodeId);
+            OnMiniGameUnavailable(nextNodeId, "ValueInputPanel 未绑定");
         }
     }
 
@@ -1461,9 +1461,20 @@ public class FinalUIManager : MonoBehaviour
         }
     }
 
+    private void OnMiniGameUnavailable(int nextNodeId, string reason)
+    {
+        RunHistoryTracker.Instance?.RecordMiniGameUnavailable(reason);
+        FinishMiniGameTransition(true, nextNodeId, false);
+    }
+
     public void OnMiniGameFinished(bool success, int nextNodeId)
     {
-        if (RunHistoryTracker.Instance != null)
+        FinishMiniGameTransition(success, nextNodeId, true);
+    }
+
+    private void FinishMiniGameTransition(bool success, int nextNodeId, bool recordCompletion)
+    {
+        if (recordCompletion && RunHistoryTracker.Instance != null)
         {
             int nodeId = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
                 ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
