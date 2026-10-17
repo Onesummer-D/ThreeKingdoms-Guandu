@@ -6,6 +6,8 @@ const manager=load('Assets/Scripts/Managers/FinalUIManager.cs');
 const entry=load('Assets/Scripts/UI/PlayerIdentityUI.cs');
 const report=load('Assets/Scripts/UI/BattleReportUI.cs');
 const state=load('Assets/Scripts/UI/PlayerIdentityState.cs');
+const tracker=load('Assets/Scripts/Managers/RunHistoryTracker.cs');
+const analyzer=load('Assets/Scripts/UI/BattleReportAnalyzer.cs');
 let pass=0;
 function check(ok,label){assert.ok(ok,label);console.log('PASS '+label);pass++;}
 check(/playerIdentityUI.Initialize\(gameInterfacePanel.transform.root, startMenuPanel.transform\)/.test(manager),
@@ -51,4 +53,15 @@ check(report.includes('AspectRatioFitter.AspectMode.EnvelopeParent') &&
   'All report thumbnails share width, vary height, crop to rounded borders without distortion');
 check(report.includes('CreateCardBadgeSlot(card.transform, "Ending", 170f, sprite)'),
   'Hero portrait follows the same rounded thumbnail standard');
+check(manager.includes('RecordMiniGameUnavailable(reason)') &&
+  manager.includes('FinishMiniGameTransition(true, nextNodeId, false)') &&
+  manager.includes('if (recordCompletion && RunHistoryTracker.Instance != null)'),
+  'Missing minigame UI may advance story but never record a fabricated victory');
+check(tracker.includes('public void RecordMiniGameUnavailable(string reason)') &&
+  tracker.includes('activeMiniGame = null;') &&
+  tracker.includes('"ui-unavailable"'),
+  'Recorder treats missing minigame UI as skipped with an audit event');
+check(!analyzer.includes('case "slider": return "伏击布阵";') &&
+  analyzer.includes('case "slider": return "诱敌兵力分配";'),
+  'Slider is the bait troop-allocation choice rather than a fictitious skirmish game');
 console.log('player-id-poster-integration: '+pass+'/'+pass);
