@@ -35,4 +35,20 @@ check(!report.includes('https://example.com')&&!report.includes('placeholderQR')
 check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)')&&
       report.includes('float height = bodyHeight + signatureHeight'),
   'Export copy is not stretched into new footer region');
+check(entry.includes('"为这一局征程定下名号", 35f') &&
+  !entry.includes('战绩海报将以此署名') &&
+  !entry.includes('这不是联网账号'), 'Short, larger startup subtitle with no explanatory footer');
+check(report.includes('GameEntryQRCodeReservedArea') &&
+  report.includes('frameRect.sizeDelta = new Vector2(148f, 148f)') &&
+  report.includes('上线后开放'), 'Visible fixed QR reservation even before a final URL asset exists');
+check(!report.includes('战绩留影'), 'Poster footer no longer contains the duplicate slogan');
+check(report.includes('evidenceDetailText') &&
+  report.includes('EvidenceDetailOpenButton') &&
+  report.includes('item.gameObject.SetActive(false)'), 'Evidence available in game but hidden in PNG output');
+check(report.includes('AspectRatioFitter.AspectMode.EnvelopeParent') &&
+  report.includes('Mask clippingMask') &&
+  report.includes('Mathf.Clamp(cardHeight * .56f, 86f, 265f)'),
+  'All report thumbnails share width, vary height, crop to rounded borders without distortion');
+check(report.includes('CreateCardBadgeSlot(card.transform, "Ending", 170f, sprite)'),
+  'Hero portrait follows the same rounded thumbnail standard');
 console.log('player-id-poster-integration: '+pass+'/'+pass);
