@@ -22,8 +22,14 @@ check(entry.includes('GameButtonSkin.Apply('),'ID screen uses existing ornate UI
 check(entry.includes('idInput.textViewport')&&entry.includes('idInput.textComponent')&&
       entry.includes('idInput.caretColor')&&entry.includes('idInput.onValidateInput'),
       'TMP input is wired for actual typing and visible caret');
-check(entry.includes('PlayerIdentityState.CurrentId')&&entry.includes('主将 ID：'),
-  'Main menu offers the current ID and an edit action');
+check(entry.includes('ShowEditor();') &&
+  !entry.includes('CreateEditButton') &&
+  !entry.includes('主将 ID：'),
+  'Name confirmation is shown every launch without a menu edit button');
+check(state.includes('ResetForNewLaunch') &&
+  state.includes('RuntimeInitializeLoadType.SubsystemRegistration') &&
+  state.includes('confirmedThisLaunch &&'),
+  'Session gate resets even if Unity disables domain reload');
 check(state.includes('PlayerPrefs.Save()')&&!state.includes('UnityWebRequest'),
   'Identity is saved locally only; not a fabricated account');
 check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHeight)'),
@@ -51,8 +57,10 @@ check(report.includes('AspectRatioFitter.AspectMode.EnvelopeParent') &&
   report.includes('Mask clippingMask') &&
   report.includes('Mathf.Clamp(cardHeight * .56f, 86f, 265f)'),
   'All report thumbnails share width, vary height, crop to rounded borders without distortion');
-check(report.includes('CreateCardBadgeSlot(card.transform, "Ending", 170f, sprite)'),
-  'Hero portrait follows the same rounded thumbnail standard');
+check(report.includes('CreateUIObject("EndingPortrait", card.transform)') &&
+  report.includes('portraitImage.preserveAspect = true') &&
+  !report.includes('CreateCardBadgeSlot(card.transform, "Ending"'),
+  'Ending uses uncropped original circular Cao Cao portrait aligned with left badges');
 check(manager.includes('RecordMiniGameUnavailable(reason)') &&
   manager.includes('FinishMiniGameTransition(true, nextNodeId, false)') &&
   manager.includes('if (recordCompletion && RunHistoryTracker.Instance != null)'),
@@ -64,4 +72,10 @@ check(tracker.includes('public void RecordMiniGameUnavailable(string reason)') &
 check(!analyzer.includes('case "slider": return "伏击布阵";') &&
   analyzer.includes('case "slider": return "诱敌兵力分配";'),
   'Slider is the bait troop-allocation choice rather than a fictitious skirmish game');
+check(!report.includes('"谋议方式 · " + tendency.consultationLabel') &&
+  report.includes('"谋议方式：" + tendency.consultationLabel') &&
+  report.includes('CreateText(card.transform, tendency.consultationSummary, 29f'),
+  'Counsel heading is detail-only and both poster summaries share font size 29');
+check(analyzer.includes('report.evidenceNotes.Sort((a, b) => a.decisionSequence.CompareTo(b.decisionSequence))'),
+  'Evidence is chronologically sorted by recorded decision sequence');
 console.log('player-id-poster-integration: '+pass+'/'+pass);
