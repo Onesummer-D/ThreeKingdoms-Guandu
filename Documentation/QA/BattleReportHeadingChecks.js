@@ -18,9 +18,12 @@ check(/"本局决策倾向 · " \+ tendency\.label,\s*40f,\s*TextAlignmentOption
   'Decision tendency heading horizontally centered');
 check(/CreateText\(card\.transform, tendency\.summary,\s*29f,\s*TextAlignmentOptions\.Center/.test(tendency),
   'War style description centered in expanded report card');
-check(tendency.includes('"谋议方式 · " + tendency.consultationLabel') &&
-      tendency.includes('tendency.evidence'),
-  'Second dimension and actual decision evidence retained');
+check(!tendency.includes('"谋议方式 · " + tendency.consultationLabel') &&
+      tendency.includes('"谋议方式：" + tendency.consultationLabel') &&
+      tendency.includes('CreateEvidenceDetailOverlay'),
+  'Counsel name appears in detail overlay, not on the poster');
+check(/CreateText\(card\.transform, tendency\.consultationSummary,\s*29f/.test(tendency),
+  'Counsel summary and war-style summary use identical font size');
 const trend=method('private float CreateTrendCard(', 'private void CreateTrendDetailOverlay(');
 check(/CreateText\(card\.transform, "四项资源趋势", 40f,\s*TextAlignmentOptions\.Center/.test(trend),
   'Resource heading uses short copy and centered alignment');

@@ -26,6 +26,7 @@ public sealed class BattleReportUI : MonoBehaviour
     };
     private const float CardBadgeRight = .16f;
     private const float CardTextLeft = .18f;
+    private static Sprite roundedBadgeMaskSprite;
 
     [Header("战绩报告卡片左侧标题图（可选）")]
     public Sprite statsCardBadge;
@@ -33,6 +34,9 @@ public sealed class BattleReportUI : MonoBehaviour
     public Sprite resourceTrendCardBadge;
     public Sprite cultureCardBadge;
     public Sprite advisorEchoCardBadge;
+
+    [Header("游戏正式上线后选填：包含最终 HTTPS 访问地址的二维码贴图")]
+    public Sprite gameEntryQrSprite;
 
     private CampaignMapUI campaignMap;
     private RunHistoryTracker historyTracker;
@@ -44,6 +48,8 @@ public sealed class BattleReportUI : MonoBehaviour
     private Sprite portraitSprite;
     private GameObject exportOverlay;
     private GameObject trendDetailOverlay;
+    private GameObject evidenceDetailOverlay;
+    private TMP_Text evidenceDetailText;
     private ResourceTrendPlotUI trendDetailPlot;
     private readonly TMP_Text[] trendDetailSummaryValues = new TMP_Text[4];
     private string lastPosterPath;
@@ -64,6 +70,7 @@ public sealed class BattleReportUI : MonoBehaviour
         if (advisorEchoCardBadge == null) advisorEchoCardBadge = Resources.Load<Sprite>("BattleReport/AdvisorEcho");
         if (resourceTrendCardBadge == null) resourceTrendCardBadge = Resources.Load<Sprite>("BattleReport/ResourceTrend");
         if (cultureCardBadge == null) cultureCardBadge = Resources.Load<Sprite>("BattleReport/Culture");
+        if (gameEntryQrSprite == null) gameEntryQrSprite = Resources.Load<Sprite>("BattleReport/GameEntryQR");
         CreateOverlay(root);
     }
 
@@ -81,6 +88,7 @@ public sealed class BattleReportUI : MonoBehaviour
         overlay.transform.SetAsLastSibling();
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
         if (trendDetailOverlay != null) trendDetailOverlay.SetActive(false);
+        if (evidenceDetailOverlay != null) evidenceDetailOverlay.SetActive(false);
     }
 
     public void Close()
@@ -126,6 +134,7 @@ public sealed class BattleReportUI : MonoBehaviour
         SetAnchored(disclaimer.rectTransform, new Vector2(.24f, .105f), new Vector2(.76f, .13f));
         CreateExportOverlay(panel.transform);
         CreateTrendDetailOverlay(overlay.transform);
+        CreateEvidenceDetailOverlay(overlay.transform);
         overlay.SetActive(false);
     }
 
@@ -178,6 +187,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
         RunHistoryData history = historyTracker.ExportHistory();
         DecisionTendencyResult tendency = BattleReportAnalyzer.Analyze(history);
+        if (evidenceDetailText != null) evidenceDetailText.text = BuildEvidenceDetailText(tendency);
         float cursor = 14f;
         cursor = CreateHeroCard(cursor);
         cursor = CreateStatsCard(cursor, history);
@@ -194,14 +204,17 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         GameObject card = CreateCard("Ending", y, 170f, false);
         Sprite sprite = portraitSprite != null ? portraitSprite : campaignMap.GetReachedEndingSprite();
-        if (sprite != null)
-        {
-            GameObject imageObject = CreateUIObject("EndingImage", card.transform);
-            SetAnchored(imageObject.GetComponent<RectTransform>(), new Vector2(.018f, .10f), new Vector2(.205f, .90f));
-            Image image = imageObject.AddComponent<Image>();
-            image.sprite = sprite;
-            image.preserveAspect = true;
-        }
+        // The ending portrait already contains its own circular frame.
+        // Do not reuse the square/rounded-rectangle cover crop: it clips
+        // Cao Cao's head and destroys the original circle.
+        GameObject portrait = CreateUIObject("EndingPortrait", card.transform);
+        RectTransform portraitRect = portrait.GetComponent<RectTransform>();
+        SetAnchored(portraitRect, new Vector2(.018f, .10f), new Vector2(CardBadgeRight, .90f));
+        Image portraitImage = portrait.AddComponent<Image>();
+        portraitImage.sprite = sprite;
+        portraitImage.color = Color.white;
+        portraitImage.preserveAspect = true;
+        portraitImage.raycastTarget = false;
         TMP_Text title = CreateText(card.transform, "恭喜通关 · " + campaignMap.GetReachedEndingLabel(), 46f,
             TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(.23f, .62f), new Vector2(.96f, .92f));
@@ -252,53 +265,84 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateTendencyCard(float y, DecisionTendencyResult tendency)
     {
-        // The report explains two different questions: *how* the army was
-        // deployed and *how* the commander evaluated advice. A rejected
-        // advisor recommendation is not an incorrect choice.
-        GameObject card = CreateCard("Tendency", y, 390f);
+        // Keep the shareable report concise. The second dimension's name
+        // and detailed chronology belong in the "查看依据" popup only.
+        const float cardHeight = 240f;
+        GameObject card = CreateCard("Tendency", y, cardHeight);
         TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .84f), new Vector2(.97f, .965f));
-
-        TMP_Text counsel = CreateText(card.transform, "谋议方式 · " + tendency.consultationLabel, 33f,
-            TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(counsel.rectTransform, new Vector2(CardTextLeft, .72f), new Vector2(.97f, .84f));
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .75f), new Vector2(.97f, .96f));
 
         TMP_Text strategy = CreateText(card.transform, tendency.summary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .57f), new Vector2(.97f, .72f));
+        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .43f), new Vector2(.97f, .76f));
 
-        TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 26f,
+        TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .43f), new Vector2(.97f, .56f));
+        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .16f), new Vector2(.97f, .47f));
 
-        // At most two facts, tied to actual (nodeId, optionIndex) decisions
-        // or an actual reviewed guest suggestion. No generic "data can be
-        // traced" line: the resource chart below already exposes every step.
-        List<string> visibleFacts = new List<string>();
-        if (tendency.evidence != null && tendency.evidence.Count > 0)
+        Button evidenceButton = CreateButton(card.transform, "查看依据", 23f);
+        evidenceButton.gameObject.name = "EvidenceDetailOpenButton";
+        SetAnchored(evidenceButton.GetComponent<RectTransform>(),
+            new Vector2(.78f, .02f), new Vector2(.96f, .155f));
+        evidenceButton.onClick.AddListener(() =>
         {
-            visibleFacts.Add(tendency.evidence[0]);
-            if (tendency.evidence.Count > 1)
-                visibleFacts.Add(tendency.evidence[tendency.evidence.Count - 1]);
-        }
-        TMP_Text facts = CreateText(card.transform,
-            visibleFacts.Count == 0 ? "暂无足够的已记录行为依据" :
-            "行为依据 · " + string.Join("\n", visibleFacts.ToArray()),
-            26f, TextAlignmentOptions.Center, TextPrimary, true);
-        facts.enableAutoSizing = true;
-        facts.fontSizeMin = 21f;
-        facts.fontSizeMax = 26f;
-        SetAnchored(facts.rectTransform, new Vector2(CardTextLeft, .15f), new Vector2(.97f, .43f));
+            if (evidenceDetailOverlay == null) return;
+            evidenceDetailOverlay.SetActive(true);
+            evidenceDetailOverlay.transform.SetAsLastSibling();
+        });
 
-        if (tendency.outcomeEvidence != null && tendency.outcomeEvidence.Count > 0)
-        {
-            TMP_Text outcome = CreateText(card.transform,
-                "战局记录 · " + string.Join("　", tendency.outcomeEvidence.ToArray()),
-                23f, TextAlignmentOptions.Center, TextPrimary, true);
-            SetAnchored(outcome.rectTransform, new Vector2(CardTextLeft, .06f), new Vector2(.97f, .16f));
-        }
-        return y + 402f;
+        return y + cardHeight + 12f;
+    }
+
+    private static string BuildEvidenceDetailText(DecisionTendencyResult tendency)
+    {
+        if (tendency == null) return "尚无有效决策记录。";
+        List<string> lines = new List<string>();
+        lines.Add("用兵风格：" + tendency.label);
+        lines.Add("谋议方式：" + tendency.consultationLabel);
+        if (!string.IsNullOrWhiteSpace(tendency.consultationSummary))
+            lines.Add(tendency.consultationSummary);
+        lines.Add("");
+        lines.Add("本局已发生的行为依据（按决策发生顺序）：");
+        if (tendency.evidence == null || tendency.evidence.Count == 0)
+            lines.Add("暂无足够的行为记录。");
+        else
+            foreach (string fact in tendency.evidence) lines.Add("· " + fact);
+        // Avoid duplicating the already-visible ending and avoid presenting
+        // a technical minigame type label as proof of personality.
+        return string.Join("\n", lines.ToArray());
+    }
+
+    private void CreateEvidenceDetailOverlay(Transform parent)
+    {
+        evidenceDetailOverlay = CreateUIObject("DecisionEvidenceDetailOverlay", parent);
+        Stretch(evidenceDetailOverlay.GetComponent<RectTransform>());
+        Image shade = evidenceDetailOverlay.AddComponent<Image>();
+        shade.color = new Color(.008f, .015f, .023f, .86f);
+
+        GameObject panel = CreateUIObject("DecisionEvidencePanel", evidenceDetailOverlay.transform);
+        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.13f, .18f), new Vector2(.87f, .82f));
+        panel.AddComponent<Image>().color = PanelColor;
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = AccentColor;
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        TMP_Text heading = CreateText(panel.transform, "本局决策依据", 42f,
+            TextAlignmentOptions.Center, AccentColor, false);
+        SetAnchored(heading.rectTransform, new Vector2(.10f, .84f), new Vector2(.89f, .96f));
+
+        evidenceDetailText = CreateText(panel.transform, "", 29f,
+            TextAlignmentOptions.TopLeft, TextPrimary, true);
+        evidenceDetailText.enableAutoSizing = true;
+        evidenceDetailText.fontSizeMin = 22f;
+        evidenceDetailText.fontSizeMax = 29f;
+        SetAnchored(evidenceDetailText.rectTransform, new Vector2(.075f, .16f), new Vector2(.93f, .83f));
+
+        Button close = CreateButton(panel.transform, "关闭", 29f);
+        SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.72f, .025f), new Vector2(.93f, .135f));
+        close.onClick.AddListener(() => evidenceDetailOverlay.SetActive(false));
+        evidenceDetailOverlay.SetActive(false);
     }
 
     private float CreateTrendCard(float y, RunHistoryData history)
@@ -570,7 +614,9 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         // Render an isolated copy of all report content, outside the scroll mask.
         float width = content.rect.width;
-        float height = content.rect.height;
+        const float signatureHeight = 208f;
+        float bodyHeight = content.rect.height;
+        float height = bodyHeight + signatureHeight;
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
         float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
         int pixelWidth = Mathf.Max(1, Mathf.CeilToInt(width * scale));
@@ -596,7 +642,13 @@ public sealed class BattleReportUI : MonoBehaviour
             copy.anchorMax = new Vector2(1f, 1f);
             copy.pivot = new Vector2(.5f, 1f);
             copy.anchoredPosition = Vector2.zero;
-            copy.sizeDelta = new Vector2(0f, height);
+            copy.sizeDelta = new Vector2(0f, bodyHeight);
+            // Keep navigation controls in the interactive report only; the
+            // exported poster contains the concise profile but no dead button.
+            foreach (Transform item in copy.GetComponentsInChildren<Transform>(true))
+                if (item.name == "EvidenceDetailOpenButton")
+                    item.gameObject.SetActive(false);
+            CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
             // The graph's generated children are copied; prevent a data-less
             // cloned component from rebuilding them before the export.
             foreach (MonoBehaviour component in copy.GetComponentsInChildren<MonoBehaviour>())
@@ -637,6 +689,72 @@ public sealed class BattleReportUI : MonoBehaviour
             if (target != null) RenderTexture.ReleaseTemporary(target);
             Destroy(cameraObject);
             Destroy(canvasObject);
+        }
+    }
+
+    /// <summary>
+    /// Render a footer only into the exported PNG; never into a scrollable
+    /// report card. Optional QR must contain the final published game URL.
+    /// Unconfigured QR is omitted instead of generating a nonfunctional code.
+    /// </summary>
+    private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight, float footerHeight)
+    {
+        // Always reserve an actual 148×148 QR frame at lower right. Before
+        // the official landing URL is deployed it is deliberately marked
+        // unavailable, rather than pretending a fake placeholder can scan.
+        GameObject footer = CreateUIObject("PosterSignatureFooter", canvasRect);
+        RectTransform rect = footer.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
+        rect.pivot = new Vector2(.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -bodyHeight);
+        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x, footerHeight);
+        Image background = footer.AddComponent<Image>();
+        background.color = PanelColor;
+        background.raycastTarget = false;
+
+        GameObject line = CreateUIObject("GoldRule", footer.transform);
+        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .91f), new Vector2(.955f, .925f));
+        line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
+
+        string id = PlayerIdentityState.CurrentId;
+        TMP_Text sign = CreateText(footer.transform,
+            "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
+            34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false);
+        SetAnchored(sign.rectTransform, new Vector2(.055f, .15f), new Vector2(.72f, .83f));
+        sign.enableAutoSizing = true;
+        sign.fontSizeMin = 24f;
+        sign.fontSizeMax = 34f;
+
+        GameObject frame = CreateUIObject("GameEntryQRCodeReservedArea", footer.transform);
+        RectTransform frameRect = frame.GetComponent<RectTransform>();
+        frameRect.anchorMin = frameRect.anchorMax = new Vector2(1f, .5f);
+        frameRect.pivot = new Vector2(.5f, .5f);
+        frameRect.anchoredPosition = new Vector2(-120f, -7f);
+        frameRect.sizeDelta = new Vector2(148f, 148f);
+        Image frameBackground = frame.AddComponent<Image>();
+        frameBackground.color = gameEntryQrSprite != null ? Color.white :
+            new Color(.13f, .18f, .20f, 1f);
+        frameBackground.raycastTarget = false;
+        Outline frameOutline = frame.AddComponent<Outline>();
+        frameOutline.effectColor = AccentColor;
+        frameOutline.effectDistance = new Vector2(1f, -1f);
+
+        if (gameEntryQrSprite != null)
+        {
+            GameObject imageObject = CreateUIObject("GameEntryQR", frame.transform);
+            RectTransform qrRect = imageObject.GetComponent<RectTransform>();
+            SetAnchored(qrRect, new Vector2(.065f, .065f), new Vector2(.935f, .935f));
+            Image qr = imageObject.AddComponent<Image>();
+            qr.sprite = gameEntryQrSprite;
+            qr.color = Color.white;
+            qr.preserveAspect = true;
+            qr.raycastTarget = false;
+        }
+        else
+        {
+            TMP_Text pending = CreateText(frame.transform, "扫码游玩\n上线后开放",
+                21f, TextAlignmentOptions.Center, TextMuted, true);
+            Stretch(pending.rectTransform);
         }
     }
 
@@ -723,27 +841,79 @@ public sealed class BattleReportUI : MonoBehaviour
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
-        if (withBadgeSlot) CreateCardBadgeSlot(card.transform, name);
+        if (withBadgeSlot) CreateCardBadgeSlot(card.transform, name, height);
         return card;
     }
 
-    private void CreateCardBadgeSlot(Transform parent, string cardName)
+    private void CreateCardBadgeSlot(Transform parent, string cardName,
+        float cardHeight, Sprite overrideSprite = null)
     {
+        // All badges share identical column width. Their vertical length
+        // responds to each card's height and is capped to avoid a 4:1 image
+        // on long chart cards. Never deform the source illustration.
         GameObject slot = CreateUIObject("CardBadgeSlot", parent);
-        SetAnchored(slot.GetComponent<RectTransform>(), new Vector2(.018f, .10f), new Vector2(CardBadgeRight, .90f));
-        Image image = slot.AddComponent<Image>();
-        image.sprite = GetCardBadgeSprite(cardName);
-        image.preserveAspect = true;
-        image.color = image.sprite != null
-            ? Color.white
-            : new Color(.055f, .085f, .10f, .58f);
-        image.raycastTarget = false;
-        if (image.sprite == null)
+        RectTransform rect = slot.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(.018f, .5f);
+        rect.anchorMax = new Vector2(CardBadgeRight, .5f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(0f, Mathf.Clamp(cardHeight * .56f, 86f, 265f));
+
+        Image clipImage = slot.AddComponent<Image>();
+        clipImage.sprite = GetRoundedBadgeMaskSprite();
+        clipImage.type = Image.Type.Sliced;
+        clipImage.color = Color.white;
+        clipImage.raycastTarget = false;
+        Mask clippingMask = slot.AddComponent<Mask>();
+        clippingMask.showMaskGraphic = false;
+
+        Sprite sprite = overrideSprite != null ? overrideSprite : GetCardBadgeSprite(cardName);
+        GameObject artObject = CreateUIObject("CardBadgeArtwork", slot.transform);
+        Image art = artObject.AddComponent<Image>();
+        art.raycastTarget = false;
+        art.sprite = sprite;
+        art.color = sprite != null ? Color.white : new Color(.12f, .16f, .18f, 1f);
+        if (sprite == null)
         {
-            Outline outline = slot.AddComponent<Outline>();
-            outline.effectColor = new Color(.45f, .36f, .20f, .72f);
-            outline.effectDistance = new Vector2(1f, -1f);
+            Stretch(artObject.GetComponent<RectTransform>());
+            return;
         }
+
+        // EnvelopeParent fits by covering the rounded frame, cropping excess
+        // width/height instead of letterboxing or stretching the art.
+        AspectRatioFitter fitter = artObject.AddComponent<AspectRatioFitter>();
+        fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        fitter.aspectRatio = sprite.rect.width / Mathf.Max(1f, sprite.rect.height);
+    }
+
+    private static Sprite GetRoundedBadgeMaskSprite()
+    {
+        if (roundedBadgeMaskSprite != null) return roundedBadgeMaskSprite;
+        const int size = 64;
+        const int radius = 13;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.name = "BattleReportRoundedBadgeMask";
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
+        Color[] pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float cx = Mathf.Clamp(x, radius, size - 1 - radius);
+                float cy = Mathf.Clamp(y, radius, size - 1 - radius);
+                float dx = x - cx, dy = y - cy;
+                pixels[y * size + x] = dx * dx + dy * dy <= radius * radius
+                    ? Color.white : Color.clear;
+            }
+        }
+        texture.SetPixels(pixels);
+        texture.Apply();
+        roundedBadgeMaskSprite = Sprite.Create(texture, new Rect(0, 0, size, size),
+            new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect,
+            new Vector4(radius, radius, radius, radius));
+        roundedBadgeMaskSprite.name = "BattleReportRoundedBadgeMask";
+        return roundedBadgeMaskSprite;
     }
 
     private Sprite GetCardBadgeSprite(string cardName)

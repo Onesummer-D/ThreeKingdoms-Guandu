@@ -60,6 +60,7 @@ public class FinalUIManager : MonoBehaviour
     private LocalSaveManager localSaveManager;
     private SaveArchiveUI saveArchiveUI;
     private HomeHubUI homeHubUI;
+    private PlayerIdentityUI playerIdentityUI;
     private GameplayExitUI gameplayExitUI;
     private RunHistoryTracker runHistoryTracker;
     private BattleReportUI battleReportUI;
@@ -242,6 +243,11 @@ public class FinalUIManager : MonoBehaviour
             homeHubUI.Initialize(this, startMenuPanel, gameInterfacePanel.transform.root,
                 caocaoLeft, xuyouLeft, yuanshaoLeft);
 
+        playerIdentityUI = GetComponent<PlayerIdentityUI>();
+        if (playerIdentityUI == null) playerIdentityUI = gameObject.AddComponent<PlayerIdentityUI>();
+        if (startMenuPanel != null && gameInterfacePanel != null)
+            playerIdentityUI.Initialize(gameInterfacePanel.transform.root, startMenuPanel.transform);
+
         gameplayExitUI = GetComponent<GameplayExitUI>();
         if (gameplayExitUI == null) gameplayExitUI = gameObject.AddComponent<GameplayExitUI>();
         if (gameInterfacePanel != null)
@@ -324,7 +330,7 @@ public class FinalUIManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning("GridGameManager未赋值，直接继续剧情");
-                    OnMiniGameFinished(true, nextNodeId);
+                    OnMiniGameUnavailable(nextNodeId, "GridGameManager 未绑定");
                 }
                 break;
 
@@ -337,7 +343,7 @@ public class FinalUIManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning("DigTunnelPanel未赋值，直接跳转");
-                    OnMiniGameFinished(true, nextNodeId);
+                    OnMiniGameUnavailable(nextNodeId, "DigTunnelPanel 未绑定");
                 }
                 break;
 
@@ -372,6 +378,11 @@ public class FinalUIManager : MonoBehaviour
 
     public void StartGame()
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            playerIdentityUI?.ShowEditor();
+            return;
+        }
         if (inviteCoCreationUI != null && inviteCoCreationUI.ShowPlayerBrief(BeginNewRun)) return;
         BeginNewRun();
     }
@@ -388,6 +399,11 @@ public class FinalUIManager : MonoBehaviour
 
     private void BeginNewRun()
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            playerIdentityUI?.ShowEditor();
+            return;
+        }
         Debug.Log("开始游戏");
 
         ResetRunState();
@@ -701,6 +717,12 @@ public class FinalUIManager : MonoBehaviour
 
     public bool LoadRunFromSlot(string slotId, out string message)
     {
+        if (!PlayerIdentityState.HasId)
+        {
+            message = "请先设置主将 ID，再读取本机存档。";
+            playerIdentityUI?.ShowEditor();
+            return false;
+        }
         if (localSaveManager == null)
         {
             message = "存档系统尚未准备完成。";
@@ -1402,7 +1424,7 @@ public class FinalUIManager : MonoBehaviour
         else
         {
             Debug.LogError("ValueInputPanel未赋值！");
-            OnMiniGameFinished(true, nextNodeId);
+            OnMiniGameUnavailable(nextNodeId, "ValueInputPanel 未绑定");
         }
     }
 
@@ -1439,9 +1461,20 @@ public class FinalUIManager : MonoBehaviour
         }
     }
 
+    private void OnMiniGameUnavailable(int nextNodeId, string reason)
+    {
+        RunHistoryTracker.Instance?.RecordMiniGameUnavailable(reason);
+        FinishMiniGameTransition(true, nextNodeId, false);
+    }
+
     public void OnMiniGameFinished(bool success, int nextNodeId)
     {
-        if (RunHistoryTracker.Instance != null)
+        FinishMiniGameTransition(success, nextNodeId, true);
+    }
+
+    private void FinishMiniGameTransition(bool success, int nextNodeId, bool recordCompletion)
+    {
+        if (recordCompletion && RunHistoryTracker.Instance != null)
         {
             int nodeId = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
                 ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
