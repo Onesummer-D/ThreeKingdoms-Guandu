@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace UnityEngine
 {
+    public enum RuntimeInitializeLoadType { SubsystemRegistration }
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class RuntimeInitializeOnLoadMethodAttribute : Attribute
+    {
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType stage) {}
+    }
+
     public static class PlayerPrefs
     {
         private static Dictionary<string,string> values=new Dictionary<string,string>();
@@ -29,13 +36,18 @@ internal static class Program
         Check(!PlayerIdentityState.TrySave("含汉字",out _),"Only simple poster-safe ASCII IDs allowed");
         Check(!PlayerIdentityState.TrySave("test<script>",out _),"Markup is not allowed in a poster ID");
         Check(!PlayerIdentityState.TrySave("john doe",out _),"Spaces are not accepted");
-        Check(PlayerIdentityState.TrySave(" Guandu_07 ",out _),"Valid ASCII custom ID accepted with trim");
-        Check(PlayerIdentityState.CurrentId=="Guandu_07","ID restored from PlayerPrefs");
-        Check(PlayerIdentityState.HasId,"Returning player skips first registration");
-        Check(PlayerIdentityState.TrySave("Another-12",out _),"User can change local ID from main menu");
-        Check(PlayerIdentityState.CurrentId=="Another-12","Updated ID used for poster signature");
+        Check(PlayerIdentityState.TrySave(" Guandu_07 ",out _),"Valid display name accepted with trim");
+        Check(PlayerIdentityState.CurrentId=="Guandu_07","Previously confirmed ID remembered for prefill");
+        Check(PlayerIdentityState.HasId,"Name confirmation permits current game session");
+        PlayerIdentityState.ResetForNewLaunch();
+        Check(!PlayerIdentityState.HasId,"A fresh app launch requires confirmation again");
+        Check(PlayerIdentityState.CurrentId=="Guandu_07","New launch can prefill previous ID");
+        Check(PlayerIdentityState.TrySave("Guandu_07",out _),"Reconfirming same name works");
+        Check(PlayerIdentityState.HasId,"Current session is unlocked only after confirmation");
+        Check(PlayerIdentityState.TrySave("Another-12",out _),"A later launch may select another name");
+        Check(PlayerIdentityState.CurrentId=="Another-12","Confirmed name used for poster signature");
         Check(!PlayerIdentityState.TrySave("!",out _) &&
-              PlayerIdentityState.CurrentId=="Another-12","Invalid changes never overwrite existing ID");
+              PlayerIdentityState.CurrentId=="Another-12","Invalid input never overwrites confirmed name");
         Console.WriteLine("player-id-tests: "+passed+"/"+passed);
     }
 }
