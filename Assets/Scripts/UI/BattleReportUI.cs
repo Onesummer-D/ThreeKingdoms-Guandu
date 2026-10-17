@@ -26,6 +26,7 @@ public sealed class BattleReportUI : MonoBehaviour
     };
     private const float CardBadgeRight = .16f;
     private const float CardTextLeft = .18f;
+    private static Sprite roundedBadgeMaskSprite;
 
     [Header("战绩报告卡片左侧标题图（可选）")]
     public Sprite statsCardBadge;
@@ -203,14 +204,9 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         GameObject card = CreateCard("Ending", y, 170f, false);
         Sprite sprite = portraitSprite != null ? portraitSprite : campaignMap.GetReachedEndingSprite();
-        if (sprite != null)
-        {
-            GameObject imageObject = CreateUIObject("EndingImage", card.transform);
-            SetAnchored(imageObject.GetComponent<RectTransform>(), new Vector2(.018f, .10f), new Vector2(.205f, .90f));
-            Image image = imageObject.AddComponent<Image>();
-            image.sprite = sprite;
-            image.preserveAspect = true;
-        }
+        // Portrait and all five report badges share the same column width
+        // and a rounded, masked frame. Height adapts to the card.
+        CreateCardBadgeSlot(card.transform, "Ending", 170f, sprite);
         TMP_Text title = CreateText(card.transform, "恭喜通关 · " + campaignMap.GetReachedEndingLabel(), 46f,
             TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(title.rectTransform, new Vector2(.23f, .62f), new Vector2(.96f, .92f));
@@ -825,27 +821,79 @@ public sealed class BattleReportUI : MonoBehaviour
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
-        if (withBadgeSlot) CreateCardBadgeSlot(card.transform, name);
+        if (withBadgeSlot) CreateCardBadgeSlot(card.transform, name, height);
         return card;
     }
 
-    private void CreateCardBadgeSlot(Transform parent, string cardName)
+    private void CreateCardBadgeSlot(Transform parent, string cardName,
+        float cardHeight, Sprite overrideSprite = null)
     {
+        // All badges share identical column width. Their vertical length
+        // responds to each card's height and is capped to avoid a 4:1 image
+        // on long chart cards. Never deform the source illustration.
         GameObject slot = CreateUIObject("CardBadgeSlot", parent);
-        SetAnchored(slot.GetComponent<RectTransform>(), new Vector2(.018f, .10f), new Vector2(CardBadgeRight, .90f));
-        Image image = slot.AddComponent<Image>();
-        image.sprite = GetCardBadgeSprite(cardName);
-        image.preserveAspect = true;
-        image.color = image.sprite != null
-            ? Color.white
-            : new Color(.055f, .085f, .10f, .58f);
-        image.raycastTarget = false;
-        if (image.sprite == null)
+        RectTransform rect = slot.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(.018f, .5f);
+        rect.anchorMax = new Vector2(CardBadgeRight, .5f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(0f, Mathf.Clamp(cardHeight * .56f, 86f, 265f));
+
+        Image clipImage = slot.AddComponent<Image>();
+        clipImage.sprite = GetRoundedBadgeMaskSprite();
+        clipImage.type = Image.Type.Sliced;
+        clipImage.color = Color.white;
+        clipImage.raycastTarget = false;
+        Mask clippingMask = slot.AddComponent<Mask>();
+        clippingMask.showMaskGraphic = false;
+
+        Sprite sprite = overrideSprite != null ? overrideSprite : GetCardBadgeSprite(cardName);
+        GameObject artObject = CreateUIObject("CardBadgeArtwork", slot.transform);
+        Image art = artObject.AddComponent<Image>();
+        art.raycastTarget = false;
+        art.sprite = sprite;
+        art.color = sprite != null ? Color.white : new Color(.12f, .16f, .18f, 1f);
+        if (sprite == null)
         {
-            Outline outline = slot.AddComponent<Outline>();
-            outline.effectColor = new Color(.45f, .36f, .20f, .72f);
-            outline.effectDistance = new Vector2(1f, -1f);
+            Stretch(artObject.GetComponent<RectTransform>());
+            return;
         }
+
+        // EnvelopeParent fits by covering the rounded frame, cropping excess
+        // width/height instead of letterboxing or stretching the art.
+        AspectRatioFitter fitter = artObject.AddComponent<AspectRatioFitter>();
+        fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        fitter.aspectRatio = sprite.rect.width / Mathf.Max(1f, sprite.rect.height);
+    }
+
+    private static Sprite GetRoundedBadgeMaskSprite()
+    {
+        if (roundedBadgeMaskSprite != null) return roundedBadgeMaskSprite;
+        const int size = 64;
+        const int radius = 13;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.name = "BattleReportRoundedBadgeMask";
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
+        Color[] pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float cx = Mathf.Clamp(x, radius, size - 1 - radius);
+                float cy = Mathf.Clamp(y, radius, size - 1 - radius);
+                float dx = x - cx, dy = y - cy;
+                pixels[y * size + x] = dx * dx + dy * dy <= radius * radius
+                    ? Color.white : Color.clear;
+            }
+        }
+        texture.SetPixels(pixels);
+        texture.Apply();
+        roundedBadgeMaskSprite = Sprite.Create(texture, new Rect(0, 0, size, size),
+            new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect,
+            new Vector4(radius, radius, radius, radius));
+        roundedBadgeMaskSprite.name = "BattleReportRoundedBadgeMask";
+        return roundedBadgeMaskSprite;
     }
 
     private Sprite GetCardBadgeSprite(string cardName)
