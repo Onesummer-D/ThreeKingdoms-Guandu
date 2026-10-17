@@ -23,15 +23,15 @@ public static class SettingsArtAtlas
     // rail atlas. Cell boundaries are top-left based, like SourceRect().
     public static Sprite SliderDecoration(SettingsGlyphKind kind)
     {
-        if (kind == SettingsGlyphKind.Lyre) return LoadDetail("lute", 0, 0, 112, 112);
-        if (kind == SettingsGlyphKind.Drum) return LoadDetail("gauntlet", 112, 0, 112, 112);
-        if (kind == SettingsGlyphKind.Sun) return LoadDetail("lamp", 224, 0, 112, 112);
+        if (kind == SettingsGlyphKind.Lyre) return LoadDetail("lute", 0, 0, 96, 96);
+        if (kind == SettingsGlyphKind.Drum) return LoadDetail("gauntlet", 96, 0, 96, 96);
+        if (kind == SettingsGlyphKind.Sun) return LoadDetail("lamp", 192, 0, 96, 96);
         return null;
     }
 
     public static Sprite SliderDecorationBubble()
     {
-        return LoadDetail("tooltip", 84, 112, 168, 112);
+        return Get("bubble");
     }
 
     private static Sprite LoadDetail(string name, int x, int top, int width, int height)
