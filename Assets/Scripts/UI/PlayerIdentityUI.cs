@@ -4,17 +4,15 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// One-time commander-name card shown before the main menu is playable.
-/// An existing local ID skips the card. A small menu button can reopen it.
+/// Commander-name card shown at each fresh app launch, once per launch.
+/// ID may be prefilled from this device, but the player must confirm it.
 /// No remote login, network permission or account credentials required.
 /// </summary>
 public sealed class PlayerIdentityUI : MonoBehaviour
 {
     private GameObject overlay;
-    private GameObject editButtonObject;
     private TMP_InputField idInput;
     private TMP_Text errorText;
-    private TMP_Text editButtonLabel;
     private Sprite sourceButton;
     private bool initialized;
 
@@ -30,13 +28,10 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             if (img != null) sourceButton = img.sprite;
         }
 
-        CreateEditButton(mainMenu);
         CreateIdentityOverlay(canvasRoot);
-        RefreshLabel();
-        if (!PlayerIdentityState.HasId)
-            ShowEditor(); // Focus the actual TMP field on first launch too.
-        else
-            overlay.SetActive(false);
+        // Always request confirmation when Unity starts, even if PlayerPrefs
+        // contains a previously used display name.
+        ShowEditor();
     }
 
     public void ShowEditor()
@@ -49,27 +44,6 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         idInput.ActivateInputField();
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(idInput.gameObject);
-    }
-
-    private void CreateEditButton(Transform mainMenu)
-    {
-        Button button = CreateButton(mainMenu, "主将名号", 28f);
-        editButtonObject = button.gameObject;
-        RectTransform rect = button.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0f);
-        rect.pivot = new Vector2(.5f, 0f);
-        rect.sizeDelta = new Vector2(390f, 66f);
-        rect.anchoredPosition = new Vector2(0f, 30f);
-        editButtonLabel = button.GetComponentInChildren<TMP_Text>(true);
-        button.onClick.AddListener(ShowEditor);
-    }
-
-    private void RefreshLabel()
-    {
-        if (editButtonLabel != null)
-            editButtonLabel.text = PlayerIdentityState.HasId
-                ? "主将 ID：" + PlayerIdentityState.CurrentId + "  ·  修改"
-                : "设置主将 ID";
     }
 
     private void CreateIdentityOverlay(Transform root)
@@ -164,7 +138,6 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             return;
         }
         errorText.text = "";
-        RefreshLabel();
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
     }
@@ -221,6 +194,5 @@ public sealed class PlayerIdentityUI : MonoBehaviour
     private void OnDestroy()
     {
         if (overlay != null) Destroy(overlay);
-        if (editButtonObject != null) Destroy(editButtonObject);
     }
 }
