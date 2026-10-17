@@ -193,7 +193,7 @@ public sealed class HomeHubUI : MonoBehaviour
             if (AudioManager.Instance != null) AudioManager.Instance.SetEffectsVolume(value);
             else PlayerPrefs.SetFloat("EffectsVolume", value);
         });
-        CreateSliderRow(panel.transform, "画面亮度", SettingsGlyphKind.Sun, .36f, .45f, 1f, brightness, value =>
+        CreateSliderRow(panel.transform, "画面亮度", SettingsGlyphKind.Sun, .36f, 0f, 1f, brightness, value =>
         {
             PlayerPrefs.SetFloat("DisplayBrightness", value);
             ApplyBrightness(value);
@@ -283,7 +283,9 @@ public sealed class HomeHubUI : MonoBehaviour
     private void ApplyBrightness(float value)
     {
         if (brightnessOverlay == null) return;
-        float darkness = Mathf.Clamp01((1f - value) / .55f) * .62f;
+        // All three settings sliders use a genuine 0-100 scale. At 0% the
+        // picture remains visible: the darkest veil is capped at 62% opacity.
+        float darkness = (1f - Mathf.Clamp01(value)) * .62f;
         brightnessOverlay.color = new Color(0f, 0f, 0f, darkness);
         brightnessOverlay.transform.SetAsLastSibling();
         if (aboutOverlay != null && aboutOverlay.activeSelf) aboutOverlay.transform.SetAsLastSibling();
@@ -569,11 +571,10 @@ public sealed class HomeHubUI : MonoBehaviour
         SetAnchored(slider.GetComponent<RectTransform>(),
             new Vector2(.405f, anchorY + .021f), new Vector2(.782f, anchorY + .114f));
         slider.gameObject.name = label + "Slider";
-        // Draw the scale as a SIBLING of the Slider, with panel-relative
-        // anchors.  The previous graphic had oversized transparent padding,
-        // while the brightness-only scale could lose its labels below the
-        // slider's own bounds.
-        CreateSettingsScale(parent, label, anchorY, min, max);
+        // Use the identical artist-supplied 0/25/50/75/100 scale for
+        // background music, effects and brightness.  Render above the rail,
+        // but below the thumb, as a panel sibling outside any Slider mask.
+        CreateSettingsScale(parent, label, anchorY);
 
         CreateStepButton(parent, label + "Decrease", .348f, anchorY + .026f, false,
             () => slider.value = Mathf.Clamp(Mathf.Round((slider.value - .05f) * 100f) / 100f, min, max));
@@ -701,11 +702,11 @@ public sealed class HomeHubUI : MonoBehaviour
         bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(.5f, 1f);
         bubbleRect.pivot = new Vector2(.5f, 0f);
         bubbleRect.anchoredPosition = new Vector2(0f, 6f);
-        bubbleRect.sizeDelta = new Vector2(130f, 67f);
+        bubbleRect.sizeDelta = new Vector2(135f, 72f);
         Image bubbleBg = bubble.AddComponent<Image>();
         Sprite bubbleArt = SettingsArtAtlas.SliderDecorationBubble();
         bubbleBg.sprite = bubbleArt != null ? bubbleArt : SettingsArtAtlas.Get("bubble");
-        bubbleBg.type = Image.Type.Simple; // The asymmetric pointed frame must not be nine-sliced.
+        bubbleBg.type = Image.Type.Simple; // Keep the original pointed frame intact.
         bubbleBg.preserveAspect = true;
         bubbleBg.raycastTarget = false;
         TMP_Text bubbleText = CreateText(bubble.transform,
@@ -729,44 +730,39 @@ public sealed class HomeHubUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Align five ticks and their labels immediately below the actual rail.
-    /// Labels are not children of the Slider: this keeps the third
-    /// (brightness) scale visible even when its minimum is 45%, and prevents
-    /// transparent margins in the supplied scale atlas from adding gaps.
+    /// The supplied gold tick strip already contains every major tick, minor
+    /// mark and engraved numeral. Render it intact on ALL three sliders; do
+    /// not draw a second, different scale for brightness.
+    /// The art is 628x65 with almost no internal vertical margin.
     /// </summary>
-    private void CreateSettingsScale(Transform panel, string label, float anchorY,
-        float min, float max)
+    private void CreateSettingsScale(Transform panel, string label, float anchorY)
     {
-        const float left = .421f;
-        const float right = .769f;
-        const int tickCount = 5;
-        for (int i = 0; i < tickCount; i++)
+        GameObject scaleObject = CreateUIObject(label + "ScaleArtwork", panel);
+        RectTransform rect = scaleObject.GetComponent<RectTransform>();
+        // The rail's bottom is anchorY + .035f.  The tick artwork begins
+        // right under that edge and leaves room for its own numerals.
+        SetAnchored(rect, new Vector2(.399f, anchorY - .016f),
+            new Vector2(.788f, anchorY + .040f));
+        Image scale = scaleObject.AddComponent<Image>();
+        scale.sprite = SettingsArtAtlas.Get("ticks");
+        scale.type = Image.Type.Simple;
+        scale.preserveAspect = false;
+        scale.raycastTarget = false;
+        if (scale.sprite == null)
         {
-            float fraction = i / (tickCount - 1f);
-            float x = Mathf.Lerp(left, right, fraction);
-            GameObject tick = CreateUIObject(label + "ScaleTick" + i, panel);
-            RectTransform tickRect = tick.GetComponent<RectTransform>();
-            tickRect.anchorMin = tickRect.anchorMax = new Vector2(x, anchorY + .035f);
-            tickRect.pivot = new Vector2(.5f, 1f);
-            tickRect.anchoredPosition = Vector2.zero;
-            tickRect.sizeDelta = new Vector2(i == 0 || i == tickCount - 1 ? 2.5f : 2f, 8f);
-            Image line = tick.AddComponent<Image>();
-            line.color = new Color(.81f, .67f, .42f, .94f);
-            line.raycastTarget = false;
-
-            // Volume shows 0/25/50/75/100. Brightness reflects its real
-            // 45-100% domain instead of deceptively labeling 45% as 0%.
-            int percent = Mathf.RoundToInt(Mathf.Lerp(min, max, fraction) * 100f);
-            TMP_Text number = CreateText(panel, percent.ToString(), 21f,
-                TextAlignmentOptions.Center, new Color(.91f, .80f, .59f, 1f), false);
-            number.gameObject.name = label + "ScaleLabel" + i;
-            number.enableAutoSizing = false;
-            number.overflowMode = TextOverflowModes.Overflow;
-            RectTransform labelRect = number.rectTransform;
-            labelRect.anchorMin = labelRect.anchorMax = new Vector2(x, anchorY + .007f);
-            labelRect.pivot = new Vector2(.5f, .5f);
-            labelRect.anchoredPosition = Vector2.zero;
-            labelRect.sizeDelta = new Vector2(66f, 30f);
+            // Fallback for broken Resources builds: keep all five labels
+            // visible, not merely the slider's three or four major ticks.
+            Destroy(scale);
+            for (int i = 0; i <= 4; i++)
+            {
+                float x = Mathf.Lerp(.406f, .782f, i / 4f);
+                TMP_Text number = CreateText(panel, (i * 25).ToString(), 20f,
+                    TextAlignmentOptions.Center, new Color(.91f, .80f, .59f), false);
+                number.gameObject.name = label + "ScaleFallback" + i;
+                SetAnchored(number.rectTransform,
+                    new Vector2(x - .015f, anchorY - .030f),
+                    new Vector2(x + .015f, anchorY + .014f));
+            }
         }
     }
 
