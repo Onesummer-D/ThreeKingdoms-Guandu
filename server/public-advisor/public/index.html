@@ -173,12 +173,73 @@
       .paper-field label{font-size:13px;}
     }
     @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;}}
+
+    /* October visual QA: readable Song-type and full-size dark lettering.
+       The reference illustration is visual guidance, not a rasterized UI. */
+    :root {
+      --reading-font:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+      font-family:var(--reading-font);
+    }
+    body {font-family:var(--reading-font);font-size:18px;line-height:1.5;color:#332015;}
+    button,input,textarea {font-family:var(--reading-font);}
+    .sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    .masthead {height:clamp(155px,40vw,215px);}
+    .masthead-title {inset:auto 0 25px;z-index:1;display:flex;justify-content:center;
+      align-items:center;pointer-events:none;}
+    .title-art {width:min(98%,525px);height:auto;display:block;object-fit:contain;
+      filter:drop-shadow(0 2px 3px #170c07a6);}
+    .paper-heading {font-size:clamp(25px,5.8vw,31px);font-weight:700;color:#392314;}
+    .recap {font-size:clamp(17px,4.3vw,20px);line-height:1.66;color:#302015;}
+    .recap-toggle {font-size:15px;font-weight:600;color:#4b301f;background:#ead6b3;}
+    .resource-label {font-size:clamp(16px,3.9vw,19px);font-weight:600;color:#332015;}
+    .question {font-size:clamp(19px,4.7vw,23px);line-height:1.5;color:#fff0cf;}
+    .question-label {font-size:15px;font-weight:600;color:#f1d29b;letter-spacing:.1em;}
+    .choice-label {font-size:clamp(19px,4.8vw,22px);font-weight:700;color:#382315;}
+    .option {font-size:clamp(15px,3.85vw,19px);font-weight:600;
+      line-height:1.46;color:#382215;text-shadow:none;}
+    /* The writing area begins *inside* the wood cylinder and gilt borders.
+       Each field occupies one half of the parchment with no overlap. */
+    .form-panel {
+      margin:13px 7px 0;
+      padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px) clamp(36px,7.5vw,48px);
+      min-height:clamp(270px,68vw,320px);
+      grid-template-columns:minmax(0,1fr);
+      grid-template-rows:minmax(0,1fr) minmax(0,1fr);
+      gap:3px;
+    }
+    .paper-field {padding:0 4px;min-height:0;display:flex;
+      flex-direction:column;justify-content:center;}
+    .paper-field label {font-size:clamp(17px,4.1vw,20px);line-height:1.3;
+      font-weight:700;color:#302016;margin:0 0 3px;}
+    .paper-field input,.paper-field textarea {
+      font-family:var(--reading-font);font-size:clamp(17px,4.1vw,20px);
+      line-height:1.45;min-height:33px;min-width:0;
+      padding:2px 0;color:#28180d;font-weight:500;resize:none;opacity:1;
+    }
+    .paper-field textarea {min-height:38px;max-height:70px;overflow-y:auto;}
+    .paper-field input::placeholder,.paper-field textarea::placeholder {
+      color:#69492e;opacity:1;font-weight:400;
+    }
+    .paper-field:focus-within {outline:2px solid #a76a36;outline-offset:2px;border-radius:3px;}
+    .submit {font-size:clamp(20px,5vw,26px);font-weight:700;color:#fff2d8;}
+    .status {font-size:16px;color:#43291b;}
+    .success-panel {font-size:18px;color:#3b2417;}
+    .footer-action {font-size:clamp(17px,4.3vw,20px);font-weight:600;color:#382215;}
+    @media (max-width:370px) {
+      .title-art{width:99%;}
+      .form-panel {margin-left:3px;margin-right:3px;
+        padding-left:44px;padding-right:35px;min-height:260px;}
+      .paper-field {padding:0 2px;}
+      .paper-field label,.paper-field input,.paper-field textarea {font-size:17px;}
+      .option {font-size:15px;}
+    }
   </style>
 </head>
 <body>
 <main class="page">
   <header class="masthead" aria-label="军帐战场背景">
-    <div class="masthead-title"><h1>官渡之战 · 军议邀约</h1></div>
+    <div class="masthead-title"><img class="title-art" src="/assets/advisor-gold-title.webp" alt="" aria-hidden="true"><h1 class="sr-only">官渡之战 · 军议邀约</h1></div>
   </header>
 
   <section class="scroll-paper" aria-labelledby="situation-heading">
