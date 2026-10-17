@@ -11,6 +11,16 @@ public static class PlayerIdentityState
     public const int MinLength = 3;
     public const int MaxLength = 18;
 
+    // Session gate is separate from the locally remembered suggestion.
+    // Unity SubsystemRegistration also runs when Play Mode skips domain reload.
+    private static bool confirmedThisLaunch;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    internal static void ResetForNewLaunch()
+    {
+        confirmedThisLaunch = false;
+    }
+
     public static string CurrentId
     {
         get
@@ -20,7 +30,7 @@ public static class PlayerIdentityState
         }
     }
 
-    public static bool HasId => !string.IsNullOrEmpty(CurrentId);
+    public static bool HasId => confirmedThisLaunch && !string.IsNullOrEmpty(CurrentId);
 
     public static bool IsValid(string value)
     {
@@ -47,6 +57,7 @@ public static class PlayerIdentityState
         }
         PlayerPrefs.SetString(PrefsKey, value);
         PlayerPrefs.Save();
+        confirmedThisLaunch = true;
         message = "";
         return true;
     }
