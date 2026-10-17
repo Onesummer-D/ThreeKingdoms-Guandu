@@ -8,7 +8,7 @@ function check(condition,message){assert.ok(condition,message); console.log('PAS
 check(/DecorateSettingsPanel\(panel\)/.test(home) && /CreateSettingsHeader\(panel.transform\)/.test(home),
   'Settings modal uses existing dark panel and settings-specific header');
 check(/new Vector2\(\.06f, \.84f\), new Vector2\(\.70f, \.97f\)/.test(home) &&
-  /new Vector2\(\.78f, \.857f\), new Vector2\(\.95f, \.953f\)/.test(home),
+  /new Vector2\(\.85f, \.862f\), new Vector2\(\.953f, \.948f\)/.test(home),
   'Settings title and close button have same .905 vertical center');
 check(/GameButtonSkin.Apply\(quality, qualityPlate, GameButtonSkin.Tone.Quiet, buttonSprite\)/.test(home) &&
   /CreateButton\(panel, "关闭"/.test(home),
@@ -77,4 +77,32 @@ check(/quality\.onClick\.AddListener\(CycleQuality\)/.test(home) &&
   'Power-saving/standard/ultra presets continue cycling');
 check(!/slider\.wholeNumbers = true/.test(home) && /slider\.wholeNumbers = false/.test(home),
   'No forced tick snapping or quantization during dragging');
+const detail=fs.readFileSync(path.join(root,'Assets/Resources/SettingsUI/SliderDetailsAtlas.png'));
+check(detail.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+      detail.readUInt32BE(16)===288 && detail.readUInt32BE(20)===96,
+  'Real 288x96 transparent PNG contains three artist-drawn slider ornaments');
+check(art.includes('Resources.Load<Texture2D>("SettingsUI/SliderDetailsAtlas")') &&
+      /LoadDetail\("lute", 0, 0, 96, 96\)/.test(art) &&
+      /LoadDetail\("gauntlet", 96, 0, 96, 96\)/.test(art) &&
+      /LoadDetail\("lamp", 192, 0, 96, 96\)/.test(art),
+  'Lute, gauntlet and oil-lamp art are separately mapped for all three controls');
+check(/SettingsArtAtlas\.SliderDecoration\(motif\)/.test(home) &&
+      /Image artImage = visual.AddComponent<Image>\(\)/.test(home) &&
+      /artImage\.preserveAspect = true/.test(home),
+  'Original slider medallions replaced with correctly aspect-ratio-preserved motif artwork');
+check(/new Vector2\(68f, 75f\)/.test(home) &&
+      /new Vector2\(67f, 69f\)/.test(home) &&
+      /new Vector2\(91f, 69f\)/.test(home) &&
+      /dragging \? 1\.07f/.test(art),
+  'Per-motif sizes plus modest hover scaling protect nearby tick labels');
+check(/new Vector2\(\.57f, \.181f\), new Vector2\(\.825f, \.275f\)/.test(home) &&
+      /new Vector2\(\.85f, \.862f\), new Vector2\(\.953f, \.948f\)/.test(home),
+  'Quality and Close buttons are compact and Close aligns with Settings');
+check(/CreateUIObject\("DraggedValue", root.transform\)/.test(home) &&
+      /Mathf\.Clamp\(progress, \.16f, \.84f\)/.test(art) &&
+      /tooltipRect\.anchorMin = tooltipRect\.anchorMax/.test(art),
+  'Tooltip belongs to slider root and remains inside its horizontal bounds');
+check(/bubbleBg\.type = Image.Type.Simple/.test(home) &&
+      /new Color\(\.96f, \.91f, \.81f, 1f\)/.test(home),
+  'Entire pointed bubble renders without 9-slice clipping and percentage is warm ivory');
 console.log('ornate-settings: '+passed+'/'+passed);
