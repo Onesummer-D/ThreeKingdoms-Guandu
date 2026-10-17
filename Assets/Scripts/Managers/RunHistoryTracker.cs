@@ -190,6 +190,16 @@ public sealed class RunHistoryTracker : MonoBehaviour
         actionEvent.success = !failed;
     }
 
+    // Missing UI bindings are a skip, never a played-and-won minigame.
+    // Keep an auditable event without fabricating a completed attempt.
+    public void RecordMiniGameUnavailable(string reason)
+    {
+        if (!runActive || activeMiniGame == null) return;
+        AppendEvent(RunEventTypes.MiniGameAction, activeMiniGame.nodeId,
+            "ui-unavailable", Compact(reason, 100));
+        activeMiniGame = null;
+    }
+
     public void RecordMiniGameCompleted(string gameType, int nodeId, int nextNodeId,
         bool success, string summary)
     {
