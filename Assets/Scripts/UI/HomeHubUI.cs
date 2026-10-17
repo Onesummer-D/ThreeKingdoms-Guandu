@@ -782,7 +782,7 @@ public sealed class HomeHubUI : MonoBehaviour
     private void CreateSettingsHeader(Transform panel)
     {
         TMP_Text heading = CreateText(panel, "设置", 52f,
-            TextAlignmentOptions.Left, TextPrimary, false);
+            TextAlignmentOptions.MidlineLeft, TextPrimary, false);
         SetAnchored(heading.rectTransform,
             new Vector2(.06f, .84f), new Vector2(.70f, .97f));
 
