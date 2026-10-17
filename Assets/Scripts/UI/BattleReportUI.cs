@@ -608,7 +608,7 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         // Render an isolated copy of all report content, outside the scroll mask.
         float width = content.rect.width;
-        const float signatureHeight = 160f;
+        const float signatureHeight = 208f;
         float bodyHeight = content.rect.height;
         float height = bodyHeight + signatureHeight;
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
@@ -637,6 +637,11 @@ public sealed class BattleReportUI : MonoBehaviour
             copy.pivot = new Vector2(.5f, 1f);
             copy.anchoredPosition = Vector2.zero;
             copy.sizeDelta = new Vector2(0f, bodyHeight);
+            // Keep navigation controls in the interactive report only; the
+            // exported poster contains the concise profile but no dead button.
+            foreach (Transform item in copy.GetComponentsInChildren<Transform>(true))
+                if (item.name == "EvidenceDetailOpenButton")
+                    item.gameObject.SetActive(false);
             CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
             // The graph's generated children are copied; prevent a data-less
             // cloned component from rebuilding them before the export.
@@ -688,6 +693,9 @@ public sealed class BattleReportUI : MonoBehaviour
     /// </summary>
     private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight, float footerHeight)
     {
+        // Always reserve an actual 148×148 QR frame at lower right. Before
+        // the official landing URL is deployed it is deliberately marked
+        // unavailable, rather than pretending a fake placeholder can scan.
         GameObject footer = CreateUIObject("PosterSignatureFooter", canvasRect);
         RectTransform rect = footer.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
@@ -699,43 +707,49 @@ public sealed class BattleReportUI : MonoBehaviour
         background.raycastTarget = false;
 
         GameObject line = CreateUIObject("GoldRule", footer.transform);
-        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .87f), new Vector2(.955f, .885f));
+        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .91f), new Vector2(.955f, .925f));
         line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
-
-        TMP_Text maker = CreateText(footer.transform, "《三国·官渡之战》　·　战绩留影",
-            27f, TextAlignmentOptions.MidlineLeft, AccentColor, false);
-        SetAnchored(maker.rectTransform, new Vector2(.05f, .17f), new Vector2(.49f, .83f));
 
         string id = PlayerIdentityState.CurrentId;
         TMP_Text sign = CreateText(footer.transform,
             "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
-            31f, TextAlignmentOptions.MidlineRight, TextPrimary, false);
-        bool hasQr = gameEntryQrSprite != null;
-        SetAnchored(sign.rectTransform,
-            new Vector2(.50f, .16f), new Vector2(hasQr ? .83f : .94f, .82f));
+            34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false);
+        SetAnchored(sign.rectTransform, new Vector2(.055f, .15f), new Vector2(.72f, .83f));
         sign.enableAutoSizing = true;
-        sign.fontSizeMin = 22f;
-        sign.fontSizeMax = 31f;
+        sign.fontSizeMin = 24f;
+        sign.fontSizeMax = 34f;
 
-        if (!hasQr) return;
-
-        // A clean white square and intact quiet zone are critical for
-        // reliable scanning in a poster circulated on mobile messengers.
-        GameObject frame = CreateUIObject("GameEntryQR", footer.transform);
+        GameObject frame = CreateUIObject("GameEntryQRCodeReservedArea", footer.transform);
         RectTransform frameRect = frame.GetComponent<RectTransform>();
         frameRect.anchorMin = frameRect.anchorMax = new Vector2(1f, .5f);
         frameRect.pivot = new Vector2(.5f, .5f);
-        frameRect.anchoredPosition = new Vector2(-100f, 0f);
-        frameRect.sizeDelta = new Vector2(122f, 122f);
-        frame.AddComponent<Image>().color = Color.white;
-        GameObject imageObject = CreateUIObject("QRImage", frame.transform);
-        RectTransform qrRect = imageObject.GetComponent<RectTransform>();
-        SetAnchored(qrRect, new Vector2(.07f, .07f), new Vector2(.93f, .93f));
-        Image qr = imageObject.AddComponent<Image>();
-        qr.sprite = gameEntryQrSprite;
-        qr.color = Color.white;
-        qr.preserveAspect = true;
-        qr.raycastTarget = false;
+        frameRect.anchoredPosition = new Vector2(-120f, -7f);
+        frameRect.sizeDelta = new Vector2(148f, 148f);
+        Image frameBackground = frame.AddComponent<Image>();
+        frameBackground.color = gameEntryQrSprite != null ? Color.white :
+            new Color(.13f, .18f, .20f, 1f);
+        frameBackground.raycastTarget = false;
+        Outline frameOutline = frame.AddComponent<Outline>();
+        frameOutline.effectColor = AccentColor;
+        frameOutline.effectDistance = new Vector2(1f, -1f);
+
+        if (gameEntryQrSprite != null)
+        {
+            GameObject imageObject = CreateUIObject("GameEntryQR", frame.transform);
+            RectTransform qrRect = imageObject.GetComponent<RectTransform>();
+            SetAnchored(qrRect, new Vector2(.065f, .065f), new Vector2(.935f, .935f));
+            Image qr = imageObject.AddComponent<Image>();
+            qr.sprite = gameEntryQrSprite;
+            qr.color = Color.white;
+            qr.preserveAspect = true;
+            qr.raycastTarget = false;
+        }
+        else
+        {
+            TMP_Text pending = CreateText(frame.transform, "扫码游玩\n上线后开放",
+                21f, TextAlignmentOptions.Center, TextMuted, true);
+            Stretch(pending.rectTransform);
+        }
     }
 
     private static string GetPosterDirectory()
