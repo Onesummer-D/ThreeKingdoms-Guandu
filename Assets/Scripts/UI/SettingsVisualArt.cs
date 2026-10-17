@@ -17,6 +17,37 @@ public static class SettingsArtAtlas
     private static readonly System.Collections.Generic.Dictionary<string, Sprite> sprites =
         new System.Collections.Generic.Dictionary<string, Sprite>();
     private static Texture2D atlas;
+    private static Texture2D detailAtlas;
+
+    // Additional artist-supplied thumb silhouettes, independent of the base
+    // rail atlas. Cell boundaries are top-left based, like SourceRect().
+    public static Sprite SliderDecoration(SettingsGlyphKind kind)
+    {
+        if (kind == SettingsGlyphKind.Lyre) return LoadDetail("lute", 0, 0, 112, 112);
+        if (kind == SettingsGlyphKind.Drum) return LoadDetail("gauntlet", 112, 0, 112, 112);
+        if (kind == SettingsGlyphKind.Sun) return LoadDetail("lamp", 224, 0, 112, 112);
+        return null;
+    }
+
+    public static Sprite SliderDecorationBubble()
+    {
+        return LoadDetail("tooltip", 84, 112, 168, 112);
+    }
+
+    private static Sprite LoadDetail(string name, int x, int top, int width, int height)
+    {
+        string cacheKey = "detail_" + name;
+        Sprite cached;
+        if (sprites.TryGetValue(cacheKey, out cached)) return cached;
+        if (detailAtlas == null)
+            detailAtlas = Resources.Load<Texture2D>("SettingsUI/SliderDetailsAtlas");
+        if (detailAtlas == null) return null;
+        Rect region = new Rect(x, detailAtlas.height - top - height, width, height);
+        Sprite result = Sprite.Create(detailAtlas, region, Vector2.one * .5f, 100f);
+        result.name = "SettingsArtist_" + name;
+        sprites[cacheKey] = result;
+        return result;
+    }
 
     public static Sprite Icon(SettingsGlyphKind kind)
     {
@@ -271,39 +302,65 @@ public sealed class SettingsSliderFeedback : MonoBehaviour,
     IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler,
     IBeginDragHandler, IEndDragHandler
 {
+    private Slider slider;
     private RectTransform handle;
     private Image handleImage;
     private GameObject tooltip;
+    private RectTransform tooltipRect;
     private TMP_Text tooltipText;
     private bool hovering, dragging;
 
-    public void Initialize(RectTransform thumb, Image thumbImage, GameObject bubble, TMP_Text label)
+    public void Initialize(Slider sourceSlider, RectTransform thumb, Image thumbImage,
+        GameObject bubble, TMP_Text label)
     {
-        handle = thumb; handleImage = thumbImage; tooltip = bubble; tooltipText = label;
-        Refresh(0f);
+        slider = sourceSlider;
+        handle = thumb;
+        handleImage = thumbImage;
+        tooltip = bubble;
+        tooltipRect = bubble != null ? bubble.GetComponent<RectTransform>() : null;
+        tooltipText = label;
+        Refresh(sourceSlider != null ? sourceSlider.value : 0f);
     }
 
     public void Refresh(float value)
     {
-        if (tooltipText != null) tooltipText.text = Mathf.RoundToInt(value * 100f) + "%";
+        if (tooltipText != null)
+            tooltipText.text = Mathf.RoundToInt(value * 100f) + "%";
+        // Dynamic position is clamped to keep the whole popup inside the
+        // slider's bounds, even at 0%, 27%, and 100%. The rendered panel
+        // remains centered above the thumb wherever there is enough space.
+        if (slider != null && tooltipRect != null)
+        {
+            float progress = Mathf.InverseLerp(slider.minValue, slider.maxValue, value);
+            float safeX = Mathf.Clamp(progress, .16f, .84f);
+            tooltipRect.anchorMin = tooltipRect.anchorMax = new Vector2(safeX, 1f);
+            tooltipRect.anchoredPosition = new Vector2(0f, 6f);
+        }
         RefreshVisual();
     }
-    public void OnPointerEnter(PointerEventData eventData) { hovering = true; RefreshVisual(); }
-    public void OnPointerExit(PointerEventData eventData) { hovering = false; RefreshVisual(); }
-    public void OnPointerDown(PointerEventData eventData) { dragging = true; RefreshVisual(); }
-    public void OnPointerUp(PointerEventData eventData) { dragging = false; RefreshVisual(); }
-    public void OnBeginDrag(PointerEventData eventData) { dragging = true; RefreshVisual(); }
-    public void OnEndDrag(PointerEventData eventData) { dragging = false; RefreshVisual(); }
+
+    public void OnPointerEnter(PointerEventData e) { hovering = true; RefreshVisual(); }
+    public void OnPointerExit(PointerEventData e) { hovering = false; RefreshVisual(); }
+    public void OnPointerDown(PointerEventData e) { dragging = true; RefreshVisual(); }
+    public void OnPointerUp(PointerEventData e) { dragging = false; RefreshVisual(); }
+    public void OnBeginDrag(PointerEventData e) { dragging = true; RefreshVisual(); }
+    public void OnEndDrag(PointerEventData e) { dragging = false; RefreshVisual(); }
 
     private void OnDisable()
     {
-        hovering = false; dragging = false; RefreshVisual();
+        hovering = false;
+        dragging = false;
+        RefreshVisual();
     }
+
     private void RefreshVisual()
     {
-        if (handle != null) handle.localScale = Vector3.one * (dragging ? 1.13f : hovering ? 1.06f : 1f);
-        if (handleImage != null) handleImage.color = dragging
-            ? new Color(1f, .93f, .72f) : Color.white;
-        if (tooltip != null) tooltip.SetActive(dragging);
+        // Keep artist silhouettes safely smaller than neighboring tick scales.
+        if (handle != null)
+            handle.localScale = Vector3.one * (dragging ? 1.07f : hovering ? 1.03f : 1f);
+        if (handleImage != null)
+            handleImage.color = dragging ? new Color(1f, .98f, .90f) : Color.white;
+        if (tooltip != null)
+            tooltip.SetActive(dragging);
     }
 }
