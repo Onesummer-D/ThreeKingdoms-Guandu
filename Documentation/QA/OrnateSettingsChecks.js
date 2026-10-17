@@ -19,8 +19,9 @@ check(/CreateSliderRow\(panel.transform, "背景音乐", SettingsGlyphKind.Lyre/
   /CreateSliderRow\(panel.transform, "音效音量", SettingsGlyphKind.Drum/.test(home) &&
   /CreateSliderRow\(panel.transform, "画面亮度", SettingsGlyphKind.Sun/.test(home),
   'Different music, SFX and brightness motifs');
-check(/CreateSliderRow\(panel.transform, "画面亮度", SettingsGlyphKind.Sun, \.36f, \.45f, 1f/.test(home),
-  'Brightness retains its original 45-100 percent real domain');
+check(/CreateSliderRow\(panel.transform, "画面亮度", SettingsGlyphKind.Sun, \.36f, 0f, 1f/.test(home) &&
+  /\(1f - Mathf\.Clamp01\(value\)\) \* \.62f/.test(home),
+  'Brightness uses actual 0-100 display scale and 0% still leaves 38% visible, never black');
 check(/slider\.onValueChanged\.AddListener\(changed\)/.test(home) &&
   /SetBGMVolume\(value\)/.test(home) && /SetEffectsVolume\(value\)/.test(home) &&
   /ApplyBrightness\(value\)/.test(home),
@@ -55,20 +56,18 @@ check(/CreateStepButton\(parent, label \+ "Decrease"/.test(home) &&
   'Both arrow buttons adjust slider in five-percent increments');
 check(/Mathf\.Clamp\(Mathf\.Round/.test(home) && /slider\.value =/.test(home),
   'Step buttons clamp to each slider’s actual min/max');
-check(/CreateSettingsScale\(parent, label, anchorY, min, max\)/.test(home) &&
-  /private void CreateSettingsScale\(Transform panel, string label, float anchorY/.test(home),
-  'All three sliders use the same panel-attached five-tick scale, not a masked child');
-check(/new Vector2\(x, anchorY \+ \.035f\)/.test(home) &&
-  /new Vector2\(x, anchorY \+ \.007f\)/.test(home) &&
-  /const int tickCount = 5/.test(home),
-  'Tick marks and numbers sit immediately under their rail at measured offsets');
-check(/Mathf\.Lerp\(min, max, fraction\) \* 100f/.test(home) &&
-  /number\.overflowMode = TextOverflowModes\.Overflow/.test(home) &&
-  /new Vector2\(66f, 30f\)/.test(home),
-  'Brightness numeric labels correctly show 45-100 and have enough space to render');
-check(!/new Vector2\(0f, -\.76f\)/.test(home) &&
-  !/GameObject tickRoot = CreateUIObject\("SettingsScale", root.transform\)/.test(home),
-  'Original oversized transparent scale art and problematic child-layout are removed');
+check(/CreateSettingsScale\(parent, label, anchorY\)/.test(home) &&
+  /private void CreateSettingsScale\(Transform panel, string label, float anchorY\)/.test(home),
+  'All three sliders share the artist-supplied engraved 0/25/50/75/100 scale');
+check(/scale\.sprite = SettingsArtAtlas\.Get\("ticks"\)/.test(home) &&
+  /new Vector2\(\.399f, anchorY - \.016f\)/.test(home) &&
+  /new Vector2\(\.788f, anchorY \+ \.040f\)/.test(home),
+  'Art tick strip is positioned just below slider rail with full-width labels');
+check(/\(i \* 25\)\.ToString\(\)/.test(home) &&
+  !/Mathf\.Lerp\(min, max, fraction\) \* 100f/.test(home),
+  'Fallback numerical ticks also show 0 25 50 75 100');
+check(!/GameObject tickRoot = CreateUIObject\("SettingsScale", root.transform\)/.test(home),
+  'No oversized/cropped intermediate tick image');
 check(/SettingsSliderFeedback/.test(home) && /IPointerDownHandler/.test(art) &&
   /IBeginDragHandler/.test(art) && /RefreshVisual\(\)/.test(art),
   'Drag and hover feedback is wired to real pointer events');
@@ -112,7 +111,16 @@ check(/CreateUIObject\("DraggedValue", root.transform\)/.test(home) &&
       /Mathf\.Clamp\(progress, \.16f, \.84f\)/.test(art) &&
       /tooltipRect\.anchorMin = tooltipRect\.anchorMax/.test(art),
   'Tooltip belongs to slider root and remains inside its horizontal bounds');
+const completeBubble=fs.readFileSync(path.join(root,'Assets/Resources/SettingsUI/SettingsValueBubble.png'));
+check(completeBubble.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+  completeBubble.readUInt32BE(16)===180 && completeBubble.readUInt32BE(20)===91,
+  'Full independent 180x91 artist bubble image exists: no cut-off left-side atlas cell');
+check(art.includes('Resources.Load<Texture2D>("SettingsUI/SettingsValueBubble")') &&
+  /new Rect\(0f, 0f, fullFrame\.width, fullFrame\.height\)/.test(art) &&
+  /Sprite frame = Sprite\.Create\(fullFrame/.test(art),
+  'Popup sprite samples the ENTIRE artist frame rather than old cropped atlas region');
 check(/bubbleBg\.type = Image.Type.Simple/.test(home) &&
-      /new Color\(\.96f, \.91f, \.81f, 1f\)/.test(home),
-  'Entire pointed bubble renders without 9-slice clipping and percentage is warm ivory');
+      /new Color\(\.96f, \.91f, \.81f, 1f\)/.test(home) &&
+      /bubbleRect\.sizeDelta = new Vector2\(135f, 72f\)/.test(home),
+  'Complete pointed bubble renders as original at readable size with warm ivory numerals');
 console.log('ornate-settings: '+passed+'/'+passed);
