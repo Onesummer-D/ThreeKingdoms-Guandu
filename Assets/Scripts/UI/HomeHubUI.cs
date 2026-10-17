@@ -659,6 +659,7 @@ public sealed class HomeHubUI : MonoBehaviour
         // is replaced by the THREE supplied pieces: lute / gauntlet / lamp.
         Image handleImage = handle.AddComponent<Image>();
         handleImage.raycastTarget = false;
+        Image feedbackImage = handleImage;
         Sprite customThumb = SettingsArtAtlas.SliderDecoration(motif);
         if (customThumb != null)
         {
@@ -679,6 +680,7 @@ public sealed class HomeHubUI : MonoBehaviour
             artImage.type = Image.Type.Simple;
             artImage.preserveAspect = true;
             artImage.raycastTarget = false;
+            feedbackImage = artImage;
         }
         else
         {
@@ -754,7 +756,7 @@ public sealed class HomeHubUI : MonoBehaviour
         }
 
         SettingsSliderFeedback feedback = root.AddComponent<SettingsSliderFeedback>();
-        feedback.Initialize(slider, handleRect, handleImage, bubble, bubbleText);
+        feedback.Initialize(slider, handleRect, feedbackImage, bubble, bubbleText);
         return slider;
     }
 
