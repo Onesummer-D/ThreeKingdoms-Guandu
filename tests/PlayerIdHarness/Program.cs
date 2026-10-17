@@ -30,24 +30,25 @@ internal static class Program
     static void Main()
     {
         Check(!PlayerIdentityState.HasId, "First launch requires an ID");
-        Check(PlayerIdentityState.MinLength == 3 && PlayerIdentityState.MaxLength == 18,"Explicit local ID length range");
-        Check(!PlayerIdentityState.TrySave("ab",out _),"Too short ID rejected");
-        Check(!PlayerIdentityState.TrySave("abcdefghijklmnopqrs",out _),"Overlong ID rejected");
-        Check(!PlayerIdentityState.TrySave("含汉字",out _),"Only simple poster-safe ASCII IDs allowed");
-        Check(!PlayerIdentityState.TrySave("test<script>",out _),"Markup is not allowed in a poster ID");
-        Check(!PlayerIdentityState.TrySave("john doe",out _),"Spaces are not accepted");
-        Check(PlayerIdentityState.TrySave(" Guandu_07 ",out _),"Valid display name accepted with trim");
-        Check(PlayerIdentityState.CurrentId=="Guandu_07","Previously confirmed ID remembered for prefill");
-        Check(PlayerIdentityState.HasId,"Name confirmation permits current game session");
+        Check(PlayerIdentityState.MinLength == 1 && PlayerIdentityState.MaxLength == 18,"Short session display ID limit");
+        Check(!PlayerIdentityState.TrySave("",out _),"Blank name is rejected");
+        Check(!PlayerIdentityState.TrySave("abcdefghijklmnopqrs",out _),"Overlong name is rejected");
+        Check(!PlayerIdentityState.TrySave("<b>name</b>",out _),"TMP markup cannot be injected");
+        Check(PlayerIdentityState.TrySave("含汉字",out _),"Chinese name accepted by the save validator");
+        Check(PlayerIdentityState.CurrentId=="含汉字","Chinese name appears on poster in current session");
+        Check(PlayerIdentityState.HasId,"Session unlocked after confirmation");
+
         PlayerIdentityState.ResetForNewLaunch();
-        Check(!PlayerIdentityState.HasId,"A fresh app launch requires confirmation again");
-        Check(PlayerIdentityState.CurrentId=="Guandu_07","New launch can prefill previous ID");
-        Check(PlayerIdentityState.TrySave("Guandu_07",out _),"Reconfirming same name works");
-        Check(PlayerIdentityState.HasId,"Current session is unlocked only after confirmation");
-        Check(PlayerIdentityState.TrySave("Another-12",out _),"A later launch may select another name");
-        Check(PlayerIdentityState.CurrentId=="Another-12","Confirmed name used for poster signature");
-        Check(!PlayerIdentityState.TrySave("!",out _) &&
-              PlayerIdentityState.CurrentId=="Another-12","Invalid input never overwrites confirmed name");
+        Check(!PlayerIdentityState.HasId,"New launch requires new confirmation");
+        Check(PlayerIdentityState.CurrentId=="","Last session ID is cleared, not prefilled");
+        Check(PlayerIdentityState.TrySave(" Guandu_07 ",out _),"Player can enter fresh Latin name");
+        Check(PlayerIdentityState.CurrentId=="Guandu_07","New ID is trimmed");
+        Check(!PlayerIdentityState.TrySave("too-long-invalid-display-name",out _) &&
+              PlayerIdentityState.CurrentId=="Guandu_07",
+            "Invalid later entry does not replace confirmed name");
+        PlayerIdentityState.ResetForNewLaunch();
+        Check(PlayerIdentityState.CurrentId=="","Second restart also clears the previous ID");
+        Check(PlayerIdentityState.TrySave("111",out _),"Short numeric ID accepted");
         Console.WriteLine("player-id-tests: "+passed+"/"+passed);
     }
 }
