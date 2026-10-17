@@ -244,7 +244,7 @@ public static class BattleReportAnalyzer
         {
             case "puzzle": return "战术拼图";
             case "digtunnel": return "地道攻防";
-            case "slider": return "伏击布阵";
+            case "slider": return "诱敌兵力分配";
             case "grid": return "夜袭行军";
             default: return "战术挑战";
         }
