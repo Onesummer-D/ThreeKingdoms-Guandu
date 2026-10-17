@@ -185,11 +185,22 @@
     button,input,textarea {font-family:var(--reading-font);}
     .sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;
       overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
-    .masthead {height:clamp(205px,55vw,285px);}
-    .masthead-title {inset:auto 0 6px;z-index:1;display:flex;justify-content:center;
-      align-items:center;pointer-events:none;}
-    .title-art {width:min(96%,515px);height:auto;max-height:calc(100% - 8px);display:block;object-fit:contain;
+    /* The uploaded title artwork has transparent vertical margins.
+       Give it a *definite* clipping area instead of a percentage max-height
+       against an auto-height absolute container (which hid the entire title
+       in some browsers). The 2-line lettering is now fully visible. */
+    .masthead {height:clamp(225px,57vw,300px);}
+    .masthead-title {inset:auto 0 8px;z-index:2;height:clamp(190px,54vw,235px);
+      display:block;overflow:hidden;pointer-events:none;}
+    .title-art {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      width:min(88%,430px);height:auto;max-height:none;display:block;object-fit:contain;
       filter:drop-shadow(0 2px 3px #170c07a6);}
+    .title-text-fallback {position:absolute;left:0;right:0;top:27%;text-align:center;
+      font-family:var(--reading-font);font-size:clamp(31px,7.5vw,45px);
+      font-weight:700;color:#ffe6a4;text-shadow:0 2px 5px #190b05,0 0 10px #190b05;}
+    .title-text-fallback small {display:block;font-size:.58em;letter-spacing:.15em;margin-top:9px;}
+    .masthead-title.title-ready .title-text-fallback {display:none;}
+    .masthead-title.title-error .title-art {display:none;}
     .paper-heading {font-size:clamp(25px,5.8vw,31px);font-weight:700;color:#392314;}
     .recap {font-size:clamp(17px,4.3vw,20px);line-height:1.66;color:#302015;}
     .recap-toggle {font-size:15px;font-weight:600;color:#4b301f;background:#ead6b3;}
@@ -231,7 +242,7 @@
     .success-panel {font-size:18px;color:#3b2417;}
     .footer-action {font-size:clamp(17px,4.3vw,20px);font-weight:600;color:#382215;}
     @media (max-width:370px) {
-      .title-art{width:99%;}
+      .title-art{width:min(92%,430px);}
       .form-panel {margin-left:3px;margin-right:3px;
         padding-left:44px;padding-right:35px;min-height:260px;}
       .paper-field {padding:0 2px;}
@@ -243,7 +254,14 @@
 <body>
 <main class="page">
   <header class="masthead" aria-label="军帐战场背景">
-    <div class="masthead-title"><img class="title-art" src="/assets/advisor-gold-title-v3.webp" alt="" aria-hidden="true"><h1 class="sr-only">官渡之战 · 军议邀约</h1></div>
+    <div class="masthead-title">
+      <img class="title-art" src="/assets/advisor-gold-title-v3.webp?v=20261018-title-layout"
+        alt="" aria-hidden="true"
+        onload="this.parentNode.classList.add('title-ready')"
+        onerror="this.parentNode.classList.add('title-error')">
+      <span class="title-text-fallback" aria-hidden="true">官渡之战<small>军议邀约</small></span>
+      <h1 class="sr-only">官渡之战 · 军议邀约</h1>
+    </div>
   </header>
 
   <section class="scroll-paper" aria-labelledby="situation-heading">
