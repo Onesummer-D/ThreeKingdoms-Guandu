@@ -5,6 +5,13 @@ using System.Collections.Generic;
 /// Evidence-backed run-specific profile, not a personality assessment.
 /// Strategic intent and counsel behavior are independent dimensions.
 /// </summary>
+public sealed class DecisionEvidenceNote
+{
+    // Sequence of the actual recorded choice, not chapter or strategy group.
+    public int decisionSequence;
+    public string detail;
+}
+
 public sealed class DecisionTendencyResult
 {
     public string label;
@@ -13,6 +20,7 @@ public sealed class DecisionTendencyResult
     public string consultationSummary;
     public int classifiedChoices;
     public List<string> evidence = new List<string>();
+    public List<DecisionEvidenceNote> evidenceNotes = new List<DecisionEvidenceNote>();
     public List<string> outcomeEvidence = new List<string>();
 }
 
@@ -31,8 +39,9 @@ public static class BattleReportAnalyzer
         };
         Dictionary<string, int> scores = new Dictionary<string, int>();
         foreach (string name in StyleOrder) scores[name] = 0;
-        Dictionary<string, List<string>> evidenceByStyle = new Dictionary<string, List<string>>();
-        foreach (string name in StyleOrder) evidenceByStyle[name] = new List<string>();
+        Dictionary<string, List<DecisionEvidenceNote>> evidenceByStyle =
+            new Dictionary<string, List<DecisionEvidenceNote>>();
+        foreach (string name in StyleOrder) evidenceByStyle[name] = new List<DecisionEvidenceNote>();
 
         List<DecisionRecordData> choices =
             history != null && history.decisions != null ? history.decisions : new List<DecisionRecordData>();
@@ -55,7 +64,11 @@ public static class BattleReportAnalyzer
             if (string.IsNullOrEmpty(tagged.strategy) || !scores.ContainsKey(tagged.strategy)) continue;
             report.classifiedChoices++;
             scores[tagged.strategy]++;
-            evidenceByStyle[tagged.strategy].Add(FormatChoiceEvidence(choice, tagged.action));
+            evidenceByStyle[tagged.strategy].Add(new DecisionEvidenceNote
+            {
+                decisionSequence = choice.sequence > 0 ? choice.sequence : i + 1,
+                detail = FormatChoiceEvidence(choice, tagged.action)
+            });
         }
 
         // A single plot choice cannot establish a stable strategic tendency.
@@ -76,26 +89,32 @@ public static class BattleReportAnalyzer
             report.label = winners > 1 ? "兼采并用" : bestStyle;
             report.summary = StyleSummary(report.label);
             if (winners == 1)
-                AddLast(report.evidence, evidenceByStyle[bestStyle], 2);
+                AddLast(report.evidenceNotes, evidenceByStyle[bestStyle], 2);
             else
             {
                 // Include evidence from the tied styles, not an arbitrary
                 // tie-breaking order that pretends a dominant preference.
                 foreach (string name in StyleOrder)
                 {
-                    if (scores[name] == best && report.evidence.Count < 2 &&
+                    if (scores[name] == best && report.evidenceNotes.Count < 2 &&
                         evidenceByStyle[name].Count > 0)
-                        report.evidence.Add(evidenceByStyle[name][evidenceByStyle[name].Count - 1]);
+                        report.evidenceNotes.Add(evidenceByStyle[name][evidenceByStyle[name].Count - 1]);
                 }
             }
         }
         else if (report.classifiedChoices == 1)
         {
             foreach (string name in StyleOrder)
-                if (scores[name] > 0) AddLast(report.evidence, evidenceByStyle[name], 1);
+                if (scores[name] > 0) AddLast(report.evidenceNotes, evidenceByStyle[name], 1);
         }
 
         AnalyzeCounsel(history, choices, narrativeAccepted, narrativeReviewed, report);
+        // Both strategy and counsel notes are anchored to the decision log's
+        // sequence. Group-based scoring chooses *which* notes matter, but may
+        // never determine their presentation order.
+        report.evidenceNotes.Sort((a, b) => a.decisionSequence.CompareTo(b.decisionSequence));
+        foreach (DecisionEvidenceNote note in report.evidenceNotes)
+            report.evidence.Add(note.detail);
         AppendOutcomeEvidence(history, report);
         return report;
     }
@@ -111,16 +130,20 @@ public static class BattleReportAnalyzer
             string implementedEvidence = "";
             string independentEvidence = "";
             string pendingEvidence = "";
+            int implementedOrder = int.MaxValue;
+            int independentOrder = int.MaxValue;
             for (int i = 0; i < advisors.Count; i++)
             {
                 AdvisorEchoData advisor = advisors[i];
                 if (advisor == null) continue;
                 DecisionRecordData acted = null;
+                int actedOrder = int.MaxValue;
                 for (int j = 0; j < choices.Count; j++)
                 {
                     if (choices[j] != null && choices[j].nodeId == advisor.nodeId)
                     {
                         acted = choices[j];
+                        actedOrder = acted.sequence > 0 ? acted.sequence : j + 1;
                         break;
                     }
                 }
@@ -135,11 +158,13 @@ public static class BattleReportAnalyzer
                 if (advisor.accepted && acted.optionIndex == advisor.optionIndex)
                 {
                     implemented++;
+                    implementedOrder = actedOrder;
                     implementedEvidence = who + "的建议经认可并落实为实际选择";
                 }
                 else
                 {
                     decidedIndependently++;
+                    independentOrder = actedOrder;
                     independentEvidence = !advisor.accepted && acted.optionIndex == advisor.optionIndex
                         ? who + "的建议未获认可，但后续选择恰与建议相同"
                         : who + "参与军议，主将最终另作决断";
@@ -162,7 +187,13 @@ public static class BattleReportAnalyzer
             }
             string relevantEvidence = implemented > 0 ? implementedEvidence :
                 decidedIndependently > 0 ? independentEvidence : pendingEvidence;
-            if (!string.IsNullOrWhiteSpace(relevantEvidence)) report.evidence.Add(relevantEvidence);
+            if (!string.IsNullOrWhiteSpace(relevantEvidence))
+                report.evidenceNotes.Add(new DecisionEvidenceNote
+                {
+                    decisionSequence = implemented > 0 ? implementedOrder :
+                        decidedIndependently > 0 ? independentOrder : int.MaxValue,
+                    detail = relevantEvidence
+                });
             return;
         }
 
@@ -172,13 +203,36 @@ public static class BattleReportAnalyzer
         {
             report.consultationLabel = "纳谏践行";
             report.consultationSummary = "主将已在剧情中采纳荀彧劝守的意见，并作出对应选择。";
-            report.evidence.Add("第二幕 · 采纳荀彧守官渡之议");
+            AddNarrativeCounselEvidence(choices, "adopt", "采纳荀彧守官渡之议", report);
         }
         else if (narrativeReviewed > 0)
         {
             report.consultationLabel = "审议自决";
             report.consultationSummary = "主将收到荀彧劝守的意见，最终选择了其它部署。";
-            report.evidence.Add("第二幕 · 已收到荀彧书信，最终另择方案");
+            AddNarrativeCounselEvidence(choices, "review", "已收到荀彧书信，最终另择方案", report);
+        }
+    }
+
+    private static void AddNarrativeCounselEvidence(List<DecisionRecordData> choices,
+        string counsel, string action, DecisionTendencyResult report)
+    {
+        for (int i = 0; i < choices.Count; i++)
+        {
+            DecisionRecordData choice = choices[i];
+            if (choice == null ||
+                !DecisionBehaviorCatalog.TryFind(choice.nodeId, choice.optionIndex, out DecisionBehaviorCatalog.Entry tagged) ||
+                tagged.counsel != counsel ||
+                (choice.nextNodeId > 0 && tagged.nextNodeId != choice.nextNodeId))
+                continue;
+
+            string chapter = choice.chapterIndex >= 0
+                ? "第" + (choice.chapterIndex + 1) + "幕" : "支线";
+            report.evidenceNotes.Add(new DecisionEvidenceNote
+            {
+                decisionSequence = choice.sequence > 0 ? choice.sequence : i + 1,
+                detail = chapter + " · " + action
+            });
+            return;
         }
     }
 
@@ -250,7 +304,7 @@ public static class BattleReportAnalyzer
         }
     }
 
-    private static void AddLast(List<string> output, List<string> input, int maximum)
+    private static void AddLast(List<DecisionEvidenceNote> output, List<DecisionEvidenceNote> input, int maximum)
     {
         int start = Math.Max(0, input.Count - maximum);
         for (int i = start; i < input.Count; i++) output.Add(input[i]);
