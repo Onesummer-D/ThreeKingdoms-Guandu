@@ -200,15 +200,15 @@ public sealed class HomeHubUI : MonoBehaviour
         });
 
         // Match the exact wood/bronze skin of the "关闭" button.
-        Button quality = CreateButton(panel.transform, "", 36f, new Vector2(390f, 74f));
+        Button quality = CreateButton(panel.transform, "", 34f, new Vector2(310f, 68f));
         SetAnchored(quality.GetComponent<RectTransform>(),
-            new Vector2(.51f, .175f), new Vector2(.85f, .28f));
+            new Vector2(.57f, .181f), new Vector2(.825f, .275f));
         Image qualityPlate = quality.GetComponent<Image>();
         GameButtonSkin.Apply(quality, qualityPlate, GameButtonSkin.Tone.Quiet, buttonSprite);
         qualityButtonLabel = quality.GetComponentInChildren<TMP_Text>(true);
         if (qualityButtonLabel != null)
         {
-            qualityButtonLabel.fontSize = 36f;
+            qualityButtonLabel.fontSize = 34f;
             qualityButtonLabel.color = GameButtonSkin.LabelColor;
             qualityButtonLabel.enableAutoSizing = false;
             qualityButtonLabel.overflowMode = TextOverflowModes.Ellipsis;
@@ -565,7 +565,7 @@ public sealed class HomeHubUI : MonoBehaviour
         SetAnchored(name.rectTransform, new Vector2(.117f, anchorY),
             new Vector2(.333f, anchorY + .12f));
 
-        Slider slider = CreateSlider(parent, min, max, value);
+        Slider slider = CreateSlider(parent, motif, min, max, value);
         SetAnchored(slider.GetComponent<RectTransform>(),
             new Vector2(.405f, anchorY + .021f), new Vector2(.782f, anchorY + .114f));
         slider.gameObject.name = label + "Slider";
@@ -612,7 +612,7 @@ public sealed class HomeHubUI : MonoBehaviour
         button.onClick.AddListener(click);
     }
 
-    private Slider CreateSlider(Transform parent, float min, float max, float value)
+    private Slider CreateSlider(Transform parent, SettingsGlyphKind motif, float min, float max, float value)
     {
         GameObject root = CreateUIObject("Slider", parent);
         // Full transparent hit area: preserves mouse and mobile touch dragging.
@@ -650,33 +650,63 @@ public sealed class HomeHubUI : MonoBehaviour
         GameObject handleArea = CreateUIObject("Handle Slide Area", root.transform);
         SetAnchored(handleArea.GetComponent<RectTransform>(),
             new Vector2(.015f, 0f), new Vector2(.985f, 1f));
-        GameObject handle = CreateUIObject("GoldReliefKnob", handleArea.transform);
+        GameObject handle = CreateUIObject("ArtDrivenSliderHandle", handleArea.transform);
         RectTransform handleRect = handle.GetComponent<RectTransform>();
         handleRect.anchorMin = handleRect.anchorMax = handleRect.pivot = Vector2.one * .5f;
         handleRect.anchoredPosition = Vector2.zero;
-        handleRect.sizeDelta = new Vector2(86f, 86f);
+        handleRect.sizeDelta = new Vector2(70f, 70f);
+        // Slider retains its real draggable handle, but the dated bronze disc
+        // is replaced by the THREE supplied pieces: lute / gauntlet / lamp.
         Image handleImage = handle.AddComponent<Image>();
-        Sprite knob = SettingsArtAtlas.Get("knob");
-        handleImage.sprite = knob != null ? knob : SettingsMetalSprites.Knob;
-        handleImage.color = Color.white;
-        handleImage.preserveAspect = true;
         handleImage.raycastTarget = false;
+        Sprite customThumb = SettingsArtAtlas.SliderDecoration(motif);
+        if (customThumb != null)
+        {
+            handleImage.color = Color.clear;
+            GameObject visual = CreateUIObject("ArtistThumb_" + motif, handle.transform);
+            RectTransform visualRect = visual.GetComponent<RectTransform>();
+            visualRect.anchorMin = visualRect.anchorMax = visualRect.pivot = Vector2.one * .5f;
+            visualRect.anchoredPosition = new Vector2(0f, 9f);
+            // Keep all art smaller than the vertical gap between rows.  In
+            // particular the lamp's flame must not cover the next bar's scale.
+            visualRect.sizeDelta = motif == SettingsGlyphKind.Lyre
+                ? new Vector2(68f, 75f)
+                : motif == SettingsGlyphKind.Drum
+                    ? new Vector2(67f, 69f)
+                    : new Vector2(91f, 69f);
+            Image artImage = visual.AddComponent<Image>();
+            artImage.sprite = customThumb;
+            artImage.type = Image.Type.Simple;
+            artImage.preserveAspect = true;
+            artImage.raycastTarget = false;
+        }
+        else
+        {
+            handleImage.sprite = SettingsArtAtlas.Get("knob") ?? SettingsMetalSprites.Knob;
+            handleImage.color = Color.white;
+            handleImage.preserveAspect = true;
+        }
 
-        GameObject bubble = CreateUIObject("DraggedValue", handle.transform);
+        // Tooltip belongs to the SLIDER, not to the moving thumb: otherwise
+        // Unity can crop one edge or move the frame out of the panel.
+        GameObject bubble = CreateUIObject("DraggedValue", root.transform);
         RectTransform bubbleRect = bubble.GetComponent<RectTransform>();
         bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(.5f, 1f);
         bubbleRect.pivot = new Vector2(.5f, 0f);
-        bubbleRect.anchoredPosition = new Vector2(0f, 0f);
-        bubbleRect.sizeDelta = new Vector2(114f, 72f);
+        bubbleRect.anchoredPosition = new Vector2(0f, 6f);
+        bubbleRect.sizeDelta = new Vector2(130f, 67f);
         Image bubbleBg = bubble.AddComponent<Image>();
-        Sprite bubbleArt = SettingsArtAtlas.Get("bubble");
-        bubbleBg.sprite = bubbleArt != null ? bubbleArt : SettingsMetalSprites.Rail;
-        bubbleBg.type = Image.Type.Sliced;
+        Sprite bubbleArt = SettingsArtAtlas.SliderDecorationBubble();
+        bubbleBg.sprite = bubbleArt != null ? bubbleArt : SettingsArtAtlas.Get("bubble");
+        bubbleBg.type = Image.Type.Simple; // The asymmetric pointed frame must not be nine-sliced.
+        bubbleBg.preserveAspect = true;
         bubbleBg.raycastTarget = false;
         TMP_Text bubbleText = CreateText(bubble.transform,
-            Mathf.RoundToInt(slider.value * 100f) + "%", 27f, TextAlignmentOptions.Center,
-            new Color(.36f, .22f, .12f), false);
-        SetAnchored(bubbleText.rectTransform, new Vector2(.06f, .29f), new Vector2(.94f, .95f));
+            Mathf.RoundToInt(slider.value * 100f) + "%", 28f, TextAlignmentOptions.Center,
+            new Color(.96f, .91f, .81f, 1f), false);
+        bubbleText.overflowMode = TextOverflowModes.Overflow;
+        // Avoid the pointed lower edge of the supplied bubble artwork.
+        SetAnchored(bubbleText.rectTransform, new Vector2(.10f, .30f), new Vector2(.90f, .97f));
         bubble.SetActive(false);
 
         slider.fillRect = null;   // Fill is driven by Image.fillAmount below.
@@ -724,7 +754,7 @@ public sealed class HomeHubUI : MonoBehaviour
         }
 
         SettingsSliderFeedback feedback = root.AddComponent<SettingsSliderFeedback>();
-        feedback.Initialize(handleRect, handleImage, bubble, bubbleText);
+        feedback.Initialize(slider, handleRect, handleImage, bubble, bubbleText);
         return slider;
     }
 
@@ -786,10 +816,10 @@ public sealed class HomeHubUI : MonoBehaviour
         SetAnchored(heading.rectTransform,
             new Vector2(.06f, .84f), new Vector2(.70f, .97f));
 
-        Button close = CreateButton(panel, "关闭", 34f, new Vector2(170f, 66f));
+        Button close = CreateButton(panel, "关闭", 32f, new Vector2(134f, 60f));
         // Title centre = (.84 + .97) / 2 = .905; close centre matches exactly.
         SetAnchored(close.GetComponent<RectTransform>(),
-            new Vector2(.78f, .857f), new Vector2(.95f, .953f));
+            new Vector2(.85f, .862f), new Vector2(.953f, .948f));
         close.onClick.AddListener(CloseSettings);
     }
 
