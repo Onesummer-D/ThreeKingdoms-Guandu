@@ -24,11 +24,17 @@ check(html.includes("background:url('/assets/advisor-option-paper.webp')") &&
 check(html.includes("url('/assets/battle-hero.png')"),
   'Selected wartime illustration C is mounted as mobile masthead');
 
-check(html.includes('src="/assets/advisor-gold-title.webp"') &&
+check(html.includes('src="/assets/advisor-gold-title-v2.webp"') &&
       html.includes('class="sr-only">官渡之战 · 军议邀约</h1>') &&
-      server.includes("'advisor-gold-title.webp':'image/webp'") &&
-      fs.existsSync(path.join(root,'public/assets/advisor-gold-title.webp')),
-  'Uploaded transparent gold headline replaces CSS text without losing accessible heading');
+      server.includes("'advisor-gold-title-v2.webp':'image/webp'") &&
+      fs.existsSync(path.join(root,'public/assets/advisor-gold-title-v2.webp')),
+  'User-provided second gold title image replaces previous headline and retains accessible heading');
+{
+  const file=fs.readFileSync(path.join(root,'public/assets/advisor-gold-title-v2.webp'));
+  check(file.length>10000 && file.toString('ascii',0,4)==='RIFF' &&
+        file.toString('ascii',8,12)==='WEBP',
+    'New uploaded gold title is a real image, not an HTML/CSS imitation');
+}
 check(html.includes('--reading-font:') &&
       html.includes('font-family:var(--reading-font)') &&
       html.includes('color:#28180d') &&
@@ -36,8 +42,10 @@ check(html.includes('--reading-font:') &&
   'Reference-style readable Song typography and dark input contrast are configured');
 check(html.includes('padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px)') &&
       html.includes('grid-template-rows:minmax(0,1fr) minmax(0,1fr)') &&
-      html.includes('.paper-field:focus-within'),
-  'Both text fields are inset into their own parchment halves, clear of decorative rim');
+      html.includes('.paper-field:focus-within {outline:none;box-shadow:none;border:0;}') &&
+      html.includes('.paper-field input:focus-visible,.paper-field textarea:focus-visible') &&
+      html.includes('outline:none;outline-offset:0;box-shadow:none;'),
+  'Both fields stay inside parchment with no oversized brown focus rectangle');
 
 check(['resource-troop.png','resource-food.png','resource-strategy.png','resource-risk.png']
       .every(file=>html.includes('/assets/'+file)) &&
