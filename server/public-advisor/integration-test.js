@@ -47,6 +47,20 @@ async function main() {
     const path = '/api/sessions/' + session.sessionId;
     const host = { 'X-Host-Token': session.hostToken };
     const guest = { 'X-Join-Token': new URL(session.joinUrl).searchParams.get('token') };
+    const publicInvite = await fetch(base + '/join/' + encodeURIComponent(session.sessionId) +
+      '?token=' + encodeURIComponent(guest['X-Join-Token']));
+    const publicHtml = await publicInvite.text();
+    check(publicInvite.status === 200 && publicHtml.includes('class="scroll-paper"') &&
+      publicHtml.includes('献策已呈') && !publicHtml.includes('__GAME_ENTRY_URL__'),
+      'scroll H5 page served with all game config placeholders replaced');
+    check(!publicHtml.includes('const joinToken = __JOIN_TOKEN__'),
+      'invited token is injected as a JavaScript literal');
+    const maliciousToken = await fetch(base + '/join/' + encodeURIComponent(session.sessionId) +
+      '?token=' + encodeURIComponent('</script><script>alert(1)</script>'));
+    const maliciousHtml = await maliciousToken.text();
+    check(maliciousHtml.includes('\\u003c/script>') &&
+      !maliciousHtml.includes('</script><script>alert(1)</script>'),
+      'HTML-breaking token is escaped in inline JavaScript');
     check((await request(path)).status === 403, 'unauthorized host rejected');
     const suggestion = { guestLabel: 'test', optionIndex: 0, clientRequestId: 'retry-1' };
     check((await request(path + '/suggestions', 'POST', suggestion, guest)).status === 201, 'guest suggestion');

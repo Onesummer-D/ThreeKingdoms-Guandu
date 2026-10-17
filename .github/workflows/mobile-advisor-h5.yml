@@ -1,0 +1,26 @@
+name: Mobile advisor H5 regression
+
+on:
+  pull_request:
+    paths:
+      - 'server/public-advisor/**'
+      - '.github/workflows/mobile-advisor-h5.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'server/public-advisor/**'
+      - '.github/workflows/mobile-advisor-h5.yml'
+
+jobs:
+  mobile-h5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static HTML, JavaScript and API contract tests
+        run: node server/public-advisor/mobile-ui-test.js
+      - name: Full session and invited advisor integration
+        run: node server/public-advisor/integration-test.js
