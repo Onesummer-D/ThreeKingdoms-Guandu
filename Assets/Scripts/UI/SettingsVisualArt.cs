@@ -7,6 +7,67 @@ using TMPro;
 /// Lightweight hand-drawn ornamentation for the settings screen.  All artwork
 /// is created at runtime so the Unity scene has no extra serialized references.
 /// </summary>
+/// <summary>
+/// Sprite regions in the artist-approved, transparent 640x416 PNG.
+/// Image coordinates below are from the TOP LEFT of the atlas; Sprite.Create
+/// uses Unity's bottom-left origin, so conversion happens in one place.
+/// </summary>
+public static class SettingsArtAtlas
+{
+    private static readonly System.Collections.Generic.Dictionary<string, Sprite> sprites =
+        new System.Collections.Generic.Dictionary<string, Sprite>();
+    private static Texture2D atlas;
+
+    public static Sprite Icon(SettingsGlyphKind kind)
+    {
+        switch (kind)
+        {
+            case SettingsGlyphKind.Lyre: return Get("lyre");
+            case SettingsGlyphKind.Drum: return Get("drum");
+            case SettingsGlyphKind.Sun: return Get("sun");
+            default: return null;
+        }
+    }
+
+    public static Sprite Get(string name)
+    {
+        Sprite cached;
+        if (sprites.TryGetValue(name, out cached)) return cached;
+        if (atlas == null) atlas = Resources.Load<Texture2D>("SettingsUI/SettingsAtlas");
+        if (atlas == null) return null;
+
+        Rect rect;
+        Vector4 border = Vector4.zero;
+        switch (name)
+        {
+            case "lyre":   rect = SourceRect(0, 0, 108, 108); break;
+            case "drum":   rect = SourceRect(114, 0, 108, 108); break;
+            case "sun":    rect = SourceRect(228, 0, 108, 108); break;
+            case "arrow":  rect = SourceRect(352, 10, 85, 85); break;
+            case "knob":   rect = SourceRect(453, 13, 80, 80); break;
+            case "bubble": rect = SourceRect(536, 23, 100, 63);
+                border = new Vector4(17f, 16f, 17f, 20f); break;
+            case "track": rect = SourceRect(6, 130, 628, 65);
+                border = new Vector4(57f, 10f, 57f, 10f); break;
+            case "fill": rect = SourceRect(6, 213, 628, 65);
+                border = new Vector4(57f, 10f, 57f, 10f); break;
+            case "ticks": rect = SourceRect(6, 300, 628, 65); break;
+            default: return null;
+        }
+
+        Sprite sprite = Sprite.Create(atlas, rect, Vector2.one * .5f,
+            100f, 0, SpriteMeshType.FullRect, border);
+        sprite.name = "SettingsArt_" + name;
+        sprites[name] = sprite;
+        return sprite;
+    }
+
+    private static Rect SourceRect(int x, int top, int width, int height)
+    {
+        return new Rect(x, atlas.height - top - height, width, height);
+    }
+}
+
 public enum SettingsGlyphKind { Lyre, Drum, Sun, ArrowLeft, ArrowRight, Corner }
 
 public sealed class SettingsGlyphGraphic : MaskableGraphic
