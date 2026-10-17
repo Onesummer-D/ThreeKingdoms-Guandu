@@ -150,7 +150,13 @@ async function handle(req, res) {
     'battle-hero.png':'image/png',
     'resource-troop.png':'image/png', 'resource-food.png':'image/png',
     'resource-strategy.png':'image/png', 'resource-risk.png':'image/png',
-    'seal-present.png':'image/png' };
+    'seal-present.png':'image/png',
+    'advisor-wood-briefing.webp':'image/webp',
+    'advisor-double-parchment.webp':'image/webp',
+    'advisor-submit-stone.webp':'image/webp',
+    'advisor-vertical-scroll.webp':'image/webp',
+    'advisor-question-panel.webp':'image/webp',
+    'advisor-option-paper.webp':'image/webp' };
   if (req.method === 'GET' && parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
     const assetPath = path.join(publicDir, 'assets', parts[1]);
     if (!fs.existsSync(assetPath)) return error(res, 404, '资源不存在');
