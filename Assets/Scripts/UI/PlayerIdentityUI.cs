@@ -111,6 +111,10 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         idInput.lineType = TMP_InputField.LineType.SingleLine;
         idInput.characterValidation = TMP_InputField.CharacterValidation.None;
         idInput.characterLimit = PlayerIdentityState.MaxLength;
+        // TMP wraps Chinese IME composition in <u> tags while typing.
+        // Render this formatting correctly but never allow stored markup.
+        idInput.richText = true;
+        idInput.isRichTextEditingAllowed = false;
         idInput.caretWidth = 3;
         idInput.customCaretColor = true;
         idInput.caretColor = Color.white;
@@ -124,6 +128,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         RectMask2D mask = viewport.AddComponent<RectMask2D>();
         TMP_Text inputText = Text(viewport.transform, "", 32f,
             TextAlignmentOptions.MidlineLeft, Color.white);
+        inputText.richText = true;
+        inputText.enableWordWrapping = false;
+        inputText.overflowMode = TextOverflowModes.Overflow;
         Stretch(inputText.rectTransform);
         inputText.raycastTarget = false;
         TMP_Text hint = Text(viewport.transform, "例如：Guandu_07", 30f,
