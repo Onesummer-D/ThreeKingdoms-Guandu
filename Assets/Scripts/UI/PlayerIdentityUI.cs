@@ -100,7 +100,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Anchor(title.rectTransform, new Vector2(.06f, .76f), new Vector2(.94f, .95f));
 
         TMP_Text intro = Text(panel.transform,
-            "为这一局征程定下名号，战绩海报将以此署名。", 27f,
+            "为这一局征程定下名号", 35f,
             TextAlignmentOptions.Center, new Color(.87f, .86f, .80f));
         Anchor(intro.rectTransform, new Vector2(.06f, .57f), new Vector2(.94f, .76f));
 
@@ -144,10 +144,6 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             new Vector2(.37f, .075f), new Vector2(.63f, .225f));
         confirm.onClick.AddListener(SubmitId);
 
-        TMP_Text note = Text(panel.transform,
-            "仅保存在当前设备；这不是联网账号，也不保证与其他玩家的 ID 唯一。",
-            20f, TextAlignmentOptions.Center, new Color(.68f, .73f, .73f));
-        Anchor(note.rectTransform, new Vector2(.07f, .012f), new Vector2(.93f, .07f));
         overlay.SetActive(false);
     }
 
