@@ -23,6 +23,22 @@ check(html.includes("background:url('/assets/advisor-option-paper.webp')") &&
   'Real parchment UI replaces white option cards; selected/keyboard state is kept');
 check(html.includes("url('/assets/battle-hero.png')"),
   'Selected wartime illustration C is mounted as mobile masthead');
+
+check(html.includes('src="/assets/advisor-gold-title.webp"') &&
+      html.includes('class="sr-only">官渡之战 · 军议邀约</h1>') &&
+      server.includes("'advisor-gold-title.webp':'image/webp'") &&
+      fs.existsSync(path.join(root,'public/assets/advisor-gold-title.webp')),
+  'Uploaded transparent gold headline replaces CSS text without losing accessible heading');
+check(html.includes('--reading-font:') &&
+      html.includes('font-family:var(--reading-font)') &&
+      html.includes('color:#29180e') &&
+      html.includes('opacity:1;font-weight:400') === false,
+  'Reference-style readable Song typography and dark input contrast are configured');
+check(html.includes('padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px)') &&
+      html.includes('grid-template-rows:minmax(0,1fr) minmax(0,1fr)') &&
+      html.includes('.paper-field:focus-within'),
+  'Both text fields are inset into their own parchment halves, clear of decorative rim');
+
 check(['resource-troop.png','resource-food.png','resource-strategy.png','resource-risk.png']
       .every(file=>html.includes('/assets/'+file)) &&
       html.includes('resource-photo') && html.includes('photo.appendChild(img)'),
