@@ -52,9 +52,13 @@ check(analyzer.includes('审议自决')&&!analyzer.includes('不听劝')&&!analy
   'Rejected-but-reviewed advice is not a negative personality label');
 check(/history\.miniGames/.test(analyzer)&&/history\.completed && history\.ending/.test(analyzer),
   'Real minigames and endings are outcome evidence, not strategy score');
-check(/谋议方式 ·/.test(ui)&&/tendency\.consultationLabel/.test(ui)&&
+check(/谋议方式：/.test(ui)&&/tendency\.consultationLabel/.test(ui)&&
   /tendency\.evidence/.test(ui)&&/BuildEvidenceDetailText/.test(ui),
-  'Battle report renders independent dimensions with factual evidence in a separate view');
+  'Two-dimensional analysis retained in factual detail, not crowded on the poster');
+check(analyzer.includes('report.evidenceNotes.Sort((a, b) => a.decisionSequence.CompareTo(b.decisionSequence))') &&
+      analyzer.includes('choice.sequence > 0 ? choice.sequence : i + 1') &&
+      analyzer.includes('AddNarrativeCounselEvidence'),
+  'Both strategy and narrative counsel evidence follow actual decision order');
 check(/EvidenceDetailOpenButton/.test(ui)&&/item\.gameObject\.SetActive\(false\)/.test(ui),
   'Interactive evidence control is excluded from PNG export');
 check(!/战局记录 · /.test(ui),
