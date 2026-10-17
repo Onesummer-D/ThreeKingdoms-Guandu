@@ -47,6 +47,8 @@ public sealed class BattleReportUI : MonoBehaviour
     private Sprite portraitSprite;
     private GameObject exportOverlay;
     private GameObject trendDetailOverlay;
+    private GameObject evidenceDetailOverlay;
+    private TMP_Text evidenceDetailText;
     private ResourceTrendPlotUI trendDetailPlot;
     private readonly TMP_Text[] trendDetailSummaryValues = new TMP_Text[4];
     private string lastPosterPath;
@@ -85,6 +87,7 @@ public sealed class BattleReportUI : MonoBehaviour
         overlay.transform.SetAsLastSibling();
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
         if (trendDetailOverlay != null) trendDetailOverlay.SetActive(false);
+        if (evidenceDetailOverlay != null) evidenceDetailOverlay.SetActive(false);
     }
 
     public void Close()
@@ -130,6 +133,7 @@ public sealed class BattleReportUI : MonoBehaviour
         SetAnchored(disclaimer.rectTransform, new Vector2(.24f, .105f), new Vector2(.76f, .13f));
         CreateExportOverlay(panel.transform);
         CreateTrendDetailOverlay(overlay.transform);
+        CreateEvidenceDetailOverlay(overlay.transform);
         overlay.SetActive(false);
     }
 
@@ -182,6 +186,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
         RunHistoryData history = historyTracker.ExportHistory();
         DecisionTendencyResult tendency = BattleReportAnalyzer.Analyze(history);
+        if (evidenceDetailText != null) evidenceDetailText.text = BuildEvidenceDetailText(tendency);
         float cursor = 14f;
         cursor = CreateHeroCard(cursor);
         cursor = CreateStatsCard(cursor, history);
@@ -256,53 +261,86 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private float CreateTendencyCard(float y, DecisionTendencyResult tendency)
     {
-        // The report explains two different questions: *how* the army was
-        // deployed and *how* the commander evaluated advice. A rejected
-        // advisor recommendation is not an incorrect choice.
-        GameObject card = CreateCard("Tendency", y, 390f);
+        // An exportable summary: the detailed event evidence is accessible
+        // from the in-game overlay, never burnt into the shared PNG.
+        const float cardHeight = 260f;
+        GameObject card = CreateCard("Tendency", y, cardHeight);
         TMP_Text title = CreateText(card.transform, "本局决策倾向 · " + tendency.label, 40f,
             TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .84f), new Vector2(.97f, .965f));
+        SetAnchored(title.rectTransform, new Vector2(CardTextLeft, .80f), new Vector2(.97f, .965f));
 
         TMP_Text counsel = CreateText(card.transform, "谋议方式 · " + tendency.consultationLabel, 33f,
             TextAlignmentOptions.Center, AccentColor, false);
-        SetAnchored(counsel.rectTransform, new Vector2(CardTextLeft, .72f), new Vector2(.97f, .84f));
+        SetAnchored(counsel.rectTransform, new Vector2(CardTextLeft, .64f), new Vector2(.97f, .82f));
 
         TMP_Text strategy = CreateText(card.transform, tendency.summary, 29f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .57f), new Vector2(.97f, .72f));
+        SetAnchored(strategy.rectTransform, new Vector2(CardTextLeft, .38f), new Vector2(.97f, .64f));
 
         TMP_Text counselCopy = CreateText(card.transform, tendency.consultationSummary, 26f,
             TextAlignmentOptions.Center, TextPrimary, true);
-        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .43f), new Vector2(.97f, .56f));
+        SetAnchored(counselCopy.rectTransform, new Vector2(CardTextLeft, .14f), new Vector2(.97f, .38f));
 
-        // At most two facts, tied to actual (nodeId, optionIndex) decisions
-        // or an actual reviewed guest suggestion. No generic "data can be
-        // traced" line: the resource chart below already exposes every step.
-        List<string> visibleFacts = new List<string>();
-        if (tendency.evidence != null && tendency.evidence.Count > 0)
+        Button evidenceButton = CreateButton(card.transform, "查看依据", 23f);
+        evidenceButton.gameObject.name = "EvidenceDetailOpenButton";
+        SetAnchored(evidenceButton.GetComponent<RectTransform>(),
+            new Vector2(.78f, .025f), new Vector2(.96f, .15f));
+        evidenceButton.onClick.AddListener(() =>
         {
-            visibleFacts.Add(tendency.evidence[0]);
-            if (tendency.evidence.Count > 1)
-                visibleFacts.Add(tendency.evidence[tendency.evidence.Count - 1]);
-        }
-        TMP_Text facts = CreateText(card.transform,
-            visibleFacts.Count == 0 ? "暂无足够的已记录行为依据" :
-            "行为依据 · " + string.Join("\n", visibleFacts.ToArray()),
-            26f, TextAlignmentOptions.Center, TextPrimary, true);
-        facts.enableAutoSizing = true;
-        facts.fontSizeMin = 21f;
-        facts.fontSizeMax = 26f;
-        SetAnchored(facts.rectTransform, new Vector2(CardTextLeft, .15f), new Vector2(.97f, .43f));
+            if (evidenceDetailOverlay == null) return;
+            evidenceDetailOverlay.SetActive(true);
+            evidenceDetailOverlay.transform.SetAsLastSibling();
+        });
 
-        if (tendency.outcomeEvidence != null && tendency.outcomeEvidence.Count > 0)
-        {
-            TMP_Text outcome = CreateText(card.transform,
-                "战局记录 · " + string.Join("　", tendency.outcomeEvidence.ToArray()),
-                23f, TextAlignmentOptions.Center, TextPrimary, true);
-            SetAnchored(outcome.rectTransform, new Vector2(CardTextLeft, .06f), new Vector2(.97f, .16f));
-        }
-        return y + 402f;
+        return y + cardHeight + 12f;
+    }
+
+    private static string BuildEvidenceDetailText(DecisionTendencyResult tendency)
+    {
+        if (tendency == null) return "尚无有效决策记录。";
+        List<string> lines = new List<string>();
+        lines.Add("用兵风格：" + tendency.label);
+        lines.Add("谋议方式：" + tendency.consultationLabel);
+        lines.Add("");
+        lines.Add("本局已发生的行为依据：");
+        if (tendency.evidence == null || tendency.evidence.Count == 0)
+            lines.Add("暂无足够的行为记录。");
+        else
+            foreach (string fact in tendency.evidence) lines.Add("· " + fact);
+        // Avoid duplicating the already-visible ending and avoid presenting
+        // a technical minigame type label as proof of personality.
+        return string.Join("\n", lines.ToArray());
+    }
+
+    private void CreateEvidenceDetailOverlay(Transform parent)
+    {
+        evidenceDetailOverlay = CreateUIObject("DecisionEvidenceDetailOverlay", parent);
+        Stretch(evidenceDetailOverlay.GetComponent<RectTransform>());
+        Image shade = evidenceDetailOverlay.AddComponent<Image>();
+        shade.color = new Color(.008f, .015f, .023f, .86f);
+
+        GameObject panel = CreateUIObject("DecisionEvidencePanel", evidenceDetailOverlay.transform);
+        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.13f, .18f), new Vector2(.87f, .82f));
+        panel.AddComponent<Image>().color = PanelColor;
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = AccentColor;
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        TMP_Text heading = CreateText(panel.transform, "本局决策依据", 42f,
+            TextAlignmentOptions.Center, AccentColor, false);
+        SetAnchored(heading.rectTransform, new Vector2(.10f, .84f), new Vector2(.89f, .96f));
+
+        evidenceDetailText = CreateText(panel.transform, "", 29f,
+            TextAlignmentOptions.TopLeft, TextPrimary, true);
+        evidenceDetailText.enableAutoSizing = true;
+        evidenceDetailText.fontSizeMin = 22f;
+        evidenceDetailText.fontSizeMax = 29f;
+        SetAnchored(evidenceDetailText.rectTransform, new Vector2(.075f, .16f), new Vector2(.93f, .83f));
+
+        Button close = CreateButton(panel.transform, "关闭", 29f);
+        SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.72f, .025f), new Vector2(.93f, .135f));
+        close.onClick.AddListener(() => evidenceDetailOverlay.SetActive(false));
+        evidenceDetailOverlay.SetActive(false);
     }
 
     private float CreateTrendCard(float y, RunHistoryData history)
