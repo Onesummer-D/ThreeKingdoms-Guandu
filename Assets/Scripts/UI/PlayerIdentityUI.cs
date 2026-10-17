@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -5,8 +6,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Commander-name card shown at each fresh app launch, once per launch.
-/// ID may be prefilled from this device, but the player must confirm it.
-/// No remote login, network permission or account credentials required.
+/// This is a fresh display name for the current app session. No remote
+/// login, reused saved ID, credentials, or persistent account required.
 /// </summary>
 public sealed class PlayerIdentityUI : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
     private TMP_InputField idInput;
     private TMP_Text errorText;
     private Sprite sourceButton;
+    private Coroutine pendingFocus;
     private bool initialized;
 
     public void Initialize(Transform canvasRoot, Transform mainMenu)
@@ -29,21 +31,41 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         }
 
         CreateIdentityOverlay(canvasRoot);
-        // Always request confirmation when Unity starts, even if PlayerPrefs
-        // contains a previously used display name.
+        // Show once at every app start with an empty field.
         ShowEditor();
     }
 
     public void ShowEditor()
     {
         if (overlay == null) return;
-        idInput.text = PlayerIdentityState.CurrentId;
-        errorText.text = "";
+        if (pendingFocus != null)
+            StopCoroutine(pendingFocus);
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
+        // Never reuse the previous play session's ID.
+        idInput.text = string.Empty;
+        idInput.ForceLabelUpdate();
+        errorText.text = string.Empty;
+        pendingFocus = StartCoroutine(FocusInputWhenReady());
+    }
+
+    private IEnumerator FocusInputWhenReady()
+    {
+        // Initialize runs while the scene and EventSystem are still being
+        // activated. Selecting immediately can leave an inert TMP caret.
+        yield return null;
+        yield return new WaitForEndOfFrame();
+        if (overlay == null || !overlay.activeInHierarchy ||
+            idInput == null || !idInput.gameObject.activeInHierarchy)
+        {
+            pendingFocus = null;
+            yield break;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        idInput.Select();
         idInput.ActivateInputField();
-        if (EventSystem.current != null)
-            EventSystem.current.SetSelectedGameObject(idInput.gameObject);
+        pendingFocus = null;
     }
 
     private void CreateIdentityOverlay(Transform root)
@@ -71,12 +93,12 @@ public sealed class PlayerIdentityUI : MonoBehaviour
 
         TMP_Text title = Text(panel.transform, "主将留名", 48f,
             TextAlignmentOptions.Center, new Color(.91f, .73f, .4f));
-        Anchor(title.rectTransform, new Vector2(.06f, .76f), new Vector2(.94f, .95f));
+        Anchor(title.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .95f));
 
         TMP_Text intro = Text(panel.transform,
             "为这一局征程定下名号", 35f,
             TextAlignmentOptions.Center, new Color(.87f, .86f, .80f));
-        Anchor(intro.rectTransform, new Vector2(.06f, .57f), new Vector2(.94f, .76f));
+        Anchor(intro.rectTransform, new Vector2(.06f, .65f), new Vector2(.94f, .84f));
 
         GameObject field = Make("CommanderIdInput", panel.transform);
         RectTransform fieldRect = field.GetComponent<RectTransform>();
@@ -85,13 +107,17 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         fieldBg.color = new Color(.16f, .20f, .24f, 1f);
         idInput = field.AddComponent<TMP_InputField>();
         idInput.targetGraphic = fieldBg;
+        idInput.contentType = TMP_InputField.ContentType.Standard;
         idInput.lineType = TMP_InputField.LineType.SingleLine;
+        idInput.characterValidation = TMP_InputField.CharacterValidation.None;
         idInput.characterLimit = PlayerIdentityState.MaxLength;
         idInput.caretWidth = 3;
         idInput.customCaretColor = true;
         idInput.caretColor = Color.white;
         idInput.selectionColor = new Color(.86f, .66f, .31f, .45f);
-        idInput.onValidateInput = ValidateIdCharacter;
+        // Do not discard Chinese/IME characters or other normal player names.
+        // Validation is performed only at submission time.
+        idInput.onSubmit.AddListener(_ => SubmitId());
 
         GameObject viewport = Make("TextViewport", field.transform);
         Anchor(viewport.GetComponent<RectTransform>(), new Vector2(.035f, .09f), new Vector2(.965f, .91f));
@@ -106,8 +132,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         hint.raycastTarget = false;
         idInput.textViewport = viewport.GetComponent<RectTransform>();
         idInput.textComponent = (TextMeshProUGUI)inputText;
+        idInput.fontAsset = ((TextMeshProUGUI)inputText).font;
         idInput.placeholder = hint;
-        idInput.text = PlayerIdentityState.CurrentId;
+        idInput.text = string.Empty;
 
         errorText = Text(panel.transform, "", 22f, TextAlignmentOptions.Center,
             new Color(.94f, .62f, .51f));
@@ -121,23 +148,24 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         overlay.SetActive(false);
     }
 
-    private char ValidateIdCharacter(string current, int position, char next)
-    {
-        if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') ||
-            (next >= '0' && next <= '9') || next == '_' || next == '-')
-            return next;
-        return '\0';
-    }
-
     private void SubmitId()
     {
+        if (overlay == null || !overlay.activeInHierarchy) return;
         if (!PlayerIdentityState.TrySave(idInput.text, out string error))
         {
+            // Only short, actionable feedback; never show restrictive
+            // ASCII-only instructions or silently filter typed characters.
             errorText.text = error;
+            idInput.Select();
             idInput.ActivateInputField();
             return;
         }
-        errorText.text = "";
+        if (pendingFocus != null)
+        {
+            StopCoroutine(pendingFocus);
+            pendingFocus = null;
+        }
+        errorText.text = string.Empty;
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
     }
@@ -193,6 +221,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (pendingFocus != null) StopCoroutine(pendingFocus);
         if (overlay != null) Destroy(overlay);
     }
 }
