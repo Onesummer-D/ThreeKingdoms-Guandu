@@ -31,7 +31,20 @@ public static class SettingsArtAtlas
 
     public static Sprite SliderDecorationBubble()
     {
-        return Get("bubble");
+        const string key = "complete_bubble";
+        Sprite cached;
+        if (sprites.TryGetValue(key, out cached)) return cached;
+        // The old 640x416 atlas trimmed the bubble at x=536, cutting away
+        // its ENTIRE left decorative edge. Reuse the user's original,
+        // separately cropped complete frame instead of that damaged cell.
+        Texture2D fullFrame = Resources.Load<Texture2D>("SettingsUI/SettingsValueBubble");
+        if (fullFrame == null) return Get("bubble"); // Historical builds only.
+        Sprite frame = Sprite.Create(fullFrame,
+            new Rect(0f, 0f, fullFrame.width, fullFrame.height),
+            Vector2.one * .5f, 100f);
+        frame.name = "SettingsCompleteValueBubble";
+        sprites[key] = frame;
+        return frame;
     }
 
     private static Sprite LoadDetail(string name, int x, int top, int width, int height)
