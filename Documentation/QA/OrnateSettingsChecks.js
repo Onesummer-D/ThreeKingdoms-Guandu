@@ -55,10 +55,20 @@ check(/CreateStepButton\(parent, label \+ "Decrease"/.test(home) &&
   'Both arrow buttons adjust slider in five-percent increments');
 check(/Mathf\.Clamp\(Mathf\.Round/.test(home) && /slider\.value =/.test(home),
   'Step buttons clamp to each slider’s actual min/max');
-check(/SettingsArtAtlas.Get\("ticks"\)/.test(home) &&
-  /Mathf.Approximately\(min, 0f\)/.test(home) &&
-  /int percent = Mathf.RoundToInt\(Mathf.Lerp\(min, max, t\) \* 100f\)/.test(home),
-  'Art scale for 0-100 volume and dynamically correct 45-100 brightness scale');
+check(/CreateSettingsScale\(parent, label, anchorY, min, max\)/.test(home) &&
+  /private void CreateSettingsScale\(Transform panel, string label, float anchorY/.test(home),
+  'All three sliders use the same panel-attached five-tick scale, not a masked child');
+check(/new Vector2\(x, anchorY \+ \.035f\)/.test(home) &&
+  /new Vector2\(x, anchorY \+ \.007f\)/.test(home) &&
+  /const int tickCount = 5/.test(home),
+  'Tick marks and numbers sit immediately under their rail at measured offsets');
+check(/Mathf\.Lerp\(min, max, fraction\) \* 100f/.test(home) &&
+  /number\.overflowMode = TextOverflowModes\.Overflow/.test(home) &&
+  /new Vector2\(66f, 30f\)/.test(home),
+  'Brightness numeric labels correctly show 45-100 and have enough space to render');
+check(!/new Vector2\(0f, -\.76f\)/.test(home) &&
+  !/GameObject tickRoot = CreateUIObject\("SettingsScale", root.transform\)/.test(home),
+  'Original oversized transparent scale art and problematic child-layout are removed');
 check(/SettingsSliderFeedback/.test(home) && /IPointerDownHandler/.test(art) &&
   /IBeginDragHandler/.test(art) && /RefreshVisual\(\)/.test(art),
   'Drag and hover feedback is wired to real pointer events');
