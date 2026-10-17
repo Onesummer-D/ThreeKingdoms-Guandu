@@ -20,8 +20,11 @@ check(/public bool LoadRunFromSlot\([\s\S]{0,180}!PlayerIdentityState.HasId/.tes
   'Loading an existing slot goes through the local identity gate');
 check(entry.includes('GameButtonSkin.Apply('),'ID screen uses existing ornate UI button language');
 check(entry.includes('idInput.textViewport')&&entry.includes('idInput.textComponent')&&
-      entry.includes('idInput.caretColor')&&entry.includes('idInput.onValidateInput'),
-      'TMP input is wired for actual typing and visible caret');
+      entry.includes('idInput.caretColor')&&entry.includes('idInput.onSubmit.AddListener') &&
+      entry.includes('idInput.Select();') && entry.includes('FocusInputWhenReady()') &&
+      entry.includes('idInput.characterValidation = TMP_InputField.CharacterValidation.None') &&
+      !entry.includes('onValidateInput ='),
+      'TMP input waits for UI readiness, allows IME and supports Enter submission');
 check(entry.includes('ShowEditor();') &&
   !entry.includes('CreateEditButton') &&
   !entry.includes('主将 ID：'),
@@ -30,8 +33,14 @@ check(state.includes('ResetForNewLaunch') &&
   state.includes('RuntimeInitializeLoadType.SubsystemRegistration') &&
   state.includes('confirmedThisLaunch &&'),
   'Session gate resets even if Unity disables domain reload');
-check(state.includes('PlayerPrefs.Save()')&&!state.includes('UnityWebRequest'),
-  'Identity is saved locally only; not a fabricated account');
+check(!state.includes('PlayerPrefs.GetString')&&!state.includes('PlayerPrefs.Save()') &&
+      !state.includes('UnityWebRequest') &&
+      state.includes('currentId = string.Empty;'),
+  'ID is session-only, reset on each restart and never persisted to device storage');
+check(entry.includes('idInput.text = string.Empty;') &&
+      !entry.includes('idInput.text = PlayerIdentityState.CurrentId') &&
+      !entry.includes('请输入3–18位'),
+  'Registration textbox is blank at every launch, with no old restrictive warning');
 check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHeight)'),
   'Export renderer appends poster footer');
 check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："'),
