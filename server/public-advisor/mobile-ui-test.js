@@ -24,11 +24,18 @@ check(html.includes("background:url('/assets/advisor-option-paper.webp')") &&
 check(html.includes("url('/assets/battle-hero.png')"),
   'Selected wartime illustration C is mounted as mobile masthead');
 
-check(html.includes('src="/assets/advisor-gold-title-v3.webp"') &&
+check(html.includes('src="/assets/advisor-gold-title-v3.webp?v=20261018-title-layout"') &&
       html.includes('class="sr-only">官渡之战 · 军议邀约</h1>') &&
       server.includes("'advisor-gold-title-v3.webp':'image/webp'") &&
       fs.existsSync(path.join(root,'public/assets/advisor-gold-title-v3.webp')),
-  'Latest user-provided gold title image replaces previous headline and retains accessible heading');
+  'Latest user-provided gold title image is cache-busted and keeps an accessible heading');
+check(html.includes('height:clamp(190px,54vw,235px)') &&
+      html.includes('max-height:none;display:block;object-fit:contain') &&
+      !html.includes('max-height:calc(100% - 8px)') &&
+      html.includes('class="title-text-fallback"') &&
+      html.includes("classList.add('title-ready')") &&
+      html.includes("classList.add('title-error')"),
+  'Title has a definite bounded layout and a visible fallback if the image fails to load');
 {
   const file=fs.readFileSync(path.join(root,'public/assets/advisor-gold-title-v3.webp'));
   check(file.length>10000 && file.toString('ascii',0,4)==='RIFF' &&
