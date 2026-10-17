@@ -5,8 +5,14 @@ const art=fs.readFileSync(path.join(root,'Assets/Scripts/UI/SettingsVisualArt.cs
 const audio=fs.readFileSync(path.join(root,'Assets/AudioManager.cs'),'utf8');
 let passed=0;
 function check(condition,message){assert.ok(condition,message); console.log('PASS '+message);passed++;}
-check(/DecorateSettingsPanel\(panel\)/.test(home) && /CreateHeader\(panel.transform, "设置", CloseSettings\)/.test(home),
-  'Settings modal uses engraved panel without losing close action');
+check(/DecorateSettingsPanel\(panel\)/.test(home) && /CreateSettingsHeader\(panel.transform\)/.test(home),
+  'Settings modal uses existing dark panel and settings-specific header');
+check(/new Vector2\(\.06f, \.84f\), new Vector2\(\.70f, \.97f\)/.test(home) &&
+  /new Vector2\(\.78f, \.857f\), new Vector2\(\.95f, \.953f\)/.test(home),
+  'Settings title and close button have same .905 vertical center');
+check(/GameButtonSkin.Apply\(quality, qualityPlate, GameButtonSkin.Tone.Quiet, buttonSprite\)/.test(home) &&
+  /CreateButton\(panel, "关闭"/.test(home),
+  'Quality mode button shares exact quiet wooden skin with Close');
 check(/SettingsOrnamentCorner/.test(home) && /UpperBronzeTrim/.test(home) &&
   /LowerBronzeTrim/.test(home), 'Border, gold trim and carved corners');
 check(/CreateSliderRow\(panel.transform, "背景音乐", SettingsGlyphKind.Lyre/.test(home) &&
@@ -26,19 +32,33 @@ check(/hitArea\.raycastTarget = true/.test(home) &&
   /new Color\(0f, 0f, 0f, 0f\)/.test(home),
   'Invisible full-rect slider pointer target supports touchscreen dragging');
 check(/slider\.handleRect = handleRect/.test(home) &&
-  /slider\.fillRect = fill\.GetComponent<RectTransform>\(\)/.test(home),
-  'Unity Slider remains functional rather than visually simulated');
-check(/SettingsMetalSprites\.Rail/.test(home) &&
-  /SettingsMetalSprites\.Fill/.test(home) &&
-  /SettingsMetalSprites\.Knob/.test(home), 'Runtime brushed metal rail, fill and relief knob');
+  /slider\.fillRect = null/.test(home) &&
+  /fillImage\.fillAmount = Mathf.InverseLerp\(min, max, current\)/.test(home),
+  'Unity Slider moves real thumb and progressively reveals supplied gold texture');
+check(/SettingsArtAtlas.Get\("track"\)/.test(home) &&
+  /SettingsArtAtlas.Get\("fill"\)/.test(home) &&
+  /SettingsArtAtlas.Get\("knob"\)/.test(home) &&
+  /SettingsArtAtlas.Icon\(motif\)/.test(home),
+  'User-supplied rail, fill, knob and three role icons are used');
+const atlasFile=path.join(root,'Assets/Resources/SettingsUI/SettingsAtlas.png');
+const png=fs.readFileSync(atlasFile);
+check(png.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+      png.readUInt32BE(16)===640 && png.readUInt32BE(20)===416,
+  'Actual 640x416 transparent UI art atlas exists in Unity Resources');
+check(art.includes('Resources.Load<Texture2D>("SettingsUI/SettingsAtlas")') &&
+      ['lyre','drum','sun','track','fill','knob','ticks','bubble','arrow'].every(
+        name=>art.includes('case "'+name+'"')),
+  'Atlas loader covers every required artwork region');
 check(/CreateStepButton\(parent, label \+ "Decrease"/.test(home) &&
   /CreateStepButton\(parent, label \+ "Increase"/.test(home) &&
   /slider\.value \+ \.05f/.test(home) && /slider\.value - \.05f/.test(home),
   'Both arrow buttons adjust slider in five-percent increments');
 check(/Mathf\.Clamp\(Mathf\.Round/.test(home) && /slider\.value =/.test(home),
   'Step buttons clamp to each slider’s actual min/max');
-check(/int tickPercent = i == 4/.test(home) &&
-  /min \+ \(max - min\) \* t/.test(home), 'Labels show actual tick percentage including 45-100 brightness');
+check(/SettingsArtAtlas.Get\("ticks"\)/.test(home) &&
+  /Mathf.Approximately\(min, 0f\)/.test(home) &&
+  /int percent = Mathf.RoundToInt\(Mathf.Lerp\(min, max, t\) \* 100f\)/.test(home),
+  'Art scale for 0-100 volume and dynamically correct 45-100 brightness scale');
 check(/SettingsSliderFeedback/.test(home) && /IPointerDownHandler/.test(art) &&
   /IBeginDragHandler/.test(art) && /RefreshVisual\(\)/.test(art),
   'Drag and hover feedback is wired to real pointer events');
