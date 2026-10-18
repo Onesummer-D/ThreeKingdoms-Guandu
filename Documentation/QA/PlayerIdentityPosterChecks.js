@@ -48,8 +48,9 @@ check(entry.includes('idInput.text = string.Empty;') &&
       !entry.includes('idInput.text = PlayerIdentityState.CurrentId') &&
       !entry.includes('请输入3–18位'),
   'Registration textbox is blank at every launch, with no old restrictive warning');
-check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHeight)'),
-  'Export renderer appends poster footer');
+check(report.includes('CreatePosterSignature(canvasRect, topMargin + bodyHeight, signatureHeight)') &&
+  report.includes('Image posterArt = posterPaper.AddComponent<Image>()'),
+  'Export renderer appends one footer after the separately designed parchment page');
 check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："'),
   'Poster footer uses the same local ID');
 check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleReport/GameEntryQR'),
@@ -57,8 +58,10 @@ check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleRepor
 check(!report.includes('https://example.com')&&!report.includes('placeholderQR'),
   'No dummy or unscannable QR artwork is ever exported');
 check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)')&&
-      report.includes('float height = bodyHeight + signatureHeight'),
-  'Export copy is not stretched into new footer region');
+      report.includes('float height = topMargin + bodyHeight + signatureHeight + bottomMargin') &&
+      report.includes('copy.anchoredPosition = new Vector2(0f, -topMargin)') &&
+      report.includes('StylePosterCopy(copy)'),
+  'Export report retains its height while separate margins and an ink-on-parchment palette surround it');
 check(entry.includes('"为这一局征程定下名号", 35f') &&
   !entry.includes('战绩海报将以此署名') &&
   !entry.includes('这不是联网账号'), 'Short, larger startup subtitle with no explanatory footer');
