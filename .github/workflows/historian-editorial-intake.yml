@@ -1,0 +1,26 @@
+name: Historian editorial intake review
+
+on:
+  pull_request:
+    paths:
+      - 'Documentation/Editorial/Historian/**'
+      - 'Documentation/QA/HistorianEditorialIntakeChecks.js'
+      - '.github/workflows/historian-editorial-intake.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Documentation/Editorial/Historian/**'
+      - 'Documentation/QA/HistorianEditorialIntakeChecks.js'
+      - '.github/workflows/historian-editorial-intake.yml'
+
+jobs:
+  editorial-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate source cards and sample QA intake
+        run: node Documentation/QA/HistorianEditorialIntakeChecks.js
