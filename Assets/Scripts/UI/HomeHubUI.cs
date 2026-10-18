@@ -779,6 +779,7 @@ public sealed class HomeHubUI : MonoBehaviour
         // and avoids stretching the old parchment sprite into a rectangle.
         image.type = Image.Type.Simple;
         image.color = new Color(.075f, .12f, .15f, .99f);
+        OrnateCardArt.Apply(image, OrnateCardArt.Kind.Ink);
         Shadow shadow = card.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, .45f);
         shadow.effectDistance = new Vector2(7f, -7f);
