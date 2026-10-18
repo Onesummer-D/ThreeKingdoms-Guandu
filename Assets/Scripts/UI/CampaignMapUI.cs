@@ -870,8 +870,9 @@ public sealed class CampaignMapUI : MonoBehaviour
             GameObject entry = CreateUIObject("HistorianCard_" + i, historianGalleryContent);
             entry.AddComponent<LayoutElement>().preferredHeight = 120f;
             Image image = entry.AddComponent<Image>();
-            image.color = unlocked ? new Color(0.13f, 0.20f, 0.22f, 1f) :
-                new Color(0.08f, 0.11f, 0.13f, 1f);
+            CardBackgroundSkin.ApplyInsetDarkCard(image, unlocked
+                ? new Color(.13f, .20f, .22f, 1f)
+                : new Color(.08f, .11f, .13f, 1f));
             Button button = entry.AddComponent<Button>();
             button.targetGraphic = image;
             button.interactable = unlocked;
@@ -881,17 +882,17 @@ public sealed class CampaignMapUI : MonoBehaviour
             TMP_Text heading = CreateText(entry.transform,
                 unlocked ? card.title : "未解锁 · 推进剧情后可读", 34f,
                 TextAlignmentOptions.Left, unlocked ? TextPrimary : TextMuted);
-            SetAnchored(heading.rectTransform, new Vector2(0.025f, 0.40f),
-                new Vector2(0.78f, 0.90f));
+            SetAnchored(heading.rectTransform, new Vector2(0.075f, 0.40f),
+                new Vector2(0.76f, 0.90f));
             TMP_Text category = CreateText(entry.transform, card.category, 25f,
                 TextAlignmentOptions.Right, unlocked ? HistorianLabelColor : TextMuted);
-            SetAnchored(category.rectTransform, new Vector2(0.78f, 0.40f),
-                new Vector2(0.97f, 0.90f));
+            SetAnchored(category.rectTransform, new Vector2(0.76f, 0.40f),
+                new Vector2(0.925f, 0.90f));
             TMP_Text source = CreateText(entry.transform,
                 unlocked ? card.note.source : "章节锚点尚未到达", 22f,
                 TextAlignmentOptions.Left, TextMuted);
-            SetAnchored(source.rectTransform, new Vector2(0.025f, 0.08f),
-                new Vector2(0.97f, 0.40f));
+            SetAnchored(source.rectTransform, new Vector2(0.075f, 0.11f),
+                new Vector2(0.925f, 0.40f));
         }
     }
 
