@@ -115,4 +115,36 @@ check(![report, saved, chat, home, gallery].some(text => text.includes('ApplyIns
       saved.includes('row.AddComponent<Image>().color = rowColor;'),
   'Small game cards, save rows and historian bubbles keep dark, rectangular, legible surfaces');
 
+// Visual regression constraints from the 19 Oct Unity screenshots. These are
+// structural checks: a Unity Editor screenshot is still needed for approval.
+const brief = load('Assets/Scripts/UI/InviteCoCreationUI.cs');
+const exit = load('Assets/Scripts/UI/GameplayExitUI.cs');
+check(entry.includes('new Vector2(-22f, 0f)') &&
+      entry.includes('foreach (Transform child in panel.transform)') &&
+      savePlaceholder(),
+  'Commander name card shifts its actual interactive contents left of the asymmetric ornament');
+function savePlaceholder() {
+  return saved.includes('title.rectTransform.offsetMin = new Vector2(110f, 0f)');
+}
+check(brief.includes('title.rectTransform.offsetMin = new Vector2(108f, -102f)'),
+  '出征之前 label avoids the left decorative corner');
+check(chat.includes('new Vector2(.075f, .55f)') &&
+      chat.includes('new Vector2(196f, 196f)') &&
+      chat.includes('new Vector2(.12f, .085f), new Vector2(.88f, .925f)') &&
+      !chat.includes('Enter 发送 · Shift + Enter 换行'),
+  'Historian launcher grows inside left sidebar; dialogue enlarged and centered with obsolete hotkey help removed');
+check(chat.includes('GameObject actionRow = Object("SourceActionRow", bubble)') &&
+      chat.includes('HorizontalLayoutGroup actionLayout') &&
+      chat.includes('toggleSize.preferredWidth = gameRecord ? 268f : 210f') &&
+      !chat.includes('sourceLabel + "（" + citations.Length + "）"'),
+  'Historical source button is compact and right aligned instead of a full-width banner');
+check(exit.includes('new Vector2(.245f, .20f)') &&
+      exit.includes('new Vector2(.755f, .82f)') &&
+      exit.includes('reviewButton = CreateButton(panel.transform, "本局复盘"') &&
+      exit.includes('reportButton = CreateButton(panel.transform, "战绩报告"') &&
+      exit.includes('manager.SetEndingShortcutsVisible(false)') &&
+      manager.includes('public void OpenEndingReviewFromExit()') &&
+      manager.includes('public void OpenBattleReportFromExit()'),
+  'End-of-run exit/review/report controls share one large centered modal rather than spilling outside the frame');
+
 console.log('player-id-poster-integration: '+pass+'/'+pass);
