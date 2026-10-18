@@ -301,6 +301,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = invitePanel.AddComponent<Image>();
         panelImage.color = panelColor;
+        CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
 
         titleText = CreateText(invitePanel.transform, "军议邀约", 48f,
             TextAlignmentOptions.Left, textPrimary);
@@ -456,6 +457,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         SetAnchored(advisorReviewPanel.GetComponent<RectTransform>(), new Vector2(.04f, .14f), new Vector2(.96f, .84f));
         Image reviewPanelImage = advisorReviewPanel.AddComponent<Image>();
         reviewPanelImage.color = new Color(.06f, .095f, .125f, .995f);
+        CardBackgroundSkin.Apply(reviewPanelImage, CardBackgroundSkin.Style.DarkPanel);
         reviewPanelImage.raycastTarget = false;
         TMP_Text reviewTitle = CreateText(advisorReviewPanel.transform, "主将审核 · 共谋回声", 42f,
             TextAlignmentOptions.Left, textPrimary);
@@ -776,7 +778,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         playerBrief.AddComponent<Image>().color = overlayColor;
         GameObject panel = CreateUIObject("BriefPanel", playerBrief.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.08f, .06f), new Vector2(.92f, .94f));
-        panel.AddComponent<Image>().color = panelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         TMP_Text title = CreateText(panel.transform, "出征之前", 48f, TextAlignmentOptions.Left, textPrimary);
         SetHeader(title.rectTransform);
         Button back = CreateButton(panel.transform, "返回", new Vector2(180f, 72f),
