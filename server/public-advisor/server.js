@@ -6,6 +6,9 @@ const historian = require('../historian-ai/grounding');
 
 const PORT = Number(process.env.PORT || 8080);
 const PUBLIC_ORIGIN = String(process.env.PUBLIC_ORIGIN || '').replace(/\/$/, '');
+const candidateGameUrl = String(process.env.PUBLIC_GAME_ENTRY_URL || '').trim();
+const PUBLIC_GAME_ENTRY_URL = /^https?:\/\//i.test(candidateGameUrl) ? candidateGameUrl : '';
+function inlineJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
 const SESSION_TTL_SECONDS = Math.min(Math.max(Number(process.env.SESSION_TTL_SECONDS || 900), 120), 3600);
 const MAX_BODY_BYTES = 32 * 1024;
 const sessions = new Map();
@@ -143,7 +146,20 @@ async function handle(req, res) {
     return json(res, 200, { ok: true, service: 'public-advisor', now: now() });
 
   const assetTypes = { 'battlefield.png':'image/png', 'option.png':'image/png',
-    'option-selected.png':'image/png', 'game-font.ttf':'font/ttf' };
+    'option-selected.png':'image/png', 'game-font.ttf':'font/ttf',
+    'battle-hero.png':'image/png',
+    'resource-troop.png':'image/png', 'resource-food.png':'image/png',
+    'resource-strategy.png':'image/png', 'resource-risk.png':'image/png',
+    'seal-present.png':'image/png',
+    'advisor-wood-briefing.webp':'image/webp',
+    'advisor-double-parchment.webp':'image/webp',
+    'advisor-submit-stone.webp':'image/webp',
+    'advisor-vertical-scroll.webp':'image/webp',
+    'advisor-question-panel.webp':'image/webp',
+    'advisor-option-paper.webp':'image/webp',
+    'advisor-gold-title.webp':'image/webp',
+    'advisor-gold-title-v2.webp':'image/webp',
+    'advisor-gold-title-v3.webp':'image/webp' };
   if (req.method === 'GET' && parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
     const assetPath = path.join(publicDir, 'assets', parts[1]);
     if (!fs.existsSync(assetPath)) return error(res, 404, '资源不存在');
@@ -155,8 +171,9 @@ async function handle(req, res) {
   if (req.method === 'GET' && parts[0] === 'join' && parts[1]) {
     const pagePath = path.join(publicDir, 'index.html');
     const html = fs.readFileSync(pagePath, 'utf8')
-      .replace('__SESSION_ID__', JSON.stringify(parts[1]))
-      .replace('__JOIN_TOKEN__', JSON.stringify(url.searchParams.get('token') || ''));
+      .replace('__SESSION_ID__', inlineJson(parts[1]))
+      .replace('__JOIN_TOKEN__', inlineJson(url.searchParams.get('token') || ''))
+      .replace('__GAME_ENTRY_URL__', inlineJson(PUBLIC_GAME_ENTRY_URL));
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
