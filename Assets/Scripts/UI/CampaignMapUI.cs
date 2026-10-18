@@ -695,6 +695,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "官渡战局 · 剧情回顾", 56f, TextAlignmentOptions.Left, TextPrimary);
         SetTopLeft(title.rectTransform, new Vector2(38f, -26f), new Vector2(1200f, 68f));
@@ -760,6 +761,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
 
         historianTitleText = CreateText(panel.transform, "史官注", 64f, TextAlignmentOptions.Left, TextPrimary);
         SetTopLeft(historianTitleText.rectTransform, new Vector2(40f, -30f), new Vector2(1200f, 80f));
@@ -796,7 +798,7 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("HistorianGalleryPanel", historianGalleryOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "史官卡片 · " + HistorianCards.Length + " 则", 54f,
             TextAlignmentOptions.Left, TextPrimary);
