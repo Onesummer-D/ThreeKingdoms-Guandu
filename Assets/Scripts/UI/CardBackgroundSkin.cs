@@ -12,6 +12,33 @@ public static class CardBackgroundSkin
 {
     public enum Style { SmallBanner, LightPanel, DarkPanel, LongPoster }
 
+    /// <summary>
+    /// Compact cards/rows within an already-decorated modal. Reuse the
+    /// illustrator's ink-blue frame WITHOUT the outer-panel overscan.
+    /// This avoids the raw 90-degree rectangular UI and keeps each row
+    /// inside its own clickable/layout bounds.
+    /// </summary>
+    public static bool ApplyInsetDarkCard(Image target, Color fallback)
+    {
+        if (target == null) return false;
+        Texture2D tex = Resources.Load<Texture2D>("CardSkins/DarkPanel");
+        if (tex == null)
+        {
+            target.sprite = null;
+            target.color = fallback;
+            return false;
+        }
+        float edge = Mathf.Min(tex.width, tex.height) * .09f;
+        Sprite sprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height),
+            new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect,
+            new Vector4(edge, edge, edge, edge));
+        target.sprite = sprite;
+        target.type = Image.Type.Sliced;
+        target.color = Color.white;
+        target.preserveAspect = false;
+        return true;
+    }
+
     public static bool Apply(Image target, Style style)
     {
         if (target == null) return false;
