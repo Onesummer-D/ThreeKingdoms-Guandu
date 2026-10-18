@@ -238,6 +238,6 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
 }
 module.exports = {
   corpus, styleExamples, grams, scoreDocument, retrieve, selectStyleExamples, normalizeHistory, retrievalQuery,
-  hasEvidence, buildGroundedPrompt, validateAnswer, fallbackAnswer,
+  hasEvidence, buildGroundedPrompt, validateAnswer, fallbackAnswer, askOpenAI,
   answerQuestion, sanitizeRun, answerRunQuestion, isRunQuestion
 };
