@@ -672,37 +672,73 @@ public sealed class HistorianLocalKnowledge
 
     public HistorianAskResponse Answer(string question, HistorianChatMessage[] history, string context)
     {
-        string query = question;
-        if (Regex.IsMatch(question, @"^(那|那么|所以|为什么|为何|还有|然后|这|他|她|它|详细|展开|再|继续)|他|她|它|刚才|当前|这一段"))
+        string query = question ?? "";
+        bool followUp = Regex.IsMatch(query, @"^(那|那么|所以|为什么|为何|还有|然后|这|他|她|它|详细|展开|再|继续)|他|她|它|刚才|当前|这一段");
+        if (followUp)
         {
-            if (history != null && history.Length >= 2) query += " " + history[history.Length - 2].content + " " + history[history.Length - 1].content;
-            else query += " " + context;
+            if (history != null && history.Length >= 2)
+                query += " " + history[history.Length - 2].content + " " + history[history.Length - 1].content;
+            else query += " " + (context ?? "");
         }
+        if (Regex.IsMatch(query, @"精确|准确|每一天|分钟|伤亡|逐日"))
+            return Refuse();
+
         List<Card> matches = new List<Card>();
-        bool supported = Regex.IsMatch(query, @"官渡|曹操|袁绍|许攸|荀彧|荀攸|张郃|高览|乌巢|粮草|粮道|史实|IF|if|复盘|游戏|补给|冲锋");
+        bool laterFate = Regex.IsMatch(question ?? "", @"(许攸|子远).{0,18}(后来|结局|下场|怎么死|为何死|被杀|被诛|许褚|死因)|(后来|结局|下场|被杀|被诛).{0,18}(许攸|子远)");
         foreach (Card card in cards)
-            if (card.tags != null) foreach (string tag in card.tags) if (tag.Length > 1 && query.Contains(tag)) supported = true;
-        if (!supported || Regex.IsMatch(question, @"精确|准确|每一天|分钟|伤亡|逐日"))
-            return new HistorianAskResponse { ok = true, mode = "grounded_refusal", answer = "现有史料不足以确认这个问题。你可以问官渡的战局、人物、粮道，或史实与游戏演绎的区别。", citations = new HistorianCitation[0] };
-        matches.AddRange(cards);
-        matches.Sort((a, b) => { int comparison = Score(b, query).CompareTo(Score(a, query)); return comparison != 0 ? comparison : string.CompareOrdinal(a.id, b.id); });
+        {
+            if (card.id == "H10" && !laterFate) continue;
+            if (Score(card, query) >= 8) matches.Add(card);
+        }
+        if (matches.Count == 0) return Refuse();
+        matches.Sort((a, b) => {
+            int c = Score(b, query).CompareTo(Score(a, query));
+            return c != 0 ? c : string.CompareOrdinal(a.id, b.id);
+        });
+
         StringBuilder answer = new StringBuilder();
         List<HistorianCitation> sources = new List<HistorianCitation>();
-        for (int i = 0; i < Math.Min(4, matches.Count); i++)
+        int limit = Math.Min(2, matches.Count);
+        for (int i = 0; i < limit; i++)
         {
             Card card = matches[i];
-            if (Score(card, query) == 0) continue;
-            answer.Append(card.title).Append("\n").Append(card.summary).Append("\n").Append(card.boundary).Append(" [").Append(card.id).Append("]\n\n");
+            answer.Append(card.summary).Append("（")
+                .Append(card.id == "D01" ? "游戏规则" : "史书记载与边界")
+                .Append("）[").Append(card.id).Append("]\n");
             sources.Add(new HistorianCitation { id = card.id, title = card.title, source = card.source });
         }
-        return new HistorianAskResponse { ok = true, mode = "grounded_fallback", answer = answer.Length > 0 ? answer.ToString().Trim() : "史料包暂不可用，请回到史官卡片阅读。", citations = sources.ToArray() };
+        return new HistorianAskResponse { ok = true, mode = "grounded_fallback",
+            answer = answer.ToString().Trim(), citations = sources.ToArray() };
+    }
+
+    private static HistorianAskResponse Refuse()
+    {
+        return new HistorianAskResponse { ok = true, mode = "grounded_refusal",
+            answer = "现有史料不足以确认这个问题。可具体询问官渡人物、战术与史实改编。",
+            citations = new HistorianCitation[0] };
     }
 
     private static int Score(Card card, string query)
     {
-        string document = card.title + card.source + card.summary + card.boundary + string.Join(" ", card.tags ?? new string[0]);
+        if (card == null || string.IsNullOrEmpty(query)) return 0;
+        string document = (card.title ?? "") + " " + (card.summary ?? "");
         int score = 0;
-        foreach (char letter in query) if (letter >= '\u4e00' && letter <= '\u9fff' && document.IndexOf(letter) >= 0) score++;
+        if (card.tags != null) foreach (string tag in card.tags)
+            if (!string.IsNullOrEmpty(tag) && tag.Length >= 2 &&
+                tag != "游戏" && tag != "历史" &&
+                query.IndexOf(tag, StringComparison.OrdinalIgnoreCase) >= 0)
+                score += 12;
+        // Lexical phrases, not isolated shared ideographs (三、史、人等).
+        string stop = "什么|为什么|为什|怎么|如何|可以|请问|这个|那个|一下|知道|觉得|是否|是不是|故事|事情|我们|他们|时候";
+        for (int i = 0; i < query.Length - 1; i++)
+        {
+            char a = query[i], b = query[i + 1];
+            if (a < '\u4e00' || a > '\u9fff' || b < '\u4e00' || b > '\u9fff') continue;
+            string pair = query.Substring(i, 2);
+            if (stop.Contains(pair) && stop.Split('|').Length > 0 &&
+                Array.Exists(stop.Split('|'), part => part == pair)) continue;
+            if (document.Contains(pair)) score += 2;
+        }
         return score;
     }
 }
