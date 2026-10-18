@@ -485,6 +485,9 @@ public sealed class HomeHubUI : MonoBehaviour
         // The panel intentionally stays a single focusable modal.  Every
         // ornament is raycast-transparent so sliders and the close button work.
         Image background = panel.GetComponent<Image>();
+        // The supplied ink-cloud card already contains its own ornamental frame.
+        // Only use the old programmatic bronze frame as a safe asset fallback.
+        if (OrnateCardArt.Apply(background, OrnateCardArt.Kind.Ink)) return;
         background.color = new Color(.085f, .082f, .087f, .995f);
         Shadow shadow = panel.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, .72f);
@@ -813,7 +816,9 @@ public sealed class HomeHubUI : MonoBehaviour
     {
         GameObject panel = CreateUIObject(name, parent);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .08f), new Vector2(.88f, .92f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image surface = panel.AddComponent<Image>();
+        surface.color = PanelColor;
+        OrnateCardArt.Apply(surface, OrnateCardArt.Kind.Ink);
         return panel;
     }
 
