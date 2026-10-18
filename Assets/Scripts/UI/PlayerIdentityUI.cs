@@ -87,6 +87,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
         Image paper = panel.AddComponent<Image>();
         paper.color = new Color(.075f, .105f, .14f, 1f);
+        bool parchmentArt = OrnateCardArt.Apply(paper, OrnateCardArt.Kind.Paper);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = new Color(.80f, .62f, .35f, .9f);
         outline.effectDistance = new Vector2(2f, -2f);
@@ -94,11 +95,13 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         TMP_Text title = Text(panel.transform, "主将留名", 48f,
             TextAlignmentOptions.Center, new Color(.91f, .73f, .4f));
         Anchor(title.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .95f));
+        if (parchmentArt) title.color = new Color(.38f, .22f, .13f);
 
         TMP_Text intro = Text(panel.transform,
             "为这一局征程定下名号", 35f,
             TextAlignmentOptions.Center, new Color(.87f, .86f, .80f));
         Anchor(intro.rectTransform, new Vector2(.06f, .65f), new Vector2(.94f, .84f));
+        if (parchmentArt) intro.color = new Color(.28f, .22f, .17f);
 
         GameObject field = Make("CommanderIdInput", panel.transform);
         RectTransform fieldRect = field.GetComponent<RectTransform>();
