@@ -87,6 +87,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
         Image paper = panel.AddComponent<Image>();
         paper.color = new Color(.075f, .105f, .14f, 1f);
+        CardBackgroundSkin.Apply(paper, CardBackgroundSkin.Style.LightPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = new Color(.80f, .62f, .35f, .9f);
         outline.effectDistance = new Vector2(2f, -2f);
