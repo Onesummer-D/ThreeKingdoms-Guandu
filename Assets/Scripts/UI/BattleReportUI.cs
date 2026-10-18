@@ -585,6 +585,17 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private IEnumerator CapturePoster()
     {
+        // Never silently fall back to the obsolete flat-color poster.
+        // The new shareable poster requires its illustrated scroll artwork.
+        if (posterBackgroundTexture == null)
+            posterBackgroundTexture = Resources.Load<Texture2D>("CardSkins/PosterDark");
+        if (posterBackgroundTexture == null)
+        {
+            const string missingArt = "缺少海报底图 PosterDark.png，请先导入 CardSkins 资源。";
+            if (statusText != null) statusText.text = missingArt;
+            Debug.LogWarning("战绩海报未生成：" + missingArt);
+            yield break;
+        }
         capturing = true;
         if (statusText != null) statusText.text = "";
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
@@ -626,18 +637,25 @@ public sealed class BattleReportUI : MonoBehaviour
         const float signatureHeight = 208f;
         float bodyHeight = content.rect.height;
         float height = bodyHeight + signatureHeight;
-        const float posterSideInset = 112f;
-        const float posterTopInset = 175f;
-        const float posterBottomInset = 92f;
+        float posterSideInset = 0f;
         float topInset = 0f;
         if (decoratedPoster)
         {
-            width += posterSideInset * 2f;
-            float requiredHeight = height + posterTopInset + posterBottomInset;
+            // PosterDark's bright frame and top tab are *outside* its dark
+            // reading surface. Reserve safe margins proportionally, not via
+            // fixed pixels that break as the history/report grows.
+            const float safeSide = .12f;
+            const float safeTop = .15f;
+            const float safeBottom = .10f;
+            float bodyWidth = width;
+            width = bodyWidth / (1f - 2f * safeSide);
+            posterSideInset = (width - bodyWidth) * .5f;
             float artAspectHeight = posterBackgroundTexture.height /
                 Mathf.Max(1f, (float)posterBackgroundTexture.width);
+            float requiredHeight = (bodyHeight + signatureHeight) /
+                (1f - safeTop - safeBottom);
             height = Mathf.Max(requiredHeight, width * artAspectHeight);
-            topInset = posterTopInset + (height - requiredHeight) * .5f;
+            topInset = height * safeTop;
         }
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
         float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
