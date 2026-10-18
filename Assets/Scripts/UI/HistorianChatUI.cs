@@ -106,12 +106,8 @@ public sealed class HistorianChatUI : MonoBehaviour
         Image historianPanelImage = panel.AddComponent<Image>();
         historianPanelImage.color = new Color(.045f, .105f, .13f, .78f);
         CardBackgroundSkin.Apply(historianPanelImage, CardBackgroundSkin.Style.DarkPanel);
-        // Outline duplicates the entire translucent quad and makes the panel opaque.
-        // Four thin edge images preserve the intended background transparency.
-        Edge(panel.transform, "TopEdge", new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -2f), Vector2.zero);
-        Edge(panel.transform, "BottomEdge", Vector2.zero, new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 2f));
-        Edge(panel.transform, "LeftEdge", Vector2.zero, new Vector2(0f, 1f), Vector2.zero, new Vector2(2f, 0f));
-        Edge(panel.transform, "RightEdge", new Vector2(1f, 0f), Vector2.one, new Vector2(-2f, 0f), Vector2.zero);
+        // The ornate background now owns the frame; four extra straight edge
+        // graphics previously appeared as a second, floating rectangle.
 
         GameObject headerIcon = Object("HistorianPortrait", panel.transform);
         Image portrait = headerIcon.AddComponent<Image>();
@@ -128,7 +124,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         close.onClick.AddListener(Close);
 
         GameObject scrollObject = Object("Conversation", panel.transform);
-        Anchors(scrollObject.GetComponent<RectTransform>(), new Vector2(.025f, .255f), new Vector2(.975f, .84f));
+        Anchors(scrollObject.GetComponent<RectTransform>(), new Vector2(.055f, .255f), new Vector2(.945f, .84f));
         scrollObject.AddComponent<Image>().color = new Color(.02f, .055f, .065f, .28f);
         GameObject viewport = Object("Viewport", scrollObject.transform);
         Anchors(viewport.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
@@ -166,7 +162,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
         GameObject choices = Object("SuggestedQuestions", panel.transform);
-        Anchors(choices.GetComponent<RectTransform>(), new Vector2(.025f, .185f), new Vector2(.975f, .24f));
+        Anchors(choices.GetComponent<RectTransform>(), new Vector2(.055f, .185f), new Vector2(.945f, .24f));
         HorizontalLayoutGroup row = choices.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 12f;
         row.childControlWidth = row.childControlHeight = true;
@@ -181,7 +177,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         }
 
         GameObject inputObject = Object("QuestionInput", panel.transform);
-        Anchors(inputObject.GetComponent<RectTransform>(), new Vector2(.025f, .055f), new Vector2(.825f, .17f));
+        Anchors(inputObject.GetComponent<RectTransform>(), new Vector2(.055f, .055f), new Vector2(.805f, .17f));
         Image inputBg = inputObject.AddComponent<Image>();
         inputBg.color = new Color(.015f, .04f, .055f, .8f);
         GameObject textArea = Object("TextArea", inputObject.transform);
@@ -213,10 +209,10 @@ public sealed class HistorianChatUI : MonoBehaviour
         input.characterLimit = 800;
         input.onValueChanged.AddListener(_ => RefreshControls());
         send = Button(panel.transform, "发送", 28f);
-        Anchors(send.GetComponent<RectTransform>(), new Vector2(.84f, .055f), new Vector2(.975f, .17f));
+        Anchors(send.GetComponent<RectTransform>(), new Vector2(.82f, .055f), new Vector2(.945f, .17f));
         send.onClick.AddListener(() => SubmitQuestion(input.text));
         status = Text(panel.transform, "", 21f, Muted);
-        Anchors(status.rectTransform, new Vector2(.03f, .005f), new Vector2(.975f, .048f));
+        Anchors(status.rectTransform, new Vector2(.055f, .005f), new Vector2(.945f, .048f));
         surface.SetActive(false);
     }
 
