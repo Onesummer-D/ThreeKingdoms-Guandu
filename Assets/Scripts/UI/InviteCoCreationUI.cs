@@ -457,7 +457,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         SetAnchored(advisorReviewPanel.GetComponent<RectTransform>(), new Vector2(.04f, .14f), new Vector2(.96f, .84f));
         Image reviewPanelImage = advisorReviewPanel.AddComponent<Image>();
         reviewPanelImage.color = new Color(.06f, .095f, .125f, .995f);
-        CardBackgroundSkin.Apply(reviewPanelImage, CardBackgroundSkin.Style.DarkPanel);
+        // A nested review card must remain a solid, compact subpanel.
+        // Rendering a second large ornament here overwhelms its buttons.
         reviewPanelImage.raycastTarget = false;
         TMP_Text reviewTitle = CreateText(advisorReviewPanel.transform, "主将审核 · 共谋回声", 42f,
             TextAlignmentOptions.Left, textPrimary);
@@ -813,8 +814,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         GameObject viewport = CreateUIObject("ScrollableBody", parent);
         RectTransform rect = viewport.GetComponent<RectTransform>();
         Stretch(rect);
-        rect.offsetMin = new Vector2(42f, 126f);
-        rect.offsetMax = new Vector2(-66f, -128f);
+        rect.offsetMin = new Vector2(64f, 132f);
+        rect.offsetMax = new Vector2(-78f, -132f);
         // An almost transparent graphic receives drag events over text/gaps.
         viewport.AddComponent<Image>().color = new Color(1f, 1f, 1f, .001f);
         viewport.AddComponent<RectMask2D>();
@@ -841,8 +842,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
 
         GameObject bar = CreateUIObject("ScrollBar", parent);
         SetAnchored(bar.GetComponent<RectTransform>(), Vector2.right, Vector2.one);
-        bar.GetComponent<RectTransform>().offsetMin = new Vector2(-42f, 126f);
-        bar.GetComponent<RectTransform>().offsetMax = new Vector2(-26f, -128f);
+        bar.GetComponent<RectTransform>().offsetMin = new Vector2(-54f, 132f);
+        bar.GetComponent<RectTransform>().offsetMax = new Vector2(-38f, -132f);
         bar.AddComponent<Image>().color = new Color(.2f, .25f, .27f, .7f);
         GameObject handle = CreateUIObject("Handle", bar.transform);
         Stretch(handle.GetComponent<RectTransform>());
