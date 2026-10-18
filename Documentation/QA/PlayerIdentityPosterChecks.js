@@ -62,6 +62,29 @@ check(report.includes('Resources.Load<Texture2D>("CardSkins/PosterDark")') &&
       report.includes('posterSideInset > 0f ? Color.clear : PanelColor') &&
       report.includes('copy.sizeDelta = new Vector2(-posterSideInset * 2f, bodyHeight)'),
   'Optional dark-scroll export is full-bleed, safe-inset and avoids nested rectangular cards');
+check(report.includes('const float safeSide = .12f') &&
+  report.includes('const float safeTop = .15f') &&
+  report.includes('const float safeBottom = .10f') &&
+  report.includes('width = bodyWidth / (1f - 2f * safeSide)') &&
+  report.includes('float requiredHeight = (bodyHeight + signatureHeight) /') &&
+  report.includes('topInset = height * safeTop'),
+  'Poster scales safe text and QR margins to the provided scroll artwork');
+check(report.includes('缺少海报底图 PosterDark.png') &&
+  report.includes('Debug.LogWarning("战绩海报未生成：" + missingArt)') &&
+  report.includes('if (posterBackgroundTexture == null)') &&
+  report.includes('yield break;'),
+  'Export does not silently emit an old plain poster when PosterDark image is missing');
+// Block acceptance while only PosterDark.png.meta has been committed: this
+// check is intentionally red until the actual 1086×1448 PNG is added.
+const posterAsset = path.join(root, 'Assets/Resources/CardSkins/PosterDark.png');
+const posterInstalled = fs.existsSync(posterAsset);
+check(posterInstalled, 'Real illustrated poster PNG is present (not only its .meta)');
+if (posterInstalled) {
+  const png = fs.readFileSync(posterAsset);
+  check(png.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+    png.readUInt32BE(16) === 1086 && png.readUInt32BE(20) === 1448,
+    'PosterDark has the supplied 1086x1448 dimensions and a valid PNG signature');
+}
 check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleReport/GameEntryQR'),
   'QR drawn only after actual final URL QR Sprite is installed');
 check(!report.includes('https://example.com')&&!report.includes('placeholderQR'),
