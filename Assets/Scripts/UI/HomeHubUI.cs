@@ -813,7 +813,7 @@ public sealed class HomeHubUI : MonoBehaviour
     {
         GameObject panel = CreateUIObject(name, parent);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .08f), new Vector2(.88f, .92f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         return panel;
     }
 
