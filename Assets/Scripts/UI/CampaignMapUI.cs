@@ -695,6 +695,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        OrnateCardArt.Apply(panelImage, OrnateCardArt.Kind.Ink);
 
         TMP_Text title = CreateText(panel.transform, "官渡战局 · 剧情回顾", 56f, TextAlignmentOptions.Left, TextPrimary);
         SetTopLeft(title.rectTransform, new Vector2(38f, -26f), new Vector2(1200f, 68f));
@@ -760,6 +761,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        OrnateCardArt.Apply(panelImage, OrnateCardArt.Kind.Ink);
 
         historianTitleText = CreateText(panel.transform, "史官注", 64f, TextAlignmentOptions.Left, TextPrimary);
         SetTopLeft(historianTitleText.rectTransform, new Vector2(40f, -30f), new Vector2(1200f, 80f));
@@ -796,7 +798,9 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("HistorianGalleryPanel", historianGalleryOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image galleryArt = panel.AddComponent<Image>();
+        galleryArt.color = PanelColor;
+        OrnateCardArt.Apply(galleryArt, OrnateCardArt.Kind.Ink);
 
         TMP_Text title = CreateText(panel.transform, "史官卡片 · " + HistorianCards.Length + " 则", 54f,
             TextAlignmentOptions.Left, TextPrimary);
@@ -1030,6 +1034,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         Image cardImage = card.AddComponent<Image>();
         bool isCurrentChapter = GetCurrentChapterIndex(currentNodeId) == GetCurrentChapterIndex(chapter.anchorNodeId);
         cardImage.color = isCurrentChapter && !isSummary ? new Color(0.12f, 0.21f, 0.23f, 1f) : CardColor;
+        OrnateCardArt.Apply(cardImage, OrnateCardArt.Kind.Ink);
 
         Sprite recapSprite = ResolveRecapSprite(chapter.imageNodeId, displayIndex - 1, visited);
         if (recapSprite != null)
@@ -1105,6 +1110,7 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         Image cardImage = card.AddComponent<Image>();
         cardImage.color = new Color(0.095f, 0.145f, 0.18f, 0.98f);
+        OrnateCardArt.Apply(cardImage, OrnateCardArt.Kind.Ink);
         // The egg's authored achievement is the visual proof of the unlock.
         // Use it in the recap card instead of repeating the scene backdrop;
         // ordinary beats keep the existing route-backdrop rotation.
@@ -1227,6 +1233,7 @@ public sealed class CampaignMapUI : MonoBehaviour
         endingRect.sizeDelta = new Vector2(0f, 220f);
         Image endingImage = ending.AddComponent<Image>();
         endingImage.color = reachedEnding ? CardColor : new Color(0.09f, 0.13f, 0.16f, 0.96f);
+        OrnateCardArt.Apply(endingImage, OrnateCardArt.Kind.Ink);
 
         if (endingSprite != null)
         {
@@ -1272,6 +1279,7 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         Image evaluationImage = evaluation.AddComponent<Image>();
         evaluationImage.color = CardColor;
+        OrnateCardArt.Apply(evaluationImage, OrnateCardArt.Kind.Ink);
 
         Sprite endingSprite = ResolveRecapSprite(reachedEndingNodeId, displayIndex - 1, visited);
         if (endingSprite != null)
