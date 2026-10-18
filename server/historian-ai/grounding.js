@@ -189,7 +189,11 @@ async function askOpenAI(prompt, question, history) {
       headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
-        model, temperature: 0.1, max_completion_tokens: 600,
+        model, temperature: 0.1,
+        // DeepSeek's OpenAI-compatible endpoint uses max_tokens.
+        // OpenAI models may use max_completion_tokens instead.
+        ...(String(model).toLowerCase().startsWith('deepseek-') || /deepseek\.com/i.test(endpoint)
+          ? { max_tokens: 600 } : { max_completion_tokens: 600 }),
         messages: [{ role: 'system', content: prompt }, ...history, { role: 'user', content: question }]
       })
     });
