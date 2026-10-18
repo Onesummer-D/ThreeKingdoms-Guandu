@@ -106,7 +106,9 @@ public sealed class BattleReportUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("BattleReportPanel", overlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.055f, .045f), new Vector2(.945f, .955f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image reportArt = panel.AddComponent<Image>();
+        reportArt.color = PanelColor;
+        OrnateCardArt.Apply(reportArt, OrnateCardArt.Kind.Ink);
 
         TMP_Text title = CreateText(panel.transform, "战绩报告", 52f,
             TextAlignmentOptions.Left, TextPrimary, false);
@@ -323,7 +325,9 @@ public sealed class BattleReportUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("DecisionEvidencePanel", evidenceDetailOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.13f, .18f), new Vector2(.87f, .82f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image evidenceArt = panel.AddComponent<Image>();
+        evidenceArt.color = PanelColor;
+        OrnateCardArt.Apply(evidenceArt, OrnateCardArt.Kind.Ink);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(2f, -2f);
@@ -380,6 +384,7 @@ public sealed class BattleReportUI : MonoBehaviour
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .10f), new Vector2(.88f, .90f));
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        OrnateCardArt.Apply(panelImage, OrnateCardArt.Kind.Ink);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(2f, -2f);
@@ -637,6 +642,8 @@ public sealed class BattleReportUI : MonoBehaviour
             canvasRect.position = new Vector3(10000f, 10000f, 0f);
             Image background = canvasObject.AddComponent<Image>();
             background.color = PanelColor;
+            // The tall artist parchment is rendered behind the entire exported report.
+            OrnateCardArt.Apply(background, OrnateCardArt.Kind.Poster);
             RectTransform copy = Instantiate(content, canvasRect, false);
             copy.anchorMin = new Vector2(0f, 1f);
             copy.anchorMax = new Vector2(1f, 1f);
@@ -710,6 +717,10 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x, footerHeight);
         Image background = footer.AddComponent<Image>();
         background.color = PanelColor;
+        // Do not paint an opaque strip over the bottom of the tall artwork.
+        bool posterArt = canvasRect.GetComponent<Image>() != null &&
+            canvasRect.GetComponent<Image>().sprite != null;
+        if (posterArt) background.color = Color.clear;
         background.raycastTarget = false;
 
         GameObject line = CreateUIObject("GoldRule", footer.transform);
@@ -721,6 +732,7 @@ public sealed class BattleReportUI : MonoBehaviour
             "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
             34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false);
         SetAnchored(sign.rectTransform, new Vector2(.055f, .15f), new Vector2(.72f, .83f));
+        if (posterArt) sign.color = new Color(.27f, .22f, .19f);
         sign.enableAutoSizing = true;
         sign.fontSizeMin = 24f;
         sign.fontSizeMax = 34f;
@@ -772,15 +784,19 @@ public sealed class BattleReportUI : MonoBehaviour
         exportOverlay.AddComponent<Image>().color = new Color(.01f, .015f, .025f, .72f);
         GameObject panel = CreateUIObject("PosterExportPanel", exportOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.22f, .30f), new Vector2(.78f, .70f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image exportArt = panel.AddComponent<Image>();
+        exportArt.color = PanelColor;
+        bool compactPopup = OrnateCardArt.Apply(exportArt, OrnateCardArt.Kind.Compact);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(3f, -3f);
 
         TMP_Text title = CreateText(panel.transform, "海报已保存", 46f, TextAlignmentOptions.Center, TextPrimary, false);
         SetAnchored(title.rectTransform, new Vector2(.08f, .68f), new Vector2(.92f, .92f));
+        if (compactPopup) title.color = new Color(.31f, .22f, .14f);
         TMP_Text path = CreateText(panel.transform, "", 26f, TextAlignmentOptions.Center, TextMuted, true);
         SetAnchored(path.rectTransform, new Vector2(.06f, .47f), new Vector2(.94f, .68f));
+        if (compactPopup) path.color = new Color(.39f, .30f, .23f);
 
         Button openImage = CreateButton(panel.transform, "打开图片", 30f);
         SetAnchored(openImage.GetComponent<RectTransform>(), new Vector2(.06f, .20f), new Vector2(.28f, .40f));
@@ -838,6 +854,7 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.sizeDelta = new Vector2(0f, height);
         Image image = card.AddComponent<Image>();
         image.color = CardColor;
+        OrnateCardArt.Apply(image, OrnateCardArt.Kind.Ink);
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
