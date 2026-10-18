@@ -61,4 +61,15 @@ check(ui.includes('游戏中的四项资源') &&
   'player-facing text now correctly names all four resources');
 check(fs.readFileSync(path.join(dir,'README-交稿审查与编号迁移.md'),'utf8').includes('生擒颜良'),
     'source inconsistency requiring human review remains documented');
+const chat=fs.readFileSync(path.join(root,'Assets/Scripts/UI/HistorianChatUI.cs'),'utf8');
+check(chat.includes('RefreshSuggestionsForCurrentChapter()') &&
+  chat.includes('CampaignChapterResolver.Resolve(nodeId)') &&
+  chat.includes('activeSuggestedQuestions[capturedIndex]') &&
+  chat.includes('GetComponentInChildren<TMP_Text>()'),
+  'suggested historian questions update by reached chapter without rebuilding the buttons');
+const groups = chat.split('private static readonly string[][] ChapterSuggestedQuestions =')[1]
+  .split('};')[0].match(/new\\[\\] \\{[^\\n]*\\}/g) || [];
+check(groups.length===5 && groups.every(g => (g.match(/"/g)||[]).length===6) &&
+  !groups[0].includes('张郃') && !groups[0].includes('结局'),
+  '15 editorial prompts are restricted to three choices per chapter with no first-act ending spoilers');
 console.log('historian-editorial-intake: '+checks+'/'+checks);
