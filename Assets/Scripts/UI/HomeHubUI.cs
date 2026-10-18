@@ -771,11 +771,9 @@ public sealed class HomeHubUI : MonoBehaviour
         GameObject card = CreateUIObject(title + "Card", parent);
         SetAnchored(card.GetComponent<RectTransform>(), min, max);
         Image image = card.AddComponent<Image>();
-        // Keep the information cards visually distinct from the paper-shaped
-        // menu buttons. A solid panel is more legible at every aspect ratio
-        // and avoids stretching the old parchment sprite into a rectangle.
-        image.type = Image.Type.Simple;
-        image.color = new Color(.075f, .12f, .15f, .99f);
+        // Reuse the artist's ink-blue ornamental frame instead of a sharp
+        // gold-outlined rectangle; preserve a dark fallback without assets.
+        CardBackgroundSkin.ApplyInsetDarkCard(image, CardColor);
         Shadow shadow = card.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, .45f);
         shadow.effectDistance = new Vector2(7f, -7f);
@@ -786,18 +784,18 @@ public sealed class HomeHubUI : MonoBehaviour
         button.targetGraphic = image;
 
         GameObject divider = CreateUIObject("Divider", card.transform);
-        SetAnchored(divider.GetComponent<RectTransform>(), new Vector2(.12f, .51f), new Vector2(.88f, .53f));
+        SetAnchored(divider.GetComponent<RectTransform>(), new Vector2(.17f, .51f), new Vector2(.83f, .53f));
         divider.AddComponent<Image>().color = new Color(.89f, .71f, .32f, .70f);
 
         TMP_Text titleText = CreateText(card.transform, title, 52f, TextAlignmentOptions.Center, AccentColor, false);
         titleText.fontStyle = FontStyles.Bold;
-        SetAnchored(titleText.rectTransform, new Vector2(.06f, .55f), new Vector2(.94f, .88f));
+        SetAnchored(titleText.rectTransform, new Vector2(.13f, .55f), new Vector2(.87f, .88f));
         TMP_Text bodyText = CreateText(card.transform, body, 36f, TextAlignmentOptions.Center, TextPrimary, true);
         bodyText.overflowMode = TextOverflowModes.Overflow;
         bodyText.enableAutoSizing = true;
         bodyText.fontSizeMin = 26f;
         bodyText.fontSizeMax = 36f;
-        SetAnchored(bodyText.rectTransform, new Vector2(.08f, .12f), new Vector2(.92f, .50f));
+        SetAnchored(bodyText.rectTransform, new Vector2(.13f, .12f), new Vector2(.87f, .50f));
         return button;
     }
 
