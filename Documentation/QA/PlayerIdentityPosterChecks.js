@@ -48,20 +48,23 @@ check(entry.includes('idInput.text = string.Empty;') &&
       !entry.includes('idInput.text = PlayerIdentityState.CurrentId') &&
       !entry.includes('请输入3–18位'),
   'Registration textbox is blank at every launch, with no old restrictive warning');
-check(report.includes('CreatePosterSignature(canvasRect, topMargin + bodyHeight, signatureHeight)') &&
-  report.includes('Image posterArt = posterPaper.AddComponent<Image>()'),
-  'Export renderer appends one footer after the separately designed parchment page');
+check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHeight)') &&
+  report.includes('background.color = PanelColor;') &&
+  !report.includes('CardBackgroundSkin.Apply(background, CardBackgroundSkin.Style.LongPoster)'),
+  'Poster uses one continuous dark background and a distinct footer without duplicated ornament');
 check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："'),
   'Poster footer uses the same local ID');
 check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleReport/GameEntryQR'),
   'QR drawn only after actual final URL QR Sprite is installed');
 check(!report.includes('https://example.com')&&!report.includes('placeholderQR'),
   'No dummy or unscannable QR artwork is ever exported');
-check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)')&&
-      report.includes('float height = topMargin + bodyHeight + signatureHeight + bottomMargin') &&
-      report.includes('copy.anchoredPosition = new Vector2(0f, -topMargin)') &&
-      report.includes('StylePosterCopy(copy)'),
-  'Export report retains its height while separate margins and an ink-on-parchment palette surround it');
+check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)') &&
+      report.includes('float height = bodyHeight + signatureHeight') &&
+      report.includes('copy.anchorMin = new Vector2(0f, 1f)') &&
+      report.includes('copy.anchorMax = new Vector2(1f, 1f)') &&
+      report.includes('copy.anchoredPosition = Vector2.zero;') &&
+      !report.includes('StylePosterCopy(copy)'),
+  'Poster preserves the original measured chart and report width instead of shrinking the clone');
 check(entry.includes('"为这一局征程定下名号", 35f') &&
   !entry.includes('战绩海报将以此署名') &&
   !entry.includes('这不是联网账号'), 'Short, larger startup subtitle with no explanatory footer');
@@ -71,7 +74,9 @@ check(report.includes('GameEntryQRCodeReservedArea') &&
 check(!report.includes('战绩留影'), 'Poster footer no longer contains the duplicate slogan');
 check(report.includes('evidenceDetailText') &&
   report.includes('EvidenceDetailOpenButton') &&
-  report.includes('item.gameObject.SetActive(false)'), 'Evidence available in game but hidden in PNG output');
+  report.includes('foreach (Button action in copy.GetComponentsInChildren<Button>(true))') &&
+  report.includes('action.gameObject.SetActive(false);'),
+  'Interactive evidence and detail controls remain in game but are absent from the exported poster');
 check(report.includes('AspectRatioFitter.AspectMode.EnvelopeParent') &&
   report.includes('Mask clippingMask') &&
   report.includes('Mathf.Clamp(cardHeight * .56f, 86f, 265f)'),
@@ -97,4 +102,17 @@ check(!report.includes('"谋议方式 · " + tendency.consultationLabel') &&
   'Counsel heading is detail-only and both poster summaries share font size 29');
 check(analyzer.includes('report.evidenceNotes.Sort((a, b) => a.decisionSequence.CompareTo(b.decisionSequence))'),
   'Evidence is chronologically sorted by recorded decision sequence');
+check(entry.includes('Anchor(fieldRect, new Vector2(.20f, .36f), new Vector2(.80f, .56f))') &&
+  entry.includes('fieldBg.color = new Color(.97f, .95f, .87f, .97f)') &&
+  entry.includes('idInput.caretColor = new Color(.24f, .20f, .17f, 1f)'),
+  'Startup light input is centered inside its illustrated border with ink-colored input and caret');
+const saved = load('Assets/Scripts/UI/SaveArchiveUI.cs');
+const chat = load('Assets/Scripts/UI/HistorianChatUI.cs');
+const home = load('Assets/Scripts/UI/HomeHubUI.cs');
+const gallery = load('Assets/Scripts/UI/CampaignMapUI.cs');
+check(![report, saved, chat, home, gallery].some(text => text.includes('ApplyInsetDarkCard')) &&
+      report.includes('image.color = CardColor;') &&
+      saved.includes('row.AddComponent<Image>().color = rowColor;'),
+  'Small game cards, save rows and historian bubbles keep dark, rectangular, legible surfaces');
+
 console.log('player-id-poster-integration: '+pass+'/'+pass);
