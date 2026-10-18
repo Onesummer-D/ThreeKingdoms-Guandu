@@ -698,7 +698,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "官渡战局 · 剧情回顾", 56f, TextAlignmentOptions.Left, TextPrimary);
-        SetTopLeft(title.rectTransform, new Vector2(38f, -26f), new Vector2(1200f, 68f));
+        // Opening heading otherwise touches the protruding left frame motif.
+        SetTopLeft(title.rectTransform, new Vector2(105f, -26f), new Vector2(1130f, 68f));
         progressText = CreateText(panel.transform, "", 30f, TextAlignmentOptions.Left, TextMuted);
         SetTopLeft(progressText.rectTransform, new Vector2(40f, -96f), new Vector2(1400f, 44f));
 
