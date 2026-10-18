@@ -54,6 +54,14 @@ check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHe
   'Poster uses one continuous dark background and a distinct footer without duplicated ornament');
 check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："'),
   'Poster footer uses the same local ID');
+check(report.includes('Resources.Load<Texture2D>("CardSkins/PosterDark")') &&
+      report.includes('bool decoratedPoster = posterBackgroundTexture != null') &&
+      report.includes('background.sprite = temporaryPosterSprite') &&
+      report.includes('PrepareIllustratedPosterContent(copy)') &&
+      report.includes('cardFill.color = Color.clear') &&
+      report.includes('posterSideInset > 0f ? Color.clear : PanelColor') &&
+      report.includes('copy.sizeDelta = new Vector2(-posterSideInset * 2f, bodyHeight)'),
+  'Optional dark-scroll export is full-bleed, safe-inset and avoids nested rectangular cards');
 check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleReport/GameEntryQR'),
   'QR drawn only after actual final URL QR Sprite is installed');
 check(!report.includes('https://example.com')&&!report.includes('placeholderQR'),
