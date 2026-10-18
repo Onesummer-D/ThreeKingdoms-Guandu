@@ -62,7 +62,7 @@ function retrieve(question, limit = 4) {
     .filter(doc => doc.score >= 8)
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
   if (!ranked.length) return [];
-  const floor = Math.max(8, ranked[0].score * 0.48);
+  const floor = Math.max(8, ranked[0].score * 0.70);
   return ranked.filter(doc => doc.score >= floor).slice(0, Math.max(0, Math.min(4, limit)));
 }
 
