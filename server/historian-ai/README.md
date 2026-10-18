@@ -40,3 +40,9 @@ Unity 的 `HistorianChatUI` 负责透明图标、半透明悬浮窗、自由输�
 - 接入模拟 DeepSeek Chat Completions 的 `max_tokens` 请求格式；真实线上 DeepSeek 账号/API Key 未在此测试，仍须服务器部署后实测。
 - PR 保持 Draft、未合并；合并代码后须更新腾讯云史官服务，并更新Unity离线知识包。校验响应 `answerVersion=grounding-v4`。
 - 当前 `CampaignMapUI.cs` 仅修正“三项/四项资源”矛盾，五幕与13张玩家史官卡片的其余改稿仍需逐项历史核定，不会擅自覆盖已验收布局。
+
+## 文案组章节提问与验收
+
+- Unity 问史官入口显示 3 个引导问题，按五幕各使用不同的3题，共15题；问题均出自或简化自校订稿《AI 史官提问引导》，且按当前章节约束未来剧情。
+- `editorial-quiz.json` 对应校订稿附录10道测试题，自动验收 `node server/historian-ai/run-editorial-quiz.js` 覆盖9题的证据/关键词；第2题需独立核对《三国志》完整正文，故明确标记人工复审，不能以局部片段判断原文全貌。
+- 新增针对误把文丑归关羽、把颜良说成生擒、许褚杀许攸、刘晔发明霹雳车等明确误记的窄范围拦截。它们不构成开放域事实审核，任何模型输出仍需人工抽检。
