@@ -103,7 +103,9 @@ public sealed class HistorianChatUI : MonoBehaviour
 
         GameObject panel = Object("ChatWindow", surface.transform);
         Anchors(panel.GetComponent<RectTransform>(), new Vector2(.20f, .13f), new Vector2(.91f, .88f));
-        panel.AddComponent<Image>().color = new Color(.045f, .105f, .13f, .78f);
+        Image historianPanelImage = panel.AddComponent<Image>();
+        historianPanelImage.color = new Color(.045f, .105f, .13f, .78f);
+        CardBackgroundSkin.Apply(historianPanelImage, CardBackgroundSkin.Style.DarkPanel);
         // Outline duplicates the entire translucent quad and makes the panel opaque.
         // Four thin edge images preserve the intended background transparency.
         Edge(panel.transform, "TopEdge", new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -2f), Vector2.zero);
