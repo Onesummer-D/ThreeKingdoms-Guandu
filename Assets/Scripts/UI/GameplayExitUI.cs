@@ -94,7 +94,9 @@ public sealed class GameplayExitUI : MonoBehaviour
 
         GameObject panel = CreateObject("ExitConfirmPanel", overlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.30f, .34f), new Vector2(.70f, .66f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image panelArt = panel.AddComponent<Image>();
+        panelArt.color = PanelColor;
+        bool compactArt = OrnateCardArt.Apply(panelArt, OrnateCardArt.Kind.Compact);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = Accent;
         outline.effectDistance = new Vector2(3f, -3f);
@@ -102,6 +104,7 @@ public sealed class GameplayExitUI : MonoBehaviour
         question = CreateText(panel.transform, "确定要退出游戏吗？", 52f,
             TextAlignmentOptions.Center, TextColor);
         SetAnchored(question.rectTransform, new Vector2(.08f, .56f), new Vector2(.92f, .90f));
+        if (compactArt) question.color = new Color(.30f, .22f, .16f);
 
         saveButton = CreateButton(panel.transform, "保存进度", new Vector2(.08f, .18f), new Vector2(.47f, .45f));
         saveButton.onClick.AddListener(HandlePrimaryAction);
@@ -116,6 +119,7 @@ public sealed class GameplayExitUI : MonoBehaviour
         status = CreateText(panel.transform, "", 27f, TextAlignmentOptions.Center,
             new Color(.78f, .79f, .75f, 1f));
         SetAnchored(status.rectTransform, new Vector2(.06f, .02f), new Vector2(.94f, .16f));
+        if (compactArt) status.color = new Color(.43f, .30f, .19f);
         overlay.SetActive(false);
     }
 
