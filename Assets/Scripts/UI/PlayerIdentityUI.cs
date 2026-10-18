@@ -105,7 +105,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
 
         GameObject field = Make("CommanderIdInput", panel.transform);
         RectTransform fieldRect = field.GetComponent<RectTransform>();
-        Anchor(fieldRect, new Vector2(.13f, .36f), new Vector2(.87f, .56f));
+        // Center the ivory field well INSIDE the painted paper border
+        // (the original 74%-width box touched the decorative right edge).
+        Anchor(fieldRect, new Vector2(.20f, .36f), new Vector2(.80f, .56f));
         Image fieldBg = field.AddComponent<Image>();
         // The host panel is cream parchment: keep the input ivory as well.
         fieldBg.color = new Color(.97f, .95f, .87f, .97f);
@@ -141,7 +143,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Stretch(inputText.rectTransform);
         inputText.raycastTarget = false;
         TMP_Text hint = Text(viewport.transform, "例如：Guandu_07", 30f,
-            TextAlignmentOptions.MidlineLeft, new Color(.54f, .47f, .40f, 1f));
+            TextAlignmentOptions.MidlineLeft, new Color(.39f, .33f, .28f, 1f));
         Stretch(hint.rectTransform);
         hint.raycastTarget = false;
         idInput.textViewport = viewport.GetComponent<RectTransform>();
