@@ -107,7 +107,11 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         RectTransform fieldRect = field.GetComponent<RectTransform>();
         Anchor(fieldRect, new Vector2(.13f, .36f), new Vector2(.87f, .56f));
         Image fieldBg = field.AddComponent<Image>();
-        fieldBg.color = new Color(.16f, .20f, .24f, 1f);
+        // The host panel is cream parchment: keep the input ivory as well.
+        fieldBg.color = new Color(.97f, .95f, .87f, .97f);
+        Outline inputBorder = field.AddComponent<Outline>();
+        inputBorder.effectColor = new Color(.54f, .39f, .23f, .8f);
+        inputBorder.effectDistance = new Vector2(2f, -2f);
         idInput = field.AddComponent<TMP_InputField>();
         idInput.targetGraphic = fieldBg;
         idInput.contentType = TMP_InputField.ContentType.Standard;
@@ -120,7 +124,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         idInput.isRichTextEditingAllowed = false;
         idInput.caretWidth = 3;
         idInput.customCaretColor = true;
-        idInput.caretColor = Color.white;
+        idInput.caretColor = new Color(.24f, .20f, .17f, 1f);
         idInput.selectionColor = new Color(.86f, .66f, .31f, .45f);
         // Do not discard Chinese/IME characters or other normal player names.
         // Validation is performed only at submission time.
@@ -130,14 +134,14 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Anchor(viewport.GetComponent<RectTransform>(), new Vector2(.035f, .09f), new Vector2(.965f, .91f));
         RectMask2D mask = viewport.AddComponent<RectMask2D>();
         TMP_Text inputText = Text(viewport.transform, "", 32f,
-            TextAlignmentOptions.MidlineLeft, Color.white);
+            TextAlignmentOptions.MidlineLeft, new Color(.22f, .20f, .19f, 1f));
         inputText.richText = true;
         inputText.enableWordWrapping = false;
         inputText.overflowMode = TextOverflowModes.Overflow;
         Stretch(inputText.rectTransform);
         inputText.raycastTarget = false;
         TMP_Text hint = Text(viewport.transform, "例如：Guandu_07", 30f,
-            TextAlignmentOptions.MidlineLeft, new Color(.62f, .66f, .68f));
+            TextAlignmentOptions.MidlineLeft, new Color(.54f, .47f, .40f, 1f));
         Stretch(hint.rectTransform);
         hint.raycastTarget = false;
         idInput.textViewport = viewport.GetComponent<RectTransform>();
