@@ -129,6 +129,18 @@ function buildGroundedPrompt(question, context, docs) {
     '可引用的历史/项目证据卡片：\n' + evidence
   ].join('\n\n');
 }
+// Only documented high-risk historical misconceptions; NOT a semantic fact checker.
+function explicitHistoricalContradiction(sentence) {
+  const value = String(sentence || '').replace(/\[[A-Z]\d{2}\]/g, '');
+  const alleged = [
+    /(?:关羽|云长).{0,5}(?:斩|杀|诛)(?:了)?文丑|文丑.{0,6}(?:被关羽|为关羽所)(?:斩|杀)/,
+    /(?:生擒|活捉)颜良|颜良.{0,6}(?:被生擒|被活捉)/,
+    /(?:许褚).{0,6}(?:斩|杀|处死)许攸|许攸.{0,7}(?:被许褚|为许褚所)(?:斩|杀)/,
+    /(?:刘晔).{0,7}(?:发明|设计|制造|创制)霹雳车/
+  ];
+  const denied = /并非|不是|非正史|误传|虚构|小说|演义|传说|没有证据|不可说|不能证明|不属|不足以确认/;
+  return alleged.some(rule => rule.test(value)) && !denied.test(value);
+}
 function validateAnswer(answer, docs) {
   const text = String(answer || '').trim();
   if (!text) return { valid: false, reason: 'empty_answer' };
@@ -147,6 +159,7 @@ function validateAnswer(answer, docs) {
   for (const sentence of sentences) {
     const cleaned = sentence.replace(/\[[A-Z]\d{2}\]/g, '').trim();
     if (!/[\u4e00-\u9fff]/.test(cleaned)) continue;
+    if (explicitHistoricalContradiction(cleaned)) return { valid: false, reason: 'explicit_historical_contradiction' };
     const cited = [...sentence.matchAll(/\[([A-Z]\d{2})\]/g)].map(match => match[1]);
     if (!cited.length || !/\[[A-Z]\d{2}\][。！？!?；;]?\s*$/.test(sentence)) return { valid: false, reason: 'uncited_sentence' };
     const sources = cited.map(id => allowed.get(id));
@@ -238,6 +251,6 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
 }
 module.exports = {
   corpus, styleExamples, grams, scoreDocument, retrieve, selectStyleExamples, normalizeHistory, retrievalQuery,
-  hasEvidence, buildGroundedPrompt, validateAnswer, fallbackAnswer, askOpenAI,
+  hasEvidence, buildGroundedPrompt, validateAnswer, explicitHistoricalContradiction, fallbackAnswer, askOpenAI,
   answerQuestion, sanitizeRun, answerRunQuestion, isRunQuestion
 };
