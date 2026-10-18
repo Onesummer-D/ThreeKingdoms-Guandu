@@ -82,8 +82,8 @@ public sealed class PlayerIdentityUI : MonoBehaviour
 
         GameObject panel = Make("CommanderRegisterPanel", overlay.transform);
         RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(.18f, .23f);
-        panelRect.anchorMax = new Vector2(.82f, .77f);
+        panelRect.anchorMin = new Vector2(.18f, .30f);
+        panelRect.anchorMax = new Vector2(.82f, .84f);
         panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
         Image paper = panel.AddComponent<Image>();
         paper.color = new Color(.075f, .105f, .14f, 1f);
