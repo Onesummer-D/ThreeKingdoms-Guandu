@@ -51,6 +51,25 @@ async function main() {
     res.end(JSON.stringify({ choices: [{ message: { content } }] }));
   });
   await new Promise(resolve => model.listen(0, '127.0.0.1', resolve));
+  // Real network calls are not used here: verify API-compatible request
+  // serialization to a local fake DeepSeek endpoint.
+  {
+    const keys=['OPENAI_API_KEY','OPENAI_API_URL','OPENAI_MODEL'];
+    const original=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+    try {
+      process.env.OPENAI_API_KEY='test-only';
+      process.env.OPENAI_API_URL=`http://127.0.0.1:${model.address().port}/chat`;
+      process.env.OPENAI_MODEL='deepseek-chat';
+      await grounding.askOpenAI('Only cite retrieved sources', '许攸带来了什么', []);
+      check(captured.model==='deepseek-chat' && captured.max_tokens===600 &&
+        captured.max_completion_tokens===undefined,
+        'DeepSeek-compatible chat-completion payload uses max_tokens');
+    } finally {
+      for (const k of keys) {
+        if (original[k]===undefined) delete process.env[k]; else process.env[k]=original[k];
+      }
+    }
+  }
   const child = spawn(process.execPath, [path.join(__dirname, '../public-advisor/server.js')], {
     env: { ...process.env, PORT: '0', OPENAI_API_KEY: 'test-only', OPENAI_MODEL: 'test-model',
       OPENAI_API_URL: `http://127.0.0.1:${model.address().port}/chat`, OPENAI_TIMEOUT_MS: '500' },
