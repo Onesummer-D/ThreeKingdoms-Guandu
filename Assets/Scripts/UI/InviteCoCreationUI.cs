@@ -782,6 +782,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         TMP_Text title = CreateText(panel.transform, "出征之前", 48f, TextAlignmentOptions.Left, textPrimary);
         SetHeader(title.rectTransform);
+        // This heading sits beside the ink-panel's protruding left corner.
+        title.rectTransform.offsetMin = new Vector2(108f, -102f);
         Button back = CreateButton(panel.transform, "返回", new Vector2(180f, 72f),
             new Vector2(-30f, -26f), new Color(.30f, .20f, .18f));
         back.onClick.AddListener(() => playerBrief.SetActive(false));
