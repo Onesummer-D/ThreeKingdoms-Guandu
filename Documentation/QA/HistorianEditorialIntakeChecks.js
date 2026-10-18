@@ -68,7 +68,7 @@ check(chat.includes('RefreshSuggestionsForCurrentChapter()') &&
   chat.includes('GetComponentInChildren<TMP_Text>()'),
   'suggested historian questions update by reached chapter without rebuilding the buttons');
 const groups = chat.split('private static readonly string[][] ChapterSuggestedQuestions =')[1]
-  .split('};')[0].match(/new\\[\\] \\{[^\\n]*\\}/g) || [];
+  .split('};')[0].split('\n').filter(line => line.trim().startsWith('new[] {'));
 check(groups.length===5 && groups.every(g => (g.match(/"/g)||[]).length===6) &&
   !groups[0].includes('张郃') && !groups[0].includes('结局'),
   '15 editorial prompts are restricted to three choices per chapter with no first-act ending spoilers');
