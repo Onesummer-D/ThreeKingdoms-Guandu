@@ -161,6 +161,12 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             new Vector2(.37f, .075f), new Vector2(.63f, .225f));
         confirm.onClick.AddListener(SubmitId);
 
+        // The illustrated paper has asymmetric ribbons on its right, so the
+        // optical content center sits LEFT of its mathematical RectTransform.
+        // Shift the content, not the artwork, after establishing all anchors.
+        foreach (RectTransform child in panel.transform)
+            child.anchoredPosition += new Vector2(-22f, 0f);
+
         overlay.SetActive(false);
     }
 
