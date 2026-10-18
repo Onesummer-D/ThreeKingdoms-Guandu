@@ -46,7 +46,7 @@ check(/CreateSettingsOverlay\(persistentHud.transform\)/.test(home) &&
   'global settings overlay and volume actions remain wired');
 check(/launcherLayer = Object\("HistorianLauncherLayer", parent\)/.test(chat) &&
   /CreateLauncher\(panel.transform.root\)/.test(chat) &&
-  /new Vector2\(\.11f, \.55f\)/.test(chat),
+  /new Vector2\(\.075f, \.55f\)/.test(chat),
   'historian icon is on the root canvas at the left portrait');
 check(/private bool ShouldShowLauncher\(\)/.test(chat) &&
   /LocalSaveManager.Instance.CurrentRunId/.test(chat) &&
