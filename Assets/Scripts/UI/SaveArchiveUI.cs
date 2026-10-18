@@ -75,7 +75,9 @@ public sealed class SaveArchiveUI : MonoBehaviour
         GameObject panel = CreateUIObject("SaveArchivePanel", overlay.transform);
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         SetAnchored(panelRect, new Vector2(.12f, .08f), new Vector2(.88f, .92f));
-        panel.AddComponent<Image>().color = panelColor;
+        Image panelArt = panel.AddComponent<Image>();
+        panelArt.color = panelColor;
+        OrnateCardArt.Apply(panelArt, OrnateCardArt.Kind.Ink);
 
         TMP_Text title = CreateText(panel.transform, "军帐存档", 54f, TextAlignmentOptions.Left, textPrimary);
         SetAnchored(title.rectTransform, new Vector2(0f, .86f), new Vector2(.72f, .98f));
