@@ -39,6 +39,26 @@ async function main() {
   check(!grounding.validateAnswer('许攸原话是“我天生知道未来一切”。[H06]', wuchaoDocs).valid,
     'Nonexistent historical quotation cannot be justified by editorial summary');
 
+  const myths = [
+    ['关羽斩杀文丑。[H02]', '谁杀了文丑？', 'H02'],
+    ['曹操在白马生擒颜良。[H02]', '白马颜良怎样战死？', 'H02'],
+    ['许褚斩杀许攸。[H10]', '许攸后来为何被杀？', 'H10'],
+    ['刘晔发明霹雳车。[H03]', '霹雳车是谁造的？', 'H03']
+  ];
+  for (const [answer,question,id] of myths) {
+    const doc = grounding.corpus.find(card=>card.id===id);
+    check(!grounding.validateAnswer(answer,[doc]).valid,
+      'Historical contradiction rejected even with real citation '+id);
+  }
+  check(!grounding.explicitHistoricalContradiction('《三国演义》中的关羽斩文丑属于小说演绎。'),
+    'Explicit denial of a historical myth remains allowed');
+  check(!grounding.retrieve('许攸来投曹操带来什么情报？').some(x=>x.id==='H10'),
+    'Xu You death does not leak into his arrival scene');
+  check(grounding.retrieve('淳于琼在乌巢有多少护粮兵？').some(x=>x.id==='H13'),
+    'Editorial quiz retrieves source-backed Chunyu Qiong troop distinction');
+  check(grounding.retrieve('文丑是谁杀的？').some(x=>x.id==='H02'),
+    'Editorial quiz retrieves attribution-boundary card for Wen Chou');
+
   let captured;
   let mode = 'valid';
   const model = http.createServer(async (req, res) => {
