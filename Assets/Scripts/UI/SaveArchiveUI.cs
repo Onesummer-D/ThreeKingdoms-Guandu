@@ -105,7 +105,9 @@ public sealed class SaveArchiveUI : MonoBehaviour
         GameObject row = CreateUIObject(slotId + "Row", parent);
         RectTransform rowRect = row.GetComponent<RectTransform>();
         SetAnchored(rowRect, new Vector2(.04f, anchorY), new Vector2(.96f, anchorY + .13f));
-        row.AddComponent<Image>().color = rowColor;
+        Image rowArt = row.AddComponent<Image>();
+        rowArt.color = rowColor;
+        OrnateCardArt.Apply(rowArt, OrnateCardArt.Kind.Ink);
 
         TMP_Text title = CreateText(row.transform, fallbackTitle, 34f, TextAlignmentOptions.Left, textPrimary);
         SetAnchored(title.rectTransform, new Vector2(.025f, .20f), new Vector2(.64f, .84f));
