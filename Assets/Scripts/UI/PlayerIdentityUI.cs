@@ -95,11 +95,13 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         TMP_Text title = Text(panel.transform, "主将留名", 48f,
             TextAlignmentOptions.Center, new Color(.91f, .73f, .4f));
         Anchor(title.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .95f));
+        if (paper.sprite != null) title.color = new Color(.36f, .22f, .13f, 1f);
 
         TMP_Text intro = Text(panel.transform,
             "为这一局征程定下名号", 35f,
             TextAlignmentOptions.Center, new Color(.87f, .86f, .80f));
         Anchor(intro.rectTransform, new Vector2(.06f, .65f), new Vector2(.94f, .84f));
+        if (paper.sprite != null) intro.color = new Color(.30f, .26f, .20f, 1f);
 
         GameObject field = Make("CommanderIdInput", panel.transform);
         RectTransform fieldRect = field.GetComponent<RectTransform>();
