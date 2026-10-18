@@ -69,10 +69,10 @@ public sealed class HistorianChatUI : MonoBehaviour
         // Align below the character portrait along the left edge rather than
         // beneath the top-right resources. Reference coordinates are relative
         // to the root Canvas and remain stable across game panels.
-        rect.anchorMin = rect.anchorMax = new Vector2(.11f, .55f);
+        rect.anchorMin = rect.anchorMax = new Vector2(.075f, .55f);
         rect.pivot = new Vector2(.5f, .5f);
         rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(148f, 148f);
+        rect.sizeDelta = new Vector2(196f, 196f);
         Image image = launcher.AddComponent<Image>();
         image.sprite = icon;
         image.preserveAspect = true;
@@ -102,7 +102,9 @@ public sealed class HistorianChatUI : MonoBehaviour
         backdrop.AddComponent<Image>().color = new Color(.015f, .025f, .03f, .18f);
 
         GameObject panel = Object("ChatWindow", surface.transform);
-        Anchors(panel.GetComponent<RectTransform>(), new Vector2(.20f, .13f), new Vector2(.91f, .88f));
+        // Keep the painted frame optically centered on the 1920x1080 canvas
+        // and use most of the viewport to make historian answers readable.
+        Anchors(panel.GetComponent<RectTransform>(), new Vector2(.12f, .085f), new Vector2(.88f, .925f));
         Image historianPanelImage = panel.AddComponent<Image>();
         historianPanelImage.color = new Color(.045f, .105f, .13f, .78f);
         CardBackgroundSkin.Apply(historianPanelImage, CardBackgroundSkin.Style.DarkPanel);
@@ -115,11 +117,11 @@ public sealed class HistorianChatUI : MonoBehaviour
         portrait.preserveAspect = true;
         portrait.color = icon != null ? Color.white : Color.clear;
         Anchors(portrait.rectTransform, new Vector2(.025f, .855f), new Vector2(.115f, .985f));
-        TMP_Text title = Text(panel.transform, "问史官", 38f, Gold);
+        TMP_Text title = Text(panel.transform, "问史官", 50f, Gold);
         Anchors(title.rectTransform, new Vector2(.13f, .92f), new Vector2(.74f, .98f));
-        TMP_Text subtitle = Text(panel.transform, "聊聊官渡的故事，分清史实与演绎", 23f, Muted);
+        TMP_Text subtitle = Text(panel.transform, "聊聊官渡的故事，分清史实与演绎", 30f, Muted);
         Anchors(subtitle.rectTransform, new Vector2(.13f, .86f), new Vector2(.81f, .92f));
-        Button close = Button(panel.transform, "关闭", 26f);
+        Button close = Button(panel.transform, "关闭", 31f);
         Anchors(close.GetComponent<RectTransform>(), new Vector2(.87f, .9f), new Vector2(.97f, .975f));
         close.onClick.AddListener(Close);
 
@@ -170,7 +172,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         foreach (string question in new[] { "乌巢为什么重要？", "许攸带来了什么信息？", "IF 结局是史实吗？" })
         {
             string captured = question;
-            Button chip = Button(choices.transform, question, 23f);
+            Button chip = Button(choices.transform, question, 29f);
             chip.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
             chip.onClick.AddListener(() => SubmitQuestion(captured));
             suggestions.Add(chip);
@@ -183,14 +185,14 @@ public sealed class HistorianChatUI : MonoBehaviour
         GameObject textArea = Object("TextArea", inputObject.transform);
         Anchors(textArea.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, new Vector2(18f, 12f), new Vector2(-18f, -12f));
         textArea.AddComponent<RectMask2D>();
-        TMP_Text inputText = Text(textArea.transform, "", 27f, Paper);
+        TMP_Text inputText = Text(textArea.transform, "", 33f, Paper);
         Anchors(inputText.rectTransform, Vector2.zero, Vector2.one);
         // TMP uses <u>...</u> internally to underline Chinese/Japanese IME composition.
         // The common Text() helper disables rich text, which renders those tags literally.
         inputText.richText = true;
         inputText.enableWordWrapping = true;
         inputText.overflowMode = TextOverflowModes.Overflow;
-        TMP_Text placeholder = Text(textArea.transform, "想问些什么？输入问题…", 27f, Muted);
+        TMP_Text placeholder = Text(textArea.transform, "想问些什么？输入问题…", 32f, Muted);
         Anchors(placeholder.rectTransform, Vector2.zero, Vector2.one);
         input = inputObject.AddComponent<TMP_InputField>();
         input.targetGraphic = inputBg;
@@ -208,7 +210,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         input.lineType = TMP_InputField.LineType.MultiLineNewline;
         input.characterLimit = 800;
         input.onValueChanged.AddListener(_ => RefreshControls());
-        send = Button(panel.transform, "发送", 28f);
+        send = Button(panel.transform, "发送", 34f);
         Anchors(send.GetComponent<RectTransform>(), new Vector2(.82f, .055f), new Vector2(.945f, .17f));
         send.onClick.AddListener(() => SubmitQuestion(input.text));
         status = Text(panel.transform, "", 21f, Muted);
@@ -321,7 +323,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         for (int i = content.childCount - 1; i >= 0; i--) { content.GetChild(i).gameObject.SetActive(false); Destroy(content.GetChild(i).gameObject); }
         AddMessage("史官", "在下为你查阅官渡相关史料。你可以问战局、人物与粮道，也可以问游戏里哪些是历史、哪些是演绎。", false);
         if (input != null) input.text = string.Empty;
-        if (status != null) status.text = "Enter 发送 · Shift + Enter 换行";
+        if (status != null) status.text = string.Empty;
         RefreshControls();
     }
 
@@ -366,7 +368,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
-        status.text = response.mode == "grounded_model" ? "依据史料回答 · Enter 发送 · Shift + Enter 换行" :
+        status.text = response.mode == "grounded_model" ? "依据史料回答" :
             response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
             response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
@@ -542,8 +544,8 @@ public sealed class HistorianChatUI : MonoBehaviour
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
-        Text(bubble.transform, speaker, 22f, Gold);
-        TMP_Text body = Text(bubble.transform, value, 28f, Paper);
+        Text(bubble.transform, speaker, 28f, Gold);
+        TMP_Text body = Text(bubble.transform, value, 35f, Paper);
         body.enableWordWrapping = true;
         body.overflowMode = TextOverflowModes.Overflow;
         body.lineSpacing = 5f;
@@ -556,8 +558,18 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (citations == null || citations.Length == 0) return;
         bool gameRecord = citations.Length == 1 && citations[0].id == "G01";
         string sourceLabel = gameRecord ? "查看本局记录依据" : "查看史料来源";
-        Button toggle = Button(bubble, sourceLabel + "（" + citations.Length + "）", 22f);
-        toggle.gameObject.AddComponent<LayoutElement>().preferredHeight = 42f;
+        // A source action is a small button at the bottom-right of the
+        // message card, not an automatically stretched full-width banner.
+        GameObject actionRow = Object("SourceActionRow", bubble);
+        HorizontalLayoutGroup actionLayout = actionRow.AddComponent<HorizontalLayoutGroup>();
+        actionLayout.childAlignment = TextAnchor.MiddleRight;
+        actionLayout.childControlWidth = actionLayout.childControlHeight = true;
+        actionLayout.childForceExpandWidth = actionLayout.childForceExpandHeight = false;
+        actionRow.AddComponent<LayoutElement>().preferredHeight = 58f;
+        Button toggle = Button(actionRow.transform, sourceLabel, 27f);
+        LayoutElement toggleSize = toggle.gameObject.AddComponent<LayoutElement>();
+        toggleSize.preferredWidth = gameRecord ? 268f : 210f;
+        toggleSize.preferredHeight = 56f;
         StringBuilder lines = new StringBuilder();
         foreach (HistorianCitation citation in citations)
             lines.Append(citation.title).Append("\n").Append(citation.source).Append("\n\n");
@@ -568,7 +580,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         toggle.onClick.AddListener(() =>
         {
             details.gameObject.SetActive(!details.gameObject.activeSelf);
-            toggle.GetComponentInChildren<TMP_Text>().text = details.gameObject.activeSelf ? "收起来源" : sourceLabel + "（" + citations.Length + "）";
+            toggle.GetComponentInChildren<TMP_Text>().text = details.gameObject.activeSelf ? "收起来源" : sourceLabel;
             LayoutRebuilder.MarkLayoutForRebuild(content);
         });
     }
