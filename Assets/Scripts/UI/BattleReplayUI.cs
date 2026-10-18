@@ -169,6 +169,7 @@ public sealed class BattleReplayUI : MonoBehaviour
             element.preferredHeight = 78f;
             Image image = row.AddComponent<Image>();
             image.color = RowColor;
+            OrnateCardArt.Apply(image, OrnateCardArt.Kind.Ink);
             Button button = row.AddComponent<Button>();
             button.targetGraphic = image;
             int capturedIndex = i;
