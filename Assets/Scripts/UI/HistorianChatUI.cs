@@ -103,13 +103,18 @@ public sealed class HistorianChatUI : MonoBehaviour
 
         GameObject panel = Object("ChatWindow", surface.transform);
         Anchors(panel.GetComponent<RectTransform>(), new Vector2(.20f, .13f), new Vector2(.91f, .88f));
-        panel.AddComponent<Image>().color = new Color(.045f, .105f, .13f, .78f);
+        Image historianPanel = panel.AddComponent<Image>();
+        historianPanel.color = new Color(.045f, .105f, .13f, .78f);
+        bool artFrame = OrnateCardArt.Apply(historianPanel, OrnateCardArt.Kind.Ink);
         // Outline duplicates the entire translucent quad and makes the panel opaque.
         // Four thin edge images preserve the intended background transparency.
-        Edge(panel.transform, "TopEdge", new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -2f), Vector2.zero);
-        Edge(panel.transform, "BottomEdge", Vector2.zero, new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 2f));
-        Edge(panel.transform, "LeftEdge", Vector2.zero, new Vector2(0f, 1f), Vector2.zero, new Vector2(2f, 0f));
-        Edge(panel.transform, "RightEdge", new Vector2(1f, 0f), Vector2.one, new Vector2(-2f, 0f), Vector2.zero);
+        if (!artFrame)
+        {
+            Edge(panel.transform, "TopEdge", new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -2f), Vector2.zero);
+            Edge(panel.transform, "BottomEdge", Vector2.zero, new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 2f));
+            Edge(panel.transform, "LeftEdge", Vector2.zero, new Vector2(0f, 1f), Vector2.zero, new Vector2(2f, 0f));
+            Edge(panel.transform, "RightEdge", new Vector2(1f, 0f), Vector2.one, new Vector2(-2f, 0f), Vector2.zero);
+        }
 
         GameObject headerIcon = Object("HistorianPortrait", panel.transform);
         Image portrait = headerIcon.AddComponent<Image>();
