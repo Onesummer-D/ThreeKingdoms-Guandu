@@ -216,7 +216,7 @@ async function handle(req, res) {
       question,
       retrieved: result.retrieved || [],
       mode: result.mode,
-      answerVersion: 'grounding-v3'
+      answerVersion: 'grounding-v4'
     };
     historianAudit.push(audit);
     if (historianAudit.length > 100) historianAudit.shift();
