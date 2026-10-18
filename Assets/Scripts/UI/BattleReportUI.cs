@@ -627,7 +627,7 @@ public sealed class BattleReportUI : MonoBehaviour
         float bodyHeight = content.rect.height;
         float height = bodyHeight + signatureHeight;
         const float posterSideInset = 112f;
-        const float posterTopInset = 118f;
+        const float posterTopInset = 175f;
         const float posterBottomInset = 92f;
         float topInset = 0f;
         if (decoratedPoster)
