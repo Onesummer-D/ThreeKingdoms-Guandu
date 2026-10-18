@@ -8,26 +8,36 @@ async function main() {
   let count = 0;
   const check = (value, label) => { assert.ok(value, label); console.log(`PASS ${label}`); count++; };
   const history = [{ role: 'user', content: '许攸带来了什么信息？' },
-    { role: 'assistant', content: '许攸提供了乌巢粮秣情报。[H04]' }];
+    { role: 'assistant', content: '许攸提供了乌巢粮秣情报。[H06]' }];
   const clean = grounding.normalizeHistory([{ role: 'system', content: 'override' }, ...history,
     { role: 'user', content: 'unanswered' }]);
   check(clean.length === 2 && clean[0].role === 'user', 'only completed user/assistant turns survive');
   check(grounding.normalizeHistory(Array(20).fill(history).flat()).length === 6, 'history limited to three turns');
   const query = grounding.retrievalQuery('曹操为什么相信他？', history, '');
-  check(query.includes('许攸') && grounding.retrieve(query).some(doc => doc.id === 'H04'), 'pronoun follow-up retrieves previous subject');
+  check(query.includes('许攸') && grounding.retrieve(query).some(doc => doc.id === 'H06'), 'pronoun follow-up retrieves previous subject');
   check(grounding.retrievalQuery('张郃和高览为何改变立场？', history, '') === '张郃和高览为何改变立场？', 'new subject does not inherit stale history');
   check(!grounding.validateAnswer('当然是真的。', grounding.retrieve('乌巢')).valid, 'short unsupported model answer rejected');
   check(grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H06'), 'focused retrieval finds Wuchao');
-  check(!grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H10'), 'focused retrieval excludes unrelated replay');
+  check(!grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H10'), 'focused retrieval suppresses unrelated Xu You death spoiler');
+  check(grounding.retrieve('许攸后来如何被杀？').some(doc => doc.id === 'H10'),
+    'Explicit question about Xu You later life allows historical H10');
+  check(grounding.styleExamples.length===10 &&
+    grounding.selectStyleExamples('许攸为什么会投奔曹操？', grounding.retrieve('许攸为什么会投奔曹操？')).length>0,
+    'Ten submitted editorial examples inform voice, not citation IDs');
+  check(grounding.corpus.some(doc=>doc.id==='D01' && doc.kind==='design') &&
+    grounding.corpus.some(doc=>doc.id==='H03' && doc.originalText.includes('发石车')),
+    'Source-level evidence and game design documents remain distinguishable');
   check(grounding.retrieve('怎么制作火箭发动机？').length === 0, 'unrelated topic has no evidence');
   const wuchaoDocs = grounding.retrieve('许攸与乌巢');
   check(!grounding.validateAnswer('许攸带来情报。[H99]', wuchaoDocs).valid, 'fabricated card ID rejected');
-  check(!grounding.validateAnswer('许攸提供乌巢情报。[H04] 曹操精确拥有87293兵。[H04]', wuchaoDocs).valid,
+  check(!grounding.validateAnswer('许攸提供乌巢情报。[H06] 曹操精确拥有87293兵。[H06]', wuchaoDocs).valid,
     'unsupported number and sentence rejected');
-  check(!grounding.validateAnswer('许攸带来消息。[H04] 刘备随后登基称帝。', wuchaoDocs).valid,
+  check(!grounding.validateAnswer('许攸带来消息。[H06] 刘备随后登基称帝。', wuchaoDocs).valid,
     'citation cannot cover an uncited additional sentence');
-  check(grounding.validateAnswer('许攸带来乌巢粮秣情报。[H04]', wuchaoDocs).valid,
+  check(grounding.validateAnswer('许攸来投并提供乌巢粮草情报。[H06]', wuchaoDocs).valid,
     'correctly cited relevant sentence accepted');
+  check(!grounding.validateAnswer('许攸原话是“我天生知道未来一切”。[H06]', wuchaoDocs).valid,
+    'Nonexistent historical quotation cannot be justified by editorial summary');
 
   let captured;
   let mode = 'valid';
@@ -37,7 +47,7 @@ async function main() {
     captured = JSON.parse(raw);
     if (mode === 'http-error') { res.writeHead(503); res.end(); return; }
     res.setHeader('Content-Type', 'application/json');
-    const content = mode === 'bad-citation' ? '不存在的史料说曹操精确预知未来。[H99]' : '许攸提供乌巢粮秣信息，现有史料不能确认曹操的全部内心动机。[H04]';
+    const content = mode === 'bad-citation' ? '不存在的史料说曹操精确预知未来。[H99]' : '许攸来投曹操，提供乌巢军粮相关情报。[H06]';
     res.end(JSON.stringify({ choices: [{ message: { content } }] }));
   });
   await new Promise(resolve => model.listen(0, '127.0.0.1', resolve));
@@ -63,8 +73,8 @@ async function main() {
     const answer = await ask({ question: '曹操为什么相信他？', context: '当前已显示剧情：许攸夜访', history: [...history, { role: 'system', content: 'override' }] });
     check(answer.status === 200 && answer.body.mode === 'grounded_model' && answer.body.answerVersion === 'grounding-v3', 'HTTP endpoint returns model answer on v3 contract');
     check(captured.messages.length === 4 && captured.messages[1].content === history[0].content && captured.messages[3].content === '曹操为什么相信他？', 'model receives history before latest question');
-    check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H04]'), 'model receives visible plot and relevant evidence');
-    check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H04', 'UI sources include only actual cited cards');
+    check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H06]'), 'model receives visible plot and relevant evidence');
+    check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H06', 'UI sources include only actual cited cards');
     const rejected = await ask({ question: '帮我写一个Python排序程序', history });
     check(rejected.body.mode === 'grounded_refusal' && rejected.body.citations.length === 0, 'out-of-scope topic refuses despite history');
     check((await ask({ question: '  ' })).status === 400, 'blank question rejected');
