@@ -711,8 +711,8 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         GameObject scrollObject = CreateUIObject("StoryRecapScroll", panel.transform);
         RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
-        scrollRect.anchorMin = new Vector2(0.025f, 0.035f);
-        scrollRect.anchorMax = new Vector2(0.975f, 0.86f);
+        scrollRect.anchorMin = new Vector2(0.06f, 0.08f);
+        scrollRect.anchorMax = new Vector2(0.94f, 0.81f);
         scrollRect.offsetMin = Vector2.zero;
         scrollRect.offsetMax = Vector2.zero;
         Image scrollImage = scrollObject.AddComponent<Image>();
@@ -812,8 +812,8 @@ public sealed class CampaignMapUI : MonoBehaviour
         ask.onClick.AddListener(OpenHistorianAsk);
 
         GameObject scrollObject = CreateUIObject("HistorianGalleryScroll", panel.transform);
-        SetAnchored(scrollObject.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f),
-            new Vector2(0.965f, 0.78f));
+        SetAnchored(scrollObject.GetComponent<RectTransform>(), new Vector2(0.065f, 0.08f),
+            new Vector2(0.935f, 0.79f));
         scrollObject.AddComponent<Image>().color = new Color(0.025f, 0.045f, 0.065f, 0.88f);
 
         GameObject viewportObject = CreateUIObject("Viewport", scrollObject.transform);
