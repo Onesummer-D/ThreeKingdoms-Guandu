@@ -94,7 +94,7 @@ public sealed class GameplayExitUI : MonoBehaviour
 
         GameObject panel = CreateObject("ExitConfirmPanel", overlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.30f, .34f), new Vector2(.70f, .66f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.SmallBanner);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = Accent;
         outline.effectDistance = new Vector2(3f, -3f);
