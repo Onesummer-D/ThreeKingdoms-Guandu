@@ -71,7 +71,7 @@ async function main() {
       return { status: response.status, body: await response.json() };
     };
     const answer = await ask({ question: '曹操为什么相信他？', context: '当前已显示剧情：许攸夜访', history: [...history, { role: 'system', content: 'override' }] });
-    check(answer.status === 200 && answer.body.mode === 'grounded_model' && answer.body.answerVersion === 'grounding-v3', 'HTTP endpoint returns model answer on v3 contract');
+    check(answer.status === 200 && answer.body.mode === 'grounded_model' && answer.body.answerVersion === 'grounding-v4', 'HTTP endpoint returns model answer on v3 contract');
     check(captured.messages.length === 4 && captured.messages[1].content === history[0].content && captured.messages[3].content === '曹操为什么相信他？', 'model receives history before latest question');
     check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H06]'), 'model receives visible plot and relevant evidence');
     check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H06', 'UI sources include only actual cited cards');
