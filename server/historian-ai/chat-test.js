@@ -103,7 +103,9 @@ async function main() {
     check(historyQuestion.body.mode !== 'run_evidence', 'historical why-question does not become personal run review');
     mode = 'bad-citation';
     const bad = await ask({ question: '乌巢为什么重要？' });
-    check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') && bad.body.answer.includes('[H06]'), 'invented citation falls back to packaged evidence');
+    check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') &&
+      bad.body.citations.length > 0 && bad.body.citations.every(c => bad.body.answer.includes('[' + c.id + ']')),
+      'invented citation falls back only to actually retrieved and packaged evidence');
     mode = 'http-error';
     const failure = await ask({ question: '乌巢为什么重要？' });
     check(failure.body.mode === 'grounded_fallback' && failure.body.citations.length > 0, 'model service failure returns usable sources');
