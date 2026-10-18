@@ -17,7 +17,15 @@ public static class CardBackgroundSkin
             : style == Style.LightPanel ? "LightPanel"
             : style == Style.DarkPanel ? "DarkPanel" : "LongPoster";
         Texture2D tex = Resources.Load<Texture2D>("CardSkins/" + asset);
-        if (tex == null) return false;
+        if (tex == null)
+        {
+            target.color = style == Style.LightPanel
+                ? new Color(.075f, .105f, .14f, 1f)
+                : style == Style.SmallBanner
+                    ? new Color(.09f, .11f, .14f, 1f)
+                    : new Color(.07f, .10f, .13f, 1f);
+            return false;
+        }
         bool poster = style == Style.LongPoster;
         // The silhouettes are irregular: opaque outer image margins MUST be
         // kept rather than cropped by a Sprite atlas. Do not stretch the
