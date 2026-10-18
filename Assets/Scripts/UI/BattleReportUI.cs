@@ -840,8 +840,9 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.anchoredPosition = new Vector2(0f, -y);
         rect.sizeDelta = new Vector2(0f, height);
         Image image = card.AddComponent<Image>();
+        // Repeatable report rows use neutral backgrounds. The large ornate
+        // artwork belongs on the report's OUTER frame, not every row.
         image.color = CardColor;
-        CardBackgroundSkin.Apply(image, CardBackgroundSkin.Style.DarkPanel);
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
