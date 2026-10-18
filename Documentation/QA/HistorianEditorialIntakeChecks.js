@@ -1,5 +1,5 @@
-// Imported Word files are intentionally NOT wired into runtime grounding.js.
-// Validate the editorial handoff before changing authoritative Hxx meanings.
+// Editorial Word originals remain separate; this checks the curated runtime
+// H01-H10 migration and distinguishes stylistic exemplars from sources.
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
@@ -9,6 +9,9 @@ const corpus=JSON.parse(fs.readFileSync(path.join(dir,'historian-corpus-intake.j
 const examples=JSON.parse(fs.readFileSync(path.join(dir,'historian-example-intake.json'),'utf8'));
 const activeServer=JSON.parse(fs.readFileSync(path.join(root,'server/historian-ai/corpus.json'),'utf8'));
 const activeUnity=JSON.parse(fs.readFileSync(path.join(root,'Assets/Resources/Historian/corpus.json'),'utf8'));
+const styles=JSON.parse(fs.readFileSync(path.join(root,'server/historian-ai/style-examples.json'),'utf8'));
+const grounding=fs.readFileSync(path.join(root,'server/historian-ai/grounding.js'),'utf8');
+const ui=fs.readFileSync(path.join(root,'Assets/Scripts/UI/CampaignMapUI.cs'),'utf8');
 let checks=0;
 function check(condition,message){assert.ok(condition,message);console.log('PASS '+message);checks++;}
 const ids=Array.from({length:10},(_,i)=>'H'+String(i+1).padStart(2,'0'));
@@ -27,11 +30,32 @@ check(!corpus.some(x=>x.referenceAnswer) && !examples.some(x=>x.originalText),
 check(corpus.find(x=>x.id==='H01').title.includes('兵力') &&
     corpus.find(x=>x.id==='H10').title.includes('许攸的结局'),
     'new H01-H10 numbering is not confused with legacy H01 geography/H10 gameplay');
-check(activeServer.length===10 && activeUnity.length===10 &&
+check(activeServer.length===12 && activeUnity.length===12 &&
     activeServer.every((x,i)=>JSON.stringify(x)===JSON.stringify(activeUnity[i])),
-    'existing production server and Unity knowledge packs remain synchronized');
-check(activeServer[0].title.includes('官渡与许都') && activeServer[9].title.includes('复盘'),
-    'unapproved editorial data has NOT silently replaced runtime citations');
+    'curated runtime server and Unity offline packs are the same twelve cards');
+check(activeServer.slice(0,10).every((x,i)=>x.id===ids[i] &&
+    x.kind==='history' && x.originalText && x.originalText.length>20),
+    'H01-H10 have original source passages and newly assigned stable meanings');
+check(activeServer.find(x=>x.id==='H01').title.includes('兵力') &&
+    activeServer.find(x=>x.id==='H10').title.includes('许攸') &&
+    activeServer.some(x=>x.id==='H11' && x.title.includes('地理')) &&
+    activeServer.some(x=>x.id==='D01' && x.kind==='design'),
+    'old H numbering has been migrated, with geography preserved and game rules separated');
+check(activeServer.find(x=>x.id==='H02').summary.includes('斩颜良') &&
+    !activeServer.find(x=>x.id==='H02').summary.includes('生擒颜良') &&
+    activeServer.find(x=>x.id==='H06').boundary.includes('裴注') &&
+    activeServer.find(x=>x.id==='H08').boundary.includes('先降后溃'),
+    'high-risk editorial conflicts are not asserted as settled historical facts');
+check(styles.length===10 && styles.every(x=>x.kind==='style_example_not_evidence' &&
+      !activeServer.some(c=>c.id===x.id) && x.referenceAnswer && x.sourceIds.every(id=>ids.includes(id))),
+    'all ten examples are style-only and never become historical citations');
+check(grounding.includes('selectStyleExamples(question, docs)') &&
+    grounding.includes("doc.id !== 'H10' || asksLaterFate(question)") &&
+    grounding.includes("doc.kind === 'design'"),
+    'runtime uses editorial voice, spoiler gate, and design-vs-history labeling');
+check(ui.includes('游戏中的四项资源') &&
+  ui.includes('兵力、粮草、计策与风险四项资源'),
+  'player-facing text now correctly names all four resources');
 check(fs.readFileSync(path.join(dir,'README-交稿审查与编号迁移.md'),'utf8').includes('生擒颜良'),
     'source inconsistency requiring human review remains documented');
 console.log('historian-editorial-intake: '+checks+'/'+checks);
