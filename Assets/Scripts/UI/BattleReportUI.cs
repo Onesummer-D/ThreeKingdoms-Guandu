@@ -615,9 +615,11 @@ public sealed class BattleReportUI : MonoBehaviour
     {
         // Render an isolated copy of all report content, outside the scroll mask.
         float width = content.rect.width;
-        const float signatureHeight = 208f;
+        const float signatureHeight = 216f;
+        const float topMargin = 68f;
+        const float bottomMargin = 24f;
         float bodyHeight = content.rect.height;
-        float height = bodyHeight + signatureHeight;
+        float height = topMargin + bodyHeight + signatureHeight + bottomMargin;
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
         float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
         int pixelWidth = Mathf.Max(1, Mathf.CeilToInt(width * scale));
@@ -636,21 +638,30 @@ public sealed class BattleReportUI : MonoBehaviour
             RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
             canvasRect.sizeDelta = new Vector2(width, height);
             canvasRect.position = new Vector3(10000f, 10000f, 0f);
+            // The exported image is a parchment DESIGN, not a screenshot of
+            // the interactive dark-themed report. Draw one uninterrupted
+            // art page, then restyle only the isolated cloned content.
             Image background = canvasObject.AddComponent<Image>();
-            background.color = PanelColor;
-            CardBackgroundSkin.Apply(background, CardBackgroundSkin.Style.LongPoster);
+            background.color = new Color(.95f, .92f, .83f, 1f);
+            GameObject posterPaper = CreateUIObject("PosterPaperArtwork", canvasRect);
+            Stretch(posterPaper.GetComponent<RectTransform>());
+            Image posterArt = posterPaper.AddComponent<Image>();
+            posterArt.raycastTarget = false;
+            CardBackgroundSkin.Apply(posterArt, CardBackgroundSkin.Style.LongPoster);
+
             RectTransform copy = Instantiate(content, canvasRect, false);
-            copy.anchorMin = new Vector2(0f, 1f);
-            copy.anchorMax = new Vector2(1f, 1f);
+            copy.anchorMin = new Vector2(.065f, 1f);
+            copy.anchorMax = new Vector2(.935f, 1f);
             copy.pivot = new Vector2(.5f, 1f);
-            copy.anchoredPosition = Vector2.zero;
+            copy.anchoredPosition = new Vector2(0f, -topMargin);
             copy.sizeDelta = new Vector2(0f, bodyHeight);
+            StylePosterCopy(copy);
             // Keep navigation controls in the interactive report only; the
             // exported poster contains the concise profile but no dead button.
             foreach (Transform item in copy.GetComponentsInChildren<Transform>(true))
                 if (item.name == "EvidenceDetailOpenButton")
                     item.gameObject.SetActive(false);
-            CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
+            CreatePosterSignature(canvasRect, topMargin + bodyHeight, signatureHeight);
             // The graph's generated children are copied; prevent a data-less
             // cloned component from rebuilding them before the export.
             foreach (MonoBehaviour component in copy.GetComponentsInChildren<MonoBehaviour>())
@@ -663,7 +674,7 @@ public sealed class BattleReportUI : MonoBehaviour
             camera.orthographicSize = height / 2f;
             camera.aspect = width / height;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = PanelColor;
+            camera.backgroundColor = new Color(.95f, .92f, .83f, 1f);
             camera.cullingMask = 1 << 31;
             camera.nearClipPlane = .1f;
             camera.farClipPlane = 20f;
@@ -695,6 +706,40 @@ public sealed class BattleReportUI : MonoBehaviour
     }
 
     /// <summary>
+    /// Restyle only the cloned report that is rendered into the PNG.
+    /// In-game cards stay dark blue; the share image uses pale parchment,
+    /// bronze ornaments and dark ink, with curved corners and readable text.
+    /// </summary>
+    private static void StylePosterCopy(RectTransform copy)
+    {
+        foreach (RectTransform rect in copy.GetComponentsInChildren<RectTransform>(true))
+        {
+            if (!rect.name.EndsWith("Card", StringComparison.Ordinal)) continue;
+            Image cardImage = rect.GetComponent<Image>();
+            if (cardImage == null) continue;
+            rect.anchorMin = new Vector2(.015f, rect.anchorMin.y);
+            rect.anchorMax = new Vector2(.985f, rect.anchorMax.y);
+            cardImage.sprite = GetRoundedBadgeMaskSprite();
+            cardImage.type = Image.Type.Sliced;
+            cardImage.color = new Color(.985f, .965f, .91f, .91f);
+            Outline border = rect.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = new Color(.63f, .46f, .24f, .78f);
+                border.effectDistance = new Vector2(2f, -2f);
+            }
+        }
+        foreach (TMP_Text label in copy.GetComponentsInChildren<TMP_Text>(true))
+        {
+            bool isGold = Mathf.Abs(label.color.r - AccentColor.r) < .04f
+                && Mathf.Abs(label.color.g - AccentColor.g) < .04f
+                && Mathf.Abs(label.color.b - AccentColor.b) < .04f;
+            label.color = isGold ? new Color(.52f, .31f, .12f, 1f)
+                : new Color(.19f, .22f, .24f, 1f);
+        }
+    }
+
+    /// <summary>
     /// Render a footer only into the exported PNG; never into a scrollable
     /// report card. Optional QR must contain the final published game URL.
     /// Unconfigured QR is omitted instead of generating a nonfunctional code.
@@ -709,15 +754,19 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
         rect.pivot = new Vector2(.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -bodyHeight);
-        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x, footerHeight);
+        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x * .87f, footerHeight);
         Image background = footer.AddComponent<Image>();
-        background.color = PanelColor;
-            CardBackgroundSkin.Apply(background, CardBackgroundSkin.Style.LongPoster);
+        background.sprite = GetRoundedBadgeMaskSprite();
+        background.type = Image.Type.Sliced;
+        background.color = new Color(.085f, .13f, .18f, .97f);
         background.raycastTarget = false;
+        Outline goldRim = footer.AddComponent<Outline>();
+        goldRim.effectColor = new Color(.64f, .48f, .27f, .85f);
+        goldRim.effectDistance = new Vector2(2f, -2f);
 
         GameObject line = CreateUIObject("GoldRule", footer.transform);
         SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .91f), new Vector2(.955f, .925f));
-        line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
+        line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .75f);
 
         string id = PlayerIdentityState.CurrentId;
         TMP_Text sign = CreateText(footer.transform,
@@ -735,8 +784,11 @@ public sealed class BattleReportUI : MonoBehaviour
         frameRect.anchoredPosition = new Vector2(-120f, -7f);
         frameRect.sizeDelta = new Vector2(148f, 148f);
         Image frameBackground = frame.AddComponent<Image>();
-        frameBackground.color = gameEntryQrSprite != null ? Color.white :
-            new Color(.13f, .18f, .20f, 1f);
+        frameBackground.sprite = GetRoundedBadgeMaskSprite();
+        frameBackground.type = Image.Type.Sliced;
+        frameBackground.color = gameEntryQrSprite != null
+            ? new Color(.97f, .95f, .86f, 1f)
+            : new Color(.15f, .21f, .26f, 1f);
         frameBackground.raycastTarget = false;
         Outline frameOutline = frame.AddComponent<Outline>();
         frameOutline.effectColor = AccentColor;
@@ -840,9 +892,9 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.anchoredPosition = new Vector2(0f, -y);
         rect.sizeDelta = new Vector2(0f, height);
         Image image = card.AddComponent<Image>();
-        // Repeatable report rows use neutral backgrounds. The large ornate
-        // artwork belongs on the report's OUTER frame, not every row.
-        image.color = CardColor;
+        // The report's six inner cards now share the illustrator's curved
+        // ink-blue frame, not sharp square rectangles.
+        CardBackgroundSkin.ApplyInsetDarkCard(image, CardColor);
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);
         outline.effectDistance = new Vector2(1f, -1f);
