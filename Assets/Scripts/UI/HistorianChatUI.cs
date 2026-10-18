@@ -23,6 +23,17 @@ public sealed class HistorianChatUI : MonoBehaviour
     private TMP_Text status;
     private Button send;
     private readonly List<Button> suggestions = new List<Button>();
+    private readonly string[] activeSuggestedQuestions = new string[3];
+    // Three concise, chapter-scoped choices derived from the editorial guide.
+    // Do not pre-suggest late-battle outcomes in early chapters.
+    private static readonly string[][] ChapterSuggestedQuestions =
+    {
+        new[] { "曹操兵力有多悬殊？", "官渡为何重要？", "土山和霹雳车是真实的吗？" },
+        new[] { "曹操为何议退许都？", "荀彧为何劝守官渡？", "袁绍的谋臣为何有分歧？" },
+        new[] { "许攸为何转投曹操？", "许攸带来了什么情报？", "曹操为何敢相信许攸？" },
+        new[] { "曹操夜袭带了多少人？", "荀攸、贾诩为何支持奇袭？", "徐晃、史涣烧粮车是怎么回事？" },
+        new[] { "乌巢粮道为何关键？", "张郃为何主张救乌巢？", "IF 结局属于史实吗？" }
+    };
     private readonly List<HistorianChatMessage> history = new List<HistorianChatMessage>();
     private HistorianAgentClient client;
     private TMP_FontAsset font;
@@ -169,12 +180,13 @@ public sealed class HistorianChatUI : MonoBehaviour
         row.spacing = 12f;
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = true;
-        foreach (string question in new[] { "乌巢为什么重要？", "许攸带来了什么信息？", "IF 结局是史实吗？" })
+        for (int i = 0; i < activeSuggestedQuestions.Length; i++)
         {
-            string captured = question;
-            Button chip = Button(choices.transform, question, 23f);
+            int capturedIndex = i;
+            activeSuggestedQuestions[i] = ChapterSuggestedQuestions[0][i];
+            Button chip = Button(choices.transform, activeSuggestedQuestions[i], 23f);
             chip.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-            chip.onClick.AddListener(() => SubmitQuestion(captured));
+            chip.onClick.AddListener(() => SubmitQuestion(activeSuggestedQuestions[capturedIndex]));
             suggestions.Add(chip);
         }
 
@@ -230,6 +242,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         CoverStoryText();
         surface.SetActive(true);
         if (launcher != null) launcher.SetActive(false);
+        RefreshSuggestionsForCurrentChapter();
         RefreshControls();
         StartCoroutine(ScrollToLatest());
         input.Select();
@@ -258,6 +271,23 @@ public sealed class HistorianChatUI : MonoBehaviour
             return false;
         FinalUIManager ui = FinalUIManager.Instance;
         return ui == null || ui.startMenuPanel == null || !ui.startMenuPanel.activeInHierarchy;
+    }
+
+    private void RefreshSuggestionsForCurrentChapter()
+    {
+        int nodeId = DialogueSystem.Instance != null &&
+            DialogueSystem.Instance.CurrentNode != null
+            ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
+        int chapter = CampaignChapterResolver.Resolve(nodeId);
+        if (chapter < 0 || chapter >= ChapterSuggestedQuestions.Length) chapter = 0;
+        string[] source = ChapterSuggestedQuestions[chapter];
+        for (int i = 0; i < suggestions.Count && i < source.Length; i++)
+        {
+            activeSuggestedQuestions[i] = source[i];
+            TMP_Text label = suggestions[i] != null
+                ? suggestions[i].GetComponentInChildren<TMP_Text>() : null;
+            if (label != null) label.text = source[i];
+        }
     }
 
     private void CoverStoryText()
