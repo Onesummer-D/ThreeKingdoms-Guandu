@@ -535,9 +535,12 @@ public sealed class HistorianChatUI : MonoBehaviour
     private TMP_Text AddMessage(string speaker, string value, bool fromPlayer)
     {
         GameObject bubble = Object(fromPlayer ? "PlayerMessage" : "HistorianMessage", content);
-        bubble.AddComponent<Image>().color = fromPlayer ? new Color(.28f, .22f, .13f, .55f) : new Color(.065f, .15f, .175f, .55f);
+        Image bubbleBackground = bubble.AddComponent<Image>();
+        CardBackgroundSkin.ApplyInsetDarkCard(bubbleBackground,
+            fromPlayer ? new Color(.28f, .22f, .13f, .78f)
+                : new Color(.065f, .15f, .175f, .86f));
         VerticalLayoutGroup layout = bubble.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(24, 24, 16, 18);
+        layout.padding = new RectOffset(42, 42, 23, 27);
         layout.spacing = 8f;
         layout.childControlWidth = layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
