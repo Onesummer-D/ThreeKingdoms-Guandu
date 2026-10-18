@@ -30,9 +30,9 @@ check(!corpus.some(x=>x.referenceAnswer) && !examples.some(x=>x.originalText),
 check(corpus.find(x=>x.id==='H01').title.includes('兵力') &&
     corpus.find(x=>x.id==='H10').title.includes('许攸的结局'),
     'new H01-H10 numbering is not confused with legacy H01 geography/H10 gameplay');
-check(activeServer.length===12 && activeUnity.length===12 &&
+check(activeServer.length===16 && activeUnity.length===16 &&
     activeServer.every((x,i)=>JSON.stringify(x)===JSON.stringify(activeUnity[i])),
-    'curated runtime server and Unity offline packs are the same twelve cards');
+    'curated runtime server and Unity offline packs are the same sixteen cards');
 check(activeServer.slice(0,10).every((x,i)=>x.id===ids[i] &&
     x.kind==='history' && x.originalText && x.originalText.length>20),
     'H01-H10 have original source passages and newly assigned stable meanings');
@@ -41,6 +41,9 @@ check(activeServer.find(x=>x.id==='H01').title.includes('兵力') &&
     activeServer.some(x=>x.id==='H11' && x.title.includes('地理')) &&
     activeServer.some(x=>x.id==='D01' && x.kind==='design'),
     'old H numbering has been migrated, with geography preserved and game rules separated');
+check(['H12','H13','H14','H15'].every(id=>
+    activeServer.some(c=>c.id===id && c.kind==='history' && c.originalText.length>50)),
+    'four supplemental scholar-reviewed historical topics retain original passages');
 check(activeServer.find(x=>x.id==='H02').summary.includes('斩颜良') &&
     !activeServer.find(x=>x.id==='H02').summary.includes('生擒颜良') &&
     activeServer.find(x=>x.id==='H06').boundary.includes('裴注') &&
