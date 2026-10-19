@@ -784,7 +784,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         back.onClick.AddListener(() => playerBrief.SetActive(false));
         Transform content = CreateScrollContent(panel.transform, out briefScroll);
         CreateWrappedText(content, "你将扮演曹操 · 曹军主将", 44f, accentColor);
-        CreateWrappedText(content, "官渡两军相持，你要在粮草、兵力与风险之间作出取舍。\n" +
+        CreateWrappedText(content, "官渡两军相持，你要在兵力、粮草、计策与风险之间作出取舍。\n" +
             "你决定曹军如何应战，选择会改变资源和后续剧情。", 38f, textPrimary);
         CreateWrappedText(content, "七条分支结局，关键决策可邀友参谋", 44f, accentColor);
         CreateWrappedText(content, "全作共有七条结局线，也有等待发现的彩蛋。\n" +
