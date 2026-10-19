@@ -18,6 +18,10 @@ public sealed class GameplayExitUI : MonoBehaviour
     private Button saveButton;
     private Button directButton;
     private Button confirmButton;
+    private Button reviewButton;
+    private Button reportButton;
+    private RectTransform exitPanelRect;
+    private Image exitPanelArtwork;
     private Sprite buttonSprite;
     private bool endingMode;
 
@@ -44,6 +48,26 @@ public sealed class GameplayExitUI : MonoBehaviour
             TMP_Text label = saveButton.GetComponentInChildren<TMP_Text>(true);
             if (label != null) label.text = endingMode ? "再玩一局" : "保存进度";
         }
+        if (exitPanelRect == null || exitPanelArtwork == null) return;
+        // Four ending actions must live INSIDE a single large card, not float
+        // outside the small confirmation banner behind the modal.
+        SetAnchored(exitPanelRect, endingMode ? new Vector2(.245f, .20f) : new Vector2(.30f, .34f),
+            endingMode ? new Vector2(.755f, .82f) : new Vector2(.70f, .66f));
+        CardBackgroundSkin.Apply(exitPanelArtwork,
+            endingMode ? CardBackgroundSkin.Style.DarkPanel : CardBackgroundSkin.Style.SmallBanner);
+        Transform ornate = exitPanelRect.Find("OrnateFrameArt");
+        if (ornate != null) ornate.gameObject.SetActive(endingMode);
+        if (question != null) SetAnchored(question.rectTransform,
+            endingMode ? new Vector2(.10f, .67f) : new Vector2(.08f, .56f),
+            endingMode ? new Vector2(.90f, .91f) : new Vector2(.92f, .90f));
+        if (saveButton != null) SetAnchored(saveButton.GetComponent<RectTransform>(),
+            endingMode ? new Vector2(.14f, .40f) : new Vector2(.08f, .18f),
+            endingMode ? new Vector2(.48f, .56f) : new Vector2(.47f, .45f));
+        if (directButton != null) SetAnchored(directButton.GetComponent<RectTransform>(),
+            endingMode ? new Vector2(.52f, .40f) : new Vector2(.53f, .18f),
+            endingMode ? new Vector2(.86f, .56f) : new Vector2(.92f, .45f));
+        if (reviewButton != null) reviewButton.gameObject.SetActive(endingMode);
+        if (reportButton != null) reportButton.gameObject.SetActive(endingMode);
     }
 
     public void SetVisible(bool visible)
@@ -93,8 +117,10 @@ public sealed class GameplayExitUI : MonoBehaviour
         overlay.AddComponent<Image>().color = OverlayColor;
 
         GameObject panel = CreateObject("ExitConfirmPanel", overlay.transform);
-        SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.30f, .34f), new Vector2(.70f, .66f));
-        panel.AddComponent<Image>().color = PanelColor;
+        exitPanelRect = panel.GetComponent<RectTransform>();
+        SetAnchored(exitPanelRect, new Vector2(.30f, .34f), new Vector2(.70f, .66f));
+        exitPanelArtwork = panel.AddComponent<Image>();
+        CardBackgroundSkin.Apply(exitPanelArtwork, CardBackgroundSkin.Style.SmallBanner);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = Accent;
         outline.effectDistance = new Vector2(3f, -3f);
@@ -113,6 +139,24 @@ public sealed class GameplayExitUI : MonoBehaviour
         confirmButton.onClick.AddListener(ResumeAfterSave);
         confirmButton.gameObject.SetActive(false);
 
+        reviewButton = CreateButton(panel.transform, "本局复盘",
+            new Vector2(.14f, .18f), new Vector2(.48f, .34f));
+        reviewButton.onClick.AddListener(() =>
+        {
+            overlay.SetActive(false);
+            manager.OpenEndingReviewFromExit();
+        });
+        reviewButton.gameObject.SetActive(false);
+
+        reportButton = CreateButton(panel.transform, "战绩报告",
+            new Vector2(.52f, .18f), new Vector2(.86f, .34f));
+        reportButton.onClick.AddListener(() =>
+        {
+            overlay.SetActive(false);
+            manager.OpenBattleReportFromExit();
+        });
+        reportButton.gameObject.SetActive(false);
+
         status = CreateText(panel.transform, "", 27f, TextAlignmentOptions.Center,
             new Color(.78f, .79f, .75f, 1f));
         SetAnchored(status.rectTransform, new Vector2(.06f, .02f), new Vector2(.94f, .16f));
@@ -127,6 +171,7 @@ public sealed class GameplayExitUI : MonoBehaviour
         if (directButton != null) directButton.gameObject.SetActive(true);
         if (confirmButton != null) confirmButton.gameObject.SetActive(false);
         SetEndingMode(endingMode);
+        if (endingMode) manager.SetEndingShortcutsVisible(false);
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
     }

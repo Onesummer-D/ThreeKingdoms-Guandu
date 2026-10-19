@@ -75,11 +75,12 @@ public sealed class SaveArchiveUI : MonoBehaviour
         GameObject panel = CreateUIObject("SaveArchivePanel", overlay.transform);
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         SetAnchored(panelRect, new Vector2(.12f, .08f), new Vector2(.88f, .92f));
-        panel.AddComponent<Image>().color = panelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "军帐存档", 54f, TextAlignmentOptions.Left, textPrimary);
         SetAnchored(title.rectTransform, new Vector2(0f, .86f), new Vector2(.72f, .98f));
-        title.rectTransform.offsetMin = new Vector2(42f, 0f);
+        // Leave breathing room between the first glyph and ornate left corner.
+        title.rectTransform.offsetMin = new Vector2(110f, 0f);
 
         Button close = CreateButton(panel.transform, "关闭", 36f, new Vector2(170f, 68f),
             new Color(.30f, .20f, .18f, 1f), Color.white);

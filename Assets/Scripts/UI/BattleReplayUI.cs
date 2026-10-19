@@ -82,7 +82,7 @@ public sealed class BattleReplayUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("BattleReplayPanel", overlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.055f, .045f), new Vector2(.945f, .955f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "战役绘卷 · 真实事件回放", 48f,
             TextAlignmentOptions.Left, TextPrimary, false);
