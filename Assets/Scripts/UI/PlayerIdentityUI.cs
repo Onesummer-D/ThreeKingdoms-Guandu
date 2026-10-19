@@ -196,9 +196,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         errorText.text = string.Empty;
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        Action next = onConfirmed;
+        Action continuation = onConfirmed;
         onConfirmed = null;
-        next?.Invoke();
+        continuation?.Invoke();
     }
 
     private Button CreateButton(Transform parent, string label, float size)
