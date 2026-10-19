@@ -28,8 +28,13 @@ jobs:
           node --check server/historian-ai/grounding.js
           node --check server/historian-ai/run-evidence.js
           node --check server/historian-ai/chat-test.js
+          node --check server/historian-ai/run-editorial-quiz.js
       - name: Evidence regression
         run: node server/historian-ai/run-eval.js
+        env:
+          OPENAI_API_KEY: ''
+      - name: Ten editorial quiz acceptance cases
+        run: node server/historian-ai/run-editorial-quiz.js
         env:
           OPENAI_API_KEY: ''
       - name: HTTP and run review regression

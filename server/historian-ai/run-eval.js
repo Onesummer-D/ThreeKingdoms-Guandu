@@ -9,9 +9,12 @@ async function main() {
   for (const item of lines) {
     const result = await grounding.answerQuestion(item.question, '');
     const text = result.answer || '';
-    const citationsOk = item.mustCite.every(id => text.includes(`[${id}]`));
+    // The player sees natural prose. Evidence IDs live only in structured metadata.
+    const citationsOk = item.mustCite.every(id =>
+      (result.citations || []).some(source => source.id === id));
+    const noVisibleIds = !/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(text);
     const mentionOk = !item.mustMention || text.includes(item.mustMention);
-    const passedCase = citationsOk && mentionOk;
+    const passedCase = citationsOk && mentionOk && noVisibleIds;
     console.log(`${passedCase ? 'PASS' : 'FAIL'} ${item.question} mode=${result.mode}`);
     if (!passedCase) process.exitCode = 1;
     if (passedCase) passed++;

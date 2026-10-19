@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -5,7 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Commander-name card shown at each fresh app launch, once per launch.
+/// Commander-name card shown after the player clicks Start Game, once per launch.
 /// This is a fresh display name for the current app session. No remote
 /// login, reused saved ID, credentials, or persistent account required.
 /// </summary>
@@ -17,6 +18,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
     private Sprite sourceButton;
     private Coroutine pendingFocus;
     private bool initialized;
+    private Action onConfirmed;
 
     public void Initialize(Transform canvasRoot, Transform mainMenu)
     {
@@ -31,13 +33,14 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         }
 
         CreateIdentityOverlay(canvasRoot);
-        // Show once at every app start with an empty field.
-        ShowEditor();
+        // Create the panel but leave the main menu visible on app launch.
+        // FinalUIManager.StartGame opens this card after the player clicks Start.
     }
 
-    public void ShowEditor()
+    public void ShowEditor(Action afterConfirmation = null)
     {
         if (overlay == null) return;
+        onConfirmed = afterConfirmation;
         if (pendingFocus != null)
             StopCoroutine(pendingFocus);
         overlay.SetActive(true);
@@ -193,6 +196,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         errorText.text = string.Empty;
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        Action continuation = onConfirmed;
+        onConfirmed = null;
+        continuation?.Invoke();
     }
 
     private Button CreateButton(Transform parent, string label, float size)

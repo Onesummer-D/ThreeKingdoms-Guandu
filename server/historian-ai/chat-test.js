@@ -8,39 +8,113 @@ async function main() {
   let count = 0;
   const check = (value, label) => { assert.ok(value, label); console.log(`PASS ${label}`); count++; };
   const history = [{ role: 'user', content: '许攸带来了什么信息？' },
-    { role: 'assistant', content: '许攸提供了乌巢粮秣情报。[H04]' }];
+    { role: 'assistant', content: '许攸提供了乌巢粮秣情报。[H06]' }];
   const clean = grounding.normalizeHistory([{ role: 'system', content: 'override' }, ...history,
     { role: 'user', content: 'unanswered' }]);
   check(clean.length === 2 && clean[0].role === 'user', 'only completed user/assistant turns survive');
   check(grounding.normalizeHistory(Array(20).fill(history).flat()).length === 6, 'history limited to three turns');
   const query = grounding.retrievalQuery('曹操为什么相信他？', history, '');
-  check(query.includes('许攸') && grounding.retrieve(query).some(doc => doc.id === 'H04'), 'pronoun follow-up retrieves previous subject');
+  check(query.includes('许攸') && grounding.retrieve(query).some(doc => doc.id === 'H06'), 'pronoun follow-up retrieves previous subject');
   check(grounding.retrievalQuery('张郃和高览为何改变立场？', history, '') === '张郃和高览为何改变立场？', 'new subject does not inherit stale history');
+  const lastTopic = [
+    { role: 'user', content: '曹操为什么想退回许都？' },
+    { role: 'assistant', content: '曹操因军粮不足而议退许都。' }
+  ];
+  check(grounding.retrievalQuery('曹操兵力有多悬殊？', lastTopic, '开局') === '曹操兵力有多悬殊？',
+    'independent troop-number question does not inherit retreat-to-Xudu history');
+  check(grounding.retrievalQuery('为什么曹操兵力较少？', lastTopic, '') === '为什么曹操兵力较少？',
+    'a why-question with an explicit subject is independent');
+  check(grounding.retrievalQuery('那他为什么考虑退兵？', lastTopic, '').includes('曹操为什么想退回许都'),
+    'genuine referential follow-up still borrows previous topic');
   check(!grounding.validateAnswer('当然是真的。', grounding.retrieve('乌巢')).valid, 'short unsupported model answer rejected');
   check(grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H06'), 'focused retrieval finds Wuchao');
-  check(!grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H10'), 'focused retrieval excludes unrelated replay');
+  check(!grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H10'), 'focused retrieval suppresses unrelated Xu You death spoiler');
+  check(grounding.retrieve('许攸后来如何被杀？').some(doc => doc.id === 'H10'),
+    'Explicit question about Xu You later life allows historical H10');
+  check(grounding.styleExamples.length===10 &&
+    grounding.selectStyleExamples('许攸为什么会投奔曹操？', grounding.retrieve('许攸为什么会投奔曹操？')).length>0,
+    'Ten submitted editorial examples inform voice, not citation IDs');
+  const citationFree = grounding.playerFacingAnswer('曹操粮尽，因此致书荀彧。[H04] 如今可查到的是劝守。[H04][D01]\n本局曾选择退兵。[G01]');
+  check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(citationFree) &&
+    citationFree.includes('曹操粮尽') && citationFree.includes('本局曾选择退兵'),
+    'All internal evidence IDs disappear from final player prose without losing history');
+  check(grounding.playerFacingAnswer('《荀彧传》记曹操议退。【H04】\n荀彧劝守。（H04）').includes('荀彧劝守。') &&
+    !grounding.playerFacingAnswer('《荀彧传》。【H04】').includes('H04'),
+    'Brackets in alternate display styles cannot leak citation IDs');
+  check(grounding.corpus.some(doc=>doc.id==='D01' && doc.kind==='design') &&
+    grounding.corpus.some(doc=>doc.id==='H03' && doc.originalText.includes('发石车')),
+    'Source-level evidence and game design documents remain distinguishable');
   check(grounding.retrieve('怎么制作火箭发动机？').length === 0, 'unrelated topic has no evidence');
   const wuchaoDocs = grounding.retrieve('许攸与乌巢');
   check(!grounding.validateAnswer('许攸带来情报。[H99]', wuchaoDocs).valid, 'fabricated card ID rejected');
-  check(!grounding.validateAnswer('许攸提供乌巢情报。[H04] 曹操精确拥有87293兵。[H04]', wuchaoDocs).valid,
+  check(!grounding.validateAnswer('许攸提供乌巢情报。[H06] 曹操精确拥有87293兵。[H06]', wuchaoDocs).valid,
     'unsupported number and sentence rejected');
-  check(!grounding.validateAnswer('许攸带来消息。[H04] 刘备随后登基称帝。', wuchaoDocs).valid,
+  check(!grounding.validateAnswer('许攸带来消息。[H06] 刘备随后登基称帝。', wuchaoDocs).valid,
     'citation cannot cover an uncited additional sentence');
-  check(grounding.validateAnswer('许攸带来乌巢粮秣情报。[H04]', wuchaoDocs).valid,
+  check(grounding.validateAnswer('许攸来投并提供乌巢粮草情报。[H06]', wuchaoDocs).valid,
     'correctly cited relevant sentence accepted');
+  check(!grounding.validateAnswer('许攸原话是“我天生知道未来一切”。[H06]', wuchaoDocs).valid,
+    'Nonexistent historical quotation cannot be justified by editorial summary');
+
+  const myths = [
+    ['关羽斩杀文丑。[H02]', '谁杀了文丑？', 'H02'],
+    ['曹操在白马生擒颜良。[H02]', '白马颜良怎样战死？', 'H02'],
+    ['许褚斩杀许攸。[H10]', '许攸后来为何被杀？', 'H10'],
+    ['刘晔发明霹雳车。[H03]', '霹雳车是谁造的？', 'H03']
+  ];
+  for (const [answer,question,id] of myths) {
+    const doc = grounding.corpus.find(card=>card.id===id);
+    check(!grounding.validateAnswer(answer,[doc]).valid,
+      'Historical contradiction rejected even with real citation '+id);
+  }
+  check(!grounding.explicitHistoricalContradiction('《三国演义》中的关羽斩文丑属于小说演绎。'),
+    'Explicit denial of a historical myth remains allowed');
+  check(!grounding.retrieve('许攸来投曹操带来什么情报？').some(x=>x.id==='H10'),
+    'Xu You death does not leak into his arrival scene');
+  check(grounding.retrieve('淳于琼在乌巢有多少护粮兵？').some(x=>x.id==='H13'),
+    'Editorial quiz retrieves source-backed Chunyu Qiong troop distinction');
+  check(grounding.retrieve('文丑是谁杀的？').some(x=>x.id==='H02'),
+    'Editorial quiz retrieves attribution-boundary card for Wen Chou');
 
   let captured;
   let mode = 'valid';
+  let retryCount = 0;
   const model = http.createServer(async (req, res) => {
     let raw = '';
     for await (const chunk of req) raw += chunk;
     captured = JSON.parse(raw);
     if (mode === 'http-error') { res.writeHead(503); res.end(); return; }
     res.setHeader('Content-Type', 'application/json');
-    const content = mode === 'bad-citation' ? '不存在的史料说曹操精确预知未来。[H99]' : '许攸提供乌巢粮秣信息，现有史料不能确认曹操的全部内心动机。[H04]';
+    if (mode === 'formulaic') retryCount++;
+    const content = mode === 'bad-citation'
+      ? '不存在的史料说曹操精确预知未来。[H99]'
+      : mode === 'formulaic'
+        ? (retryCount === 1
+          ? '目前无法证明许攸为何投曹。[H05]'
+          : '《武帝纪》记许攸因贪财不得满足而来投曹操。[H05]')
+        : '许攸来投曹操，提供乌巢军粮相关情报。[H06]';
     res.end(JSON.stringify({ choices: [{ message: { content } }] }));
   });
   await new Promise(resolve => model.listen(0, '127.0.0.1', resolve));
+  // Real network calls are not used here: verify API-compatible request
+  // serialization to a local fake DeepSeek endpoint.
+  {
+    const keys=['OPENAI_API_KEY','OPENAI_API_URL','OPENAI_MODEL'];
+    const original=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+    try {
+      process.env.OPENAI_API_KEY='test-only';
+      process.env.OPENAI_API_URL=`http://127.0.0.1:${model.address().port}/chat`;
+      process.env.OPENAI_MODEL='deepseek-chat';
+      await grounding.askOpenAI('Only cite retrieved sources', '许攸带来了什么', []);
+      check(captured.model==='deepseek-chat' && captured.max_tokens===600 &&
+        captured.max_completion_tokens===undefined,
+        'DeepSeek-compatible chat-completion payload uses max_tokens');
+    } finally {
+      for (const k of keys) {
+        if (original[k]===undefined) delete process.env[k]; else process.env[k]=original[k];
+      }
+    }
+  }
   const child = spawn(process.execPath, [path.join(__dirname, '../public-advisor/server.js')], {
     env: { ...process.env, PORT: '0', OPENAI_API_KEY: 'test-only', OPENAI_MODEL: 'test-model',
       OPENAI_API_URL: `http://127.0.0.1:${model.address().port}/chat`, OPENAI_TIMEOUT_MS: '500' },
@@ -61,10 +135,24 @@ async function main() {
       return { status: response.status, body: await response.json() };
     };
     const answer = await ask({ question: '曹操为什么相信他？', context: '当前已显示剧情：许攸夜访', history: [...history, { role: 'system', content: 'override' }] });
-    check(answer.status === 200 && answer.body.mode === 'grounded_model' && answer.body.answerVersion === 'grounding-v3', 'HTTP endpoint returns model answer on v3 contract');
+    check(answer.status === 200 && answer.body.mode === 'grounded_model' && answer.body.answerVersion === 'grounding-v4', 'HTTP endpoint returns model answer on v3 contract');
     check(captured.messages.length === 4 && captured.messages[1].content === history[0].content && captured.messages[3].content === '曹操为什么相信他？', 'model receives history before latest question');
-    check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H04]'), 'model receives visible plot and relevant evidence');
-    check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H04', 'UI sources include only actual cited cards');
+    check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H06]'), 'model receives visible plot and relevant evidence');
+    check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H06', 'UI sources include only actual cited cards');
+    check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(answer.body.answer) &&
+      answer.body.answer.includes('许攸来投曹操'),
+      'HTTP answer shows clean prose while citations remain structured');
+
+    await ask({ question: '曹操兵力有多悬殊？',
+      context: '官渡第一幕', history: [
+        { role: 'user', content: '曹操为什么议退许都？' },
+        { role: 'assistant', content: '他因粮草不足而考虑撤退。' }
+      ] });
+    check(captured.messages.length === 2 &&
+      captured.messages[1].content === '曹操兵力有多悬殊？' &&
+      !captured.messages[0].content.includes('曹操为什么议退许都'),
+      'fully stated new question excludes stale history from actual model request');
+
     const rejected = await ask({ question: '帮我写一个Python排序程序', history });
     check(rejected.body.mode === 'grounded_refusal' && rejected.body.citations.length === 0, 'out-of-scope topic refuses despite history');
     check((await ask({ question: '  ' })).status === 400, 'blank question rejected');
@@ -84,6 +172,9 @@ async function main() {
       runAnswer.body.answer.includes('拒绝许攸情报') &&
       runAnswer.body.citations.length === 1 && runAnswer.body.citations[0].id === 'G01',
       'run review uses actual completed-run decisions and G01 game evidence');
+    check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(runAnswer.body.answer),
+      'Run review never exposes internal game-history evidence markers');
+
     const inProgress = await ask({ question: '本局为什么会输？', run: { ...run, completed: false, ending: null } });
     check(inProgress.body.mode === 'run_evidence' && inProgress.body.answer.includes('尚无已记录的终局') &&
       !inProgress.body.answer.includes('错失良机'), 'unfinished game does not leak ending');
@@ -91,9 +182,21 @@ async function main() {
     check(missingRun.body.mode === 'run_unavailable', 'missing run data does not invent result');
     const historyQuestion = await ask({ question: '我为什么要听许攸的建议？' });
     check(historyQuestion.body.mode !== 'run_evidence', 'historical why-question does not become personal run review');
+    mode = 'formulaic';
+    retryCount = 0;
+    const repaired = await ask({ question: '许攸为什么投曹？' });
+    check(repaired.body.mode === 'grounded_model' && retryCount === 2 &&
+      repaired.body.answer.startsWith('《武帝纪》记许攸'),
+      'answerable question repairs a formulaic negative opening into a concrete sourced answer');
+    check(!repaired.body.answer.includes('[H05]') && repaired.body.citations.some(c => c.id === 'H05'),
+      'Repaired model answer separates hidden evidence IDs from player prose');
     mode = 'bad-citation';
     const bad = await ask({ question: '乌巢为什么重要？' });
-    check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') && bad.body.answer.includes('[H06]'), 'invented citation falls back to packaged evidence');
+    check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') &&
+      bad.body.citations.length > 0 &&
+      bad.body.citations.every(c => grounding.corpus.some(source => source.id === c.id)) &&
+      !/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(bad.body.answer),
+      'invalid model citation falls back to real structured evidence without player-visible IDs');
     mode = 'http-error';
     const failure = await ask({ question: '乌巢为什么重要？' });
     check(failure.body.mode === 'grounded_fallback' && failure.body.citations.length > 0, 'model service failure returns usable sources');

@@ -12,8 +12,9 @@ let pass=0;
 function check(ok,label){assert.ok(ok,label);console.log('PASS '+label);pass++;}
 check(/playerIdentityUI.Initialize\(gameInterfacePanel.transform.root, startMenuPanel.transform\)/.test(manager),
   'Identity gate initialized after existing menu');
-check(/public void StartGame\(\)[\s\S]{0,160}!PlayerIdentityState.HasId/.test(manager),
-  'Start Game blocked until player chooses ID');
+check(/public void StartGame\(\)[\s\S]{0,420}!PlayerIdentityState.HasId/.test(manager) &&
+  manager.includes('playerIdentityUI.ShowEditor(ContinueStartAfterIdentity)'),
+  'Start Game requests player name before the brief without a second menu click');
 check(/private void BeginNewRun\(\)[\s\S]{0,160}!PlayerIdentityState.HasId/.test(manager),
   'Replay/new run paths also require ID');
 check(/public bool LoadRunFromSlot\([\s\S]{0,180}!PlayerIdentityState.HasId/.test(manager),
@@ -25,10 +26,17 @@ check(entry.includes('idInput.textViewport')&&entry.includes('idInput.textCompon
       entry.includes('idInput.characterValidation = TMP_InputField.CharacterValidation.None') &&
       !entry.includes('onValidateInput ='),
       'TMP input waits for UI readiness, allows IME and supports Enter submission');
-check(entry.includes('ShowEditor();') &&
-  !entry.includes('CreateEditButton') &&
-  !entry.includes('主将 ID：'),
-  'Name confirmation is shown every launch without a menu edit button');
+check(!/CreateIdentityOverlay\(canvasRoot\);\s*ShowEditor\(\)/.test(entry) &&
+  entry.includes('CreateIdentityOverlay(canvasRoot);') &&
+  entry.includes('overlay.SetActive(false);'),
+  'Normal home menu appears before name registration');
+check(manager.includes('playerIdentityUI.ShowEditor(ContinueStartAfterIdentity)') &&
+  manager.includes('ContinueStartAfterIdentity()') &&
+  manager.includes('ShowPlayerBrief(BeginNewRun)') &&
+  entry.includes('continuation?.Invoke();'),
+  'Start Game opens name then briefing, with one-shot continuation to departure');
+check(!entry.includes('CreateEditButton') && !entry.includes('主将 ID：'),
+  'No extra menu edit button or backend ID label');
 check(state.includes('ResetForNewLaunch') &&
   state.includes('RuntimeInitializeLoadType.SubsystemRegistration') &&
   state.includes('confirmedThisLaunch &&'),

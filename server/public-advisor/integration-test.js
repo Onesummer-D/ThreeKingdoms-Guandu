@@ -74,7 +74,16 @@ async function main() {
     check((await request(path, 'GET', undefined, host)).body.error === 'session_expired', 'closed session rejected');
     const started = Date.now();
     const answer = await request('/api/historian/ask', 'POST', { question: '乌巢为什么重要？' });
-    check(answer.body.mode === 'grounded_fallback' && Date.now() - started < 3000 && answer.body.answer.includes('[H'), 'stalled model body times out with cited fallback');
+    // Citation IDs remain in structured evidence; the player-facing answer
+    // deliberately strips [Hxx]/[Gxx]/[Dxx] markers after validation.
+    const sources = answer.body.citations || [];
+    check(answer.body.mode === 'grounded_fallback' &&
+      Date.now() - started < 3000 &&
+      typeof answer.body.answer === 'string' && answer.body.answer.trim().length > 0 &&
+      sources.length > 0 && sources.every(source => /^H[0-9]{2}$/.test(source.id) &&
+        typeof source.title === 'string' && source.title.length > 0) &&
+      !/\[[A-Z][0-9]{2}\]/.test(answer.body.answer),
+      'stalled model body times out with structured citations and clean player prose');
     console.log(`integration: ${count}/${count}`);
   } finally {
     child.kill();

@@ -23,6 +23,17 @@ public sealed class HistorianChatUI : MonoBehaviour
     private TMP_Text status;
     private Button send;
     private readonly List<Button> suggestions = new List<Button>();
+    private readonly string[] activeSuggestedQuestions = new string[3];
+    // Three concise, chapter-scoped choices derived from the editorial guide.
+    // Do not pre-suggest late-battle outcomes in early chapters.
+    private static readonly string[][] ChapterSuggestedQuestions =
+    {
+        new[] { "曹操兵力有多悬殊？", "官渡为何重要？", "土山和霹雳车是真实的吗？" },
+        new[] { "曹操为何议退许都？", "荀彧为何劝守官渡？", "袁绍的谋臣为何有分歧？" },
+        new[] { "许攸为何转投曹操？", "许攸带来了什么情报？", "曹操为何敢相信许攸？" },
+        new[] { "曹操夜袭带了多少人？", "荀攸、贾诩为何支持奇袭？", "徐晃、史涣烧粮车是怎么回事？" },
+        new[] { "乌巢粮道为何关键？", "张郃为何主张救乌巢？", "IF 结局属于史实吗？" }
+    };
     private readonly List<HistorianChatMessage> history = new List<HistorianChatMessage>();
     private HistorianAgentClient client;
     private TMP_FontAsset font;
@@ -169,12 +180,13 @@ public sealed class HistorianChatUI : MonoBehaviour
         row.spacing = 12f;
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = true;
-        foreach (string question in new[] { "乌巢为什么重要？", "许攸带来了什么信息？", "IF 结局是史实吗？" })
+        for (int i = 0; i < activeSuggestedQuestions.Length; i++)
         {
-            string captured = question;
-            Button chip = Button(choices.transform, question, 29f);
+            int capturedIndex = i;
+            activeSuggestedQuestions[i] = ChapterSuggestedQuestions[0][i];
+            Button chip = Button(choices.transform, activeSuggestedQuestions[i], 29f);
             chip.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-            chip.onClick.AddListener(() => SubmitQuestion(captured));
+            chip.onClick.AddListener(() => SubmitQuestion(activeSuggestedQuestions[capturedIndex]));
             suggestions.Add(chip);
         }
 
@@ -230,6 +242,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         CoverStoryText();
         surface.SetActive(true);
         if (launcher != null) launcher.SetActive(false);
+        RefreshSuggestionsForCurrentChapter();
         RefreshControls();
         StartCoroutine(ScrollToLatest());
         input.Select();
@@ -258,6 +271,23 @@ public sealed class HistorianChatUI : MonoBehaviour
             return false;
         FinalUIManager ui = FinalUIManager.Instance;
         return ui == null || ui.startMenuPanel == null || !ui.startMenuPanel.activeInHierarchy;
+    }
+
+    private void RefreshSuggestionsForCurrentChapter()
+    {
+        int nodeId = DialogueSystem.Instance != null &&
+            DialogueSystem.Instance.CurrentNode != null
+            ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
+        int chapter = CampaignChapterResolver.Resolve(nodeId);
+        if (chapter < 0 || chapter >= ChapterSuggestedQuestions.Length) chapter = 0;
+        string[] source = ChapterSuggestedQuestions[chapter];
+        for (int i = 0; i < suggestions.Count && i < source.Length; i++)
+        {
+            activeSuggestedQuestions[i] = source[i];
+            TMP_Text label = suggestions[i] != null
+                ? suggestions[i].GetComponentInChildren<TMP_Text>() : null;
+            if (label != null) label.text = source[i];
+        }
     }
 
     private void CoverStoryText()
@@ -361,10 +391,20 @@ public sealed class HistorianChatUI : MonoBehaviour
         });
     }
 
+    // Evidence references are for the validator, not part of the player's story.
+    // Also clean older server responses, offline answers and restored history.
+    private static string PlayerFacingText(string text)
+    {
+        return Regex.Replace(text ?? string.Empty,
+            @"[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]", "",
+            RegexOptions.IgnoreCase).Trim();
+    }
+
     private void CompleteAnswer(TMP_Text body, HistorianAskResponse response)
     {
-        body.text = Regex.Replace(response.answer, @"\[[HG]\d{2}\]", "").Trim();
-        history.Add(new HistorianChatMessage("assistant", response.answer));
+        string playerAnswer = PlayerFacingText(response.answer);
+        body.text = playerAnswer;
+        history.Add(new HistorianChatMessage("assistant", playerAnswer));
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
@@ -528,7 +568,7 @@ public sealed class HistorianChatUI : MonoBehaviour
                 new HistorianCitation
                 {
                     id = "G01", title = "本局战况记录",
-                    source = "RunHistoryTracker 游戏事件；非历史史料"
+                    source = "本局实际发生的选择、资源变化与结局记录（非历史史料）"
                 }
             }
         };
@@ -557,7 +597,9 @@ public sealed class HistorianChatUI : MonoBehaviour
     {
         if (citations == null || citations.Length == 0) return;
         bool gameRecord = citations.Length == 1 && citations[0].id == "G01";
-        string sourceLabel = gameRecord ? "查看本局记录依据" : "查看史料来源";
+        bool gameDesign = citations.Length == 1 && citations[0].id == "D01";
+        string sourceLabel = gameRecord ? "查看本局记录依据" :
+            gameDesign ? "查看游戏设定说明" : "查看史料来源";
         // A source action is a small button at the bottom-right of the
         // message card, not an automatically stretched full-width banner.
         GameObject actionRow = Object("SourceActionRow", bubble);
@@ -572,7 +614,11 @@ public sealed class HistorianChatUI : MonoBehaviour
         toggleSize.preferredHeight = 56f;
         StringBuilder lines = new StringBuilder();
         foreach (HistorianCitation citation in citations)
-            lines.Append(citation.title).Append("\n").Append(citation.source).Append("\n\n");
+        {
+            if (citation == null) continue;
+            lines.Append(PlayerFacingText(citation.title)).Append("\n")
+                .Append(PlayerFacingText(citation.source)).Append("\n\n");
+        }
         TMP_Text details = Text(bubble, lines.ToString().Trim(), 22f, Muted);
         details.enableWordWrapping = true;
         details.overflowMode = TextOverflowModes.Overflow;
@@ -682,37 +728,75 @@ public sealed class HistorianLocalKnowledge
 
     public HistorianAskResponse Answer(string question, HistorianChatMessage[] history, string context)
     {
-        string query = question;
-        if (Regex.IsMatch(question, @"^(那|那么|所以|为什么|为何|还有|然后|这|他|她|它|详细|展开|再|继续)|他|她|它|刚才|当前|这一段"))
+        string query = question ?? "";
+        bool refersBack = Regex.IsMatch(query, @"他|她|它|他们|此人|此事|这件事|刚才|上面|上述|这一段|那个决定|这场");
+        bool explicitSubject = Regex.IsMatch(query, @"曹操|孟德|袁绍|许攸|子远|荀彧|荀攸|贾诩|张郃|高览|官渡|乌巢|许都|粮草|粮道|兵力|发石车|霹雳车|地道");
+        bool followUp = !(explicitSubject && !refersBack) &&
+            (refersBack || Regex.IsMatch(query, @"^(那|那么|所以|还有|然后|为什么|为何|继续|展开|再说|接着)"));
+        if (followUp)
         {
-            if (history != null && history.Length >= 2) query += " " + history[history.Length - 2].content + " " + history[history.Length - 1].content;
-            else query += " " + context;
+            if (history != null && history.Length >= 2)
+                query += " " + history[history.Length - 2].content + " " + history[history.Length - 1].content;
+            else query += " " + (context ?? "");
         }
+        if (Regex.IsMatch(query, @"(精确|准确|具体).{0,10}(伤亡人数|死伤人数|伤亡数字|阵亡人数|死亡人数|分钟级|逐日兵力)|(每一天|每分钟|逐日).{0,8}(伤亡|人数|损失)"))
+            return Refuse();
+
         List<Card> matches = new List<Card>();
-        bool supported = Regex.IsMatch(query, @"官渡|曹操|袁绍|许攸|荀彧|荀攸|张郃|高览|乌巢|粮草|粮道|史实|IF|if|复盘|游戏|补给|冲锋");
+        bool laterFate = Regex.IsMatch(question ?? "", @"(许攸|子远).{0,18}(后来|结局|下场|怎么死|为何死|被杀|被诛|许褚|死因)|(后来|结局|下场|被杀|被诛).{0,18}(许攸|子远)");
         foreach (Card card in cards)
-            if (card.tags != null) foreach (string tag in card.tags) if (tag.Length > 1 && query.Contains(tag)) supported = true;
-        if (!supported || Regex.IsMatch(question, @"精确|准确|每一天|分钟|伤亡|逐日"))
-            return new HistorianAskResponse { ok = true, mode = "grounded_refusal", answer = "现有史料不足以确认这个问题。你可以问官渡的战局、人物、粮道，或史实与游戏演绎的区别。", citations = new HistorianCitation[0] };
-        matches.AddRange(cards);
-        matches.Sort((a, b) => { int comparison = Score(b, query).CompareTo(Score(a, query)); return comparison != 0 ? comparison : string.CompareOrdinal(a.id, b.id); });
+        {
+            if (card.id == "H10" && !laterFate) continue;
+            if (Score(card, query) >= 8) matches.Add(card);
+        }
+        if (matches.Count == 0) return Refuse();
+        matches.Sort((a, b) => {
+            int c = Score(b, query).CompareTo(Score(a, query));
+            return c != 0 ? c : string.CompareOrdinal(a.id, b.id);
+        });
+
         StringBuilder answer = new StringBuilder();
         List<HistorianCitation> sources = new List<HistorianCitation>();
-        for (int i = 0; i < Math.Min(4, matches.Count); i++)
+        // One directly matched card is more useful than two loosely related extracts.
+        int limit = Math.Min(1, matches.Count);
+        for (int i = 0; i < limit; i++)
         {
             Card card = matches[i];
-            if (Score(card, query) == 0) continue;
-            answer.Append(card.title).Append("\n").Append(card.summary).Append("\n").Append(card.boundary).Append(" [").Append(card.id).Append("]\n\n");
+            answer.Append(card.summary.Trim()).Append("[").Append(card.id).Append("]");
             sources.Add(new HistorianCitation { id = card.id, title = card.title, source = card.source });
         }
-        return new HistorianAskResponse { ok = true, mode = "grounded_fallback", answer = answer.Length > 0 ? answer.ToString().Trim() : "史料包暂不可用，请回到史官卡片阅读。", citations = sources.ToArray() };
+        return new HistorianAskResponse { ok = true, mode = "grounded_fallback",
+            answer = answer.ToString().Trim(), citations = sources.ToArray() };
+    }
+
+    private static HistorianAskResponse Refuse()
+    {
+        return new HistorianAskResponse { ok = true, mode = "grounded_refusal",
+            answer = "这道问题暂时没有匹配到可靠的史料卡。你可以问官渡的人物、粮草、战术，或者游戏改编了哪里。",
+            citations = new HistorianCitation[0] };
     }
 
     private static int Score(Card card, string query)
     {
-        string document = card.title + card.source + card.summary + card.boundary + string.Join(" ", card.tags ?? new string[0]);
+        if (card == null || string.IsNullOrEmpty(query)) return 0;
+        string document = (card.title ?? "") + " " + (card.summary ?? "");
         int score = 0;
-        foreach (char letter in query) if (letter >= '\u4e00' && letter <= '\u9fff' && document.IndexOf(letter) >= 0) score++;
+        if (card.tags != null) foreach (string tag in card.tags)
+            if (!string.IsNullOrEmpty(tag) && tag.Length >= 2 &&
+                tag != "游戏" && tag != "历史" &&
+                query.IndexOf(tag, StringComparison.OrdinalIgnoreCase) >= 0)
+                score += 12;
+        // Lexical phrases, not isolated shared ideographs (三、史、人等).
+        string stop = "什么|为什么|为什|怎么|如何|可以|请问|这个|那个|一下|知道|觉得|是否|是不是|故事|事情|我们|他们|时候";
+        for (int i = 0; i < query.Length - 1; i++)
+        {
+            char a = query[i], b = query[i + 1];
+            if (a < '\u4e00' || a > '\u9fff' || b < '\u4e00' || b > '\u9fff') continue;
+            string pair = query.Substring(i, 2);
+            if (stop.Contains(pair) && stop.Split('|').Length > 0 &&
+                Array.Exists(stop.Split('|'), part => part == pair)) continue;
+            if (document.Contains(pair)) score += 2;
+        }
         return score;
     }
 }
