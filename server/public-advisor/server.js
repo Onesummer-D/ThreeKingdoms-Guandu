@@ -9,6 +9,12 @@ const PUBLIC_ORIGIN = String(process.env.PUBLIC_ORIGIN || '').replace(/\/$/, '')
 const candidateGameUrl = String(process.env.PUBLIC_GAME_ENTRY_URL || '').trim();
 const PUBLIC_GAME_ENTRY_URL = /^https?:\/\//i.test(candidateGameUrl) ? candidateGameUrl : '';
 function inlineJson(value) { return JSON.stringify(value).replace(/</g, '\\u003c'); }
+// Social crawlers read HTML meta tags rather than the page's client script.
+// Escape a fully qualified preview image URL before putting it in an attribute.
+function htmlAttribute(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;');
+}
 const SESSION_TTL_SECONDS = Math.min(Math.max(Number(process.env.SESSION_TTL_SECONDS || 900), 120), 3600);
 const MAX_BODY_BYTES = 32 * 1024;
 const sessions = new Map();
@@ -170,7 +176,12 @@ async function handle(req, res) {
 
   if (req.method === 'GET' && parts[0] === 'join' && parts[1]) {
     const pagePath = path.join(publicDir, 'index.html');
+    // Serve a full URL that a social preview crawler can request without
+    // JavaScript, a login, the invitation token or a special auth header.
+    const origin = PUBLIC_ORIGIN || `http://${req.headers.host || 'localhost'}`;
+    const shareImageUrl = htmlAttribute(new URL('/assets/battle-hero.png', origin).toString());
     const html = fs.readFileSync(pagePath, 'utf8')
+      .replaceAll('__SHARE_IMAGE_URL__', shareImageUrl)
       .replace('__SESSION_ID__', inlineJson(parts[1]))
       .replace('__JOIN_TOKEN__', inlineJson(url.searchParams.get('token') || ''))
       .replace('__GAME_ENTRY_URL__', inlineJson(PUBLIC_GAME_ENTRY_URL));
