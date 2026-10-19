@@ -5,6 +5,9 @@ on:
     paths:
       - 'Documentation/Editorial/Historian/**'
       - 'Documentation/QA/HistorianEditorialIntakeChecks.js'
+      - 'Documentation/QA/HistorianPlayerCopyChecks.js'
+      - 'Assets/Scripts/UI/CampaignMapUI.cs'
+      - 'Assets/Scripts/UI/InviteCoCreationUI.cs'
       - '.github/workflows/historian-editorial-intake.yml'
   push:
     branches: [main]
@@ -24,3 +27,5 @@ jobs:
           node-version: '22'
       - name: Validate source cards and sample QA intake
         run: node Documentation/QA/HistorianEditorialIntakeChecks.js
+      - name: Check gameplay copy and historian spoiler guards
+        run: node Documentation/QA/HistorianPlayerCopyChecks.js
