@@ -76,7 +76,7 @@ check(report.includes('const float safeSide = .12f') &&
   report.includes('width = bodyWidth / (1f - 2f * safeSide)') &&
   report.includes('float requiredHeight = (bodyHeight + signatureHeight) /') &&
   report.includes('topInset = height * safeTop'),
-  'Poster scales safe text and QR margins to the provided scroll artwork');
+  'Poster scales safe text and signature margins to the provided scroll artwork');
 check(report.includes('缺少海报底图 PosterDark.png') &&
   report.includes('Debug.LogWarning("战绩海报未生成：" + missingArt)') &&
   report.includes('if (posterBackgroundTexture == null)') &&
@@ -93,10 +93,14 @@ if (posterInstalled) {
     png.readUInt32BE(16) === 1086 && png.readUInt32BE(20) === 1448,
     'PosterDark has the supplied 1086x1448 dimensions and a valid PNG signature');
 }
-check(report.includes('gameEntryQrSprite != null')&&report.includes('BattleReport/GameEntryQR'),
-  'QR drawn only after actual final URL QR Sprite is installed');
-check(!report.includes('https://example.com')&&!report.includes('placeholderQR'),
-  'No dummy or unscannable QR artwork is ever exported');
+check(!report.includes('gameEntryQrSprite') &&
+      !report.includes('BattleReport/GameEntryQR') &&
+      !report.includes('GameEntryQRCodeReservedArea'),
+  'Exported poster does not reserve, load or draw a game entry QR');
+check(!report.includes('扫码游玩') &&
+      !report.includes('上线后开放') &&
+      !report.includes('placeholderQR'),
+  'Poster has no dummy scan-to-play message or QR placeholder');
 check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)') &&
       report.includes('float height = bodyHeight + signatureHeight') &&
       report.includes('copy.anchorMin = new Vector2(0f, 1f)') &&
@@ -107,9 +111,10 @@ check(report.includes('copy.sizeDelta = new Vector2(0f, bodyHeight)') &&
 check(entry.includes('"为这一局征程定下名号", 35f') &&
   !entry.includes('战绩海报将以此署名') &&
   !entry.includes('这不是联网账号'), 'Short, larger startup subtitle with no explanatory footer');
-check(report.includes('GameEntryQRCodeReservedArea') &&
-  report.includes('frameRect.sizeDelta = new Vector2(148f, 148f)') &&
-  report.includes('上线后开放'), 'Visible fixed QR reservation even before a final URL asset exists');
+check(report.includes('const float signatureHeight = 128f;') &&
+      report.includes('new Vector2(.055f, .12f), new Vector2(.945f, .82f)') &&
+      !report.includes('const float signatureHeight = 208f;'),
+  'Poster footer is compact with full-width commander signature and no QR spacing');
 check(!report.includes('战绩留影'), 'Poster footer no longer contains the duplicate slogan');
 check(report.includes('evidenceDetailText') &&
   report.includes('EvidenceDetailOpenButton') &&
