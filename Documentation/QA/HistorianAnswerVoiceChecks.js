@@ -66,10 +66,14 @@ check(offline.includes('查看游戏设定说明') && offline.includes('查看�
   'Game design and run-record evidence use natural player labels');
 check(!/精确\|准确\|每一天\|分钟\|伤亡\|逐日/.test(offline),
   'Broad keyword-based refusal no longer discards ordinary accuracy questions');
-check(offline.includes('version != "grounding-v4"') &&
-  offline.includes('当前连接旧版史官服务') &&
-  offline.includes('answerVersion = "local-offline"'),
-  'Unity test UI distinguishes old remote service and local offline fallback');
+check(!offline.includes('当前连接旧版史官服务') &&
+  !offline.includes('新版史官已连接') &&
+  !offline.includes('新版服务已连接') &&
+  !offline.includes('answerVersion = "local-offline"') &&
+  !offline.includes('Debug.Log("[Historian] answerVersion="'),
+  'Historian game UI no longer displays or logs deployment version diagnostics');
+check(offline.includes('依据史料回答 · Enter 发送 · Shift + Enter 换行'),
+  'Historian retains unobtrusive player-facing message status');
 check(offline.includes('bool explicitSubject = Regex.IsMatch(query') &&
   offline.includes('!(explicitSubject && !refersBack)'),
   'Unity offline fallback keeps independent question topics separate');
