@@ -8,6 +8,7 @@ on:
       - 'Documentation/QA/HistorianPlayerCopyChecks.js'
       - 'Documentation/QA/HistorianAnswerVoiceChecks.js'
       - 'Assets/Scripts/UI/CampaignMapUI.cs'
+      - 'Assets/Scripts/UI/HistorianChatUI.cs'
       - 'Assets/Scripts/UI/InviteCoCreationUI.cs'
       - '.github/workflows/historian-editorial-intake.yml'
   push:
