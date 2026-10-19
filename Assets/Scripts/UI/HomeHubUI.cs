@@ -813,7 +813,13 @@ public sealed class HomeHubUI : MonoBehaviour
     {
         GameObject panel = CreateUIObject(name, parent);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .08f), new Vector2(.88f, .92f));
-        panel.AddComponent<Image>().color = PanelColor;
+        Image panelImage = panel.AddComponent<Image>();
+        // The settings page already has a custom bronze/black frame and
+        // ornate sliders. Do not paint a second translucent card over it.
+        if (name == "SettingsPanel")
+            panelImage.color = PanelColor;
+        else
+            CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
         return panel;
     }
 

@@ -301,6 +301,7 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         panelRect.offsetMax = Vector2.zero;
         Image panelImage = invitePanel.AddComponent<Image>();
         panelImage.color = panelColor;
+        CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
 
         titleText = CreateText(invitePanel.transform, "军议邀约", 48f,
             TextAlignmentOptions.Left, textPrimary);
@@ -456,6 +457,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         SetAnchored(advisorReviewPanel.GetComponent<RectTransform>(), new Vector2(.04f, .14f), new Vector2(.96f, .84f));
         Image reviewPanelImage = advisorReviewPanel.AddComponent<Image>();
         reviewPanelImage.color = new Color(.06f, .095f, .125f, .995f);
+        // A nested review card must remain a solid, compact subpanel.
+        // Rendering a second large ornament here overwhelms its buttons.
         reviewPanelImage.raycastTarget = false;
         TMP_Text reviewTitle = CreateText(advisorReviewPanel.transform, "主将审核 · 共谋回声", 42f,
             TextAlignmentOptions.Left, textPrimary);
@@ -776,9 +779,11 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         playerBrief.AddComponent<Image>().color = overlayColor;
         GameObject panel = CreateUIObject("BriefPanel", playerBrief.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.08f, .06f), new Vector2(.92f, .94f));
-        panel.AddComponent<Image>().color = panelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         TMP_Text title = CreateText(panel.transform, "出征之前", 48f, TextAlignmentOptions.Left, textPrimary);
         SetHeader(title.rectTransform);
+        // This heading sits beside the ink-panel's protruding left corner.
+        title.rectTransform.offsetMin = new Vector2(108f, -102f);
         Button back = CreateButton(panel.transform, "返回", new Vector2(180f, 72f),
             new Vector2(-30f, -26f), new Color(.30f, .20f, .18f));
         back.onClick.AddListener(() => playerBrief.SetActive(false));
@@ -811,8 +816,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
         GameObject viewport = CreateUIObject("ScrollableBody", parent);
         RectTransform rect = viewport.GetComponent<RectTransform>();
         Stretch(rect);
-        rect.offsetMin = new Vector2(42f, 126f);
-        rect.offsetMax = new Vector2(-66f, -128f);
+        rect.offsetMin = new Vector2(64f, 132f);
+        rect.offsetMax = new Vector2(-78f, -132f);
         // An almost transparent graphic receives drag events over text/gaps.
         viewport.AddComponent<Image>().color = new Color(1f, 1f, 1f, .001f);
         viewport.AddComponent<RectMask2D>();
@@ -839,8 +844,8 @@ public sealed class InviteCoCreationUI : MonoBehaviour
 
         GameObject bar = CreateUIObject("ScrollBar", parent);
         SetAnchored(bar.GetComponent<RectTransform>(), Vector2.right, Vector2.one);
-        bar.GetComponent<RectTransform>().offsetMin = new Vector2(-42f, 126f);
-        bar.GetComponent<RectTransform>().offsetMax = new Vector2(-26f, -128f);
+        bar.GetComponent<RectTransform>().offsetMin = new Vector2(-54f, 132f);
+        bar.GetComponent<RectTransform>().offsetMax = new Vector2(-38f, -132f);
         bar.AddComponent<Image>().color = new Color(.2f, .25f, .27f, .7f);
         GameObject handle = CreateUIObject("Handle", bar.transform);
         Stretch(handle.GetComponent<RectTransform>());

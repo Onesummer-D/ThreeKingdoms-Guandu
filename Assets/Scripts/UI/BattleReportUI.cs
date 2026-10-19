@@ -38,6 +38,9 @@ public sealed class BattleReportUI : MonoBehaviour
     [Header("游戏正式上线后选填：包含最终 HTTPS 访问地址的二维码贴图")]
     public Sprite gameEntryQrSprite;
 
+    [Header("仅用于导出海报的深墨长底图（可选，Resources/CardSkins/PosterDark）")]
+    public Texture2D posterBackgroundTexture;
+
     private CampaignMapUI campaignMap;
     private RunHistoryTracker historyTracker;
     private GameObject overlay;
@@ -71,6 +74,8 @@ public sealed class BattleReportUI : MonoBehaviour
         if (resourceTrendCardBadge == null) resourceTrendCardBadge = Resources.Load<Sprite>("BattleReport/ResourceTrend");
         if (cultureCardBadge == null) cultureCardBadge = Resources.Load<Sprite>("BattleReport/Culture");
         if (gameEntryQrSprite == null) gameEntryQrSprite = Resources.Load<Sprite>("BattleReport/GameEntryQR");
+        if (posterBackgroundTexture == null)
+            posterBackgroundTexture = Resources.Load<Texture2D>("CardSkins/PosterDark");
         CreateOverlay(root);
     }
 
@@ -106,7 +111,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("BattleReportPanel", overlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.055f, .045f), new Vector2(.945f, .955f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
 
         TMP_Text title = CreateText(panel.transform, "战绩报告", 52f,
             TextAlignmentOptions.Left, TextPrimary, false);
@@ -323,7 +328,7 @@ public sealed class BattleReportUI : MonoBehaviour
 
         GameObject panel = CreateUIObject("DecisionEvidencePanel", evidenceDetailOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.13f, .18f), new Vector2(.87f, .82f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(2f, -2f);
@@ -380,6 +385,7 @@ public sealed class BattleReportUI : MonoBehaviour
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.12f, .10f), new Vector2(.88f, .90f));
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = PanelColor;
+        CardBackgroundSkin.Apply(panelImage, CardBackgroundSkin.Style.DarkPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(2f, -2f);
@@ -579,6 +585,17 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private IEnumerator CapturePoster()
     {
+        // Never silently fall back to the obsolete flat-color poster.
+        // The new shareable poster requires its illustrated scroll artwork.
+        if (posterBackgroundTexture == null)
+            posterBackgroundTexture = Resources.Load<Texture2D>("CardSkins/PosterDark");
+        if (posterBackgroundTexture == null)
+        {
+            const string missingArt = "缺少海报底图 PosterDark.png，请先导入 CardSkins 资源。";
+            if (statusText != null) statusText.text = missingArt;
+            Debug.LogWarning("战绩海报未生成：" + missingArt);
+            yield break;
+        }
         capturing = true;
         if (statusText != null) statusText.text = "";
         if (scrollRect != null) scrollRect.verticalNormalizedPosition = 1f;
@@ -612,11 +629,34 @@ public sealed class BattleReportUI : MonoBehaviour
 
     private Texture2D RenderCompleteReport()
     {
-        // Render an isolated copy of all report content, outside the scroll mask.
+        // The new dark scroll has a decorative frame and an asymmetric tab.
+        // Its safe reading area is smaller than the artwork bounds. Export a
+        // separate flattened layout, never modify the in-game report cards.
+        bool decoratedPoster = posterBackgroundTexture != null;
         float width = content.rect.width;
         const float signatureHeight = 208f;
         float bodyHeight = content.rect.height;
         float height = bodyHeight + signatureHeight;
+        float posterSideInset = 0f;
+        float topInset = 0f;
+        if (decoratedPoster)
+        {
+            // PosterDark's bright frame and top tab are *outside* its dark
+            // reading surface. Reserve safe margins proportionally, not via
+            // fixed pixels that break as the history/report grows.
+            const float safeSide = .12f;
+            const float safeTop = .15f;
+            const float safeBottom = .10f;
+            float bodyWidth = width;
+            width = bodyWidth / (1f - 2f * safeSide);
+            posterSideInset = (width - bodyWidth) * .5f;
+            float artAspectHeight = posterBackgroundTexture.height /
+                Mathf.Max(1f, (float)posterBackgroundTexture.width);
+            float requiredHeight = (bodyHeight + signatureHeight) /
+                (1f - safeTop - safeBottom);
+            height = Mathf.Max(requiredHeight, width * artAspectHeight);
+            topInset = height * safeTop;
+        }
         int maxSize = Mathf.Min(SystemInfo.maxTextureSize, 8192);
         float scale = Mathf.Min(1f, maxSize / Mathf.Max(width, height));
         int pixelWidth = Mathf.Max(1, Mathf.CeilToInt(width * scale));
@@ -626,6 +666,7 @@ public sealed class BattleReportUI : MonoBehaviour
         RenderTexture target = null;
         RenderTexture previous = RenderTexture.active;
         Texture2D result = null;
+        Sprite temporaryPosterSprite = null;
         try
         {
             Canvas canvas = canvasObject.GetComponent<Canvas>();
@@ -637,22 +678,46 @@ public sealed class BattleReportUI : MonoBehaviour
             canvasRect.position = new Vector3(10000f, 10000f, 0f);
             Image background = canvasObject.AddComponent<Image>();
             background.color = PanelColor;
+            if (decoratedPoster)
+            {
+                // One continuous full-height illustration, no repeated picture
+                // behind each card or duplicate decorative footer.
+                temporaryPosterSprite = Sprite.Create(posterBackgroundTexture,
+                    new Rect(0f, 0f, posterBackgroundTexture.width, posterBackgroundTexture.height),
+                    new Vector2(.5f, .5f), 100f);
+                background.sprite = temporaryPosterSprite;
+                background.type = Image.Type.Simple;
+                background.preserveAspect = false;
+                background.color = Color.white;
+            }
+
             RectTransform copy = Instantiate(content, canvasRect, false);
             copy.anchorMin = new Vector2(0f, 1f);
             copy.anchorMax = new Vector2(1f, 1f);
             copy.pivot = new Vector2(.5f, 1f);
             copy.anchoredPosition = Vector2.zero;
             copy.sizeDelta = new Vector2(0f, bodyHeight);
-            // Keep navigation controls in the interactive report only; the
-            // exported poster contains the concise profile but no dead button.
-            foreach (Transform item in copy.GetComponentsInChildren<Transform>(true))
-                if (item.name == "EvidenceDetailOpenButton")
-                    item.gameObject.SetActive(false);
-            CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
-            // The graph's generated children are copied; prevent a data-less
-            // cloned component from rebuilding them before the export.
+            if (decoratedPoster)
+            {
+                // Keep exactly the source chart/content width, only add an
+                // external margin so labels never touch the painted frame.
+                copy.anchoredPosition = new Vector2(0f, -topInset);
+                copy.sizeDelta = new Vector2(-posterSideInset * 2f, bodyHeight);
+                PrepareIllustratedPosterContent(copy);
+            }
+
+            // A PNG has no clickable UI. The underlying in-game buttons stay.
+            foreach (Button action in copy.GetComponentsInChildren<Button>(true))
+                action.gameObject.SetActive(false);
+            if (decoratedPoster)
+                CreatePosterSignature(canvasRect, topInset + bodyHeight,
+                    signatureHeight, posterSideInset);
+            else
+                CreatePosterSignature(canvasRect, bodyHeight, signatureHeight);
+            // The graph's generated children are already copied. Prevent an
+            // inert cloned component rebuilding the timeline before rendering.
             foreach (MonoBehaviour component in copy.GetComponentsInChildren<MonoBehaviour>())
-                if (component is ResourceTrendPlotUI || component is Button) component.enabled = false;
+                if (component is ResourceTrendPlotUI) component.enabled = false;
             foreach (Transform child in canvasObject.GetComponentsInChildren<Transform>())
                 child.gameObject.layer = 31;
             Camera camera = cameraObject.GetComponent<Camera>();
@@ -689,6 +754,36 @@ public sealed class BattleReportUI : MonoBehaviour
             if (target != null) RenderTexture.ReleaseTemporary(target);
             Destroy(cameraObject);
             Destroy(canvasObject);
+            if (temporaryPosterSprite != null) Destroy(temporaryPosterSprite);
+        }
+    }
+
+    private static void PrepareIllustratedPosterContent(RectTransform reportCopy)
+    {
+        // Do not shrink a giant ornamental frame into every individual
+        // report card: old screenshots show it sitting *on top* of the text.
+        // Hide only card backgrounds/outlines in the export, keeping icons,
+        // titles, body copy and the actual resource plot untouched.
+        foreach (RectTransform item in reportCopy.GetComponentsInChildren<RectTransform>(true))
+        {
+            if (!item.name.EndsWith("Card", StringComparison.Ordinal)) continue;
+            Image cardFill = item.GetComponent<Image>();
+            if (cardFill != null)
+            {
+                cardFill.sprite = null;
+                cardFill.color = Color.clear;
+            }
+            Outline border = item.GetComponent<Outline>();
+            if (border != null) border.enabled = false;
+
+            // A thin line separates neighbouring sections without restoring
+            // the distracting large rectangular cards.
+            GameObject separator = CreateUIObject("PosterSectionDivider", item);
+            RectTransform line = separator.GetComponent<RectTransform>();
+            SetAnchored(line, new Vector2(.12f, .012f), new Vector2(.96f, .016f));
+            Image rule = separator.AddComponent<Image>();
+            rule.color = new Color(.74f, .60f, .37f, .40f);
+            rule.raycastTarget = false;
         }
     }
 
@@ -697,7 +792,8 @@ public sealed class BattleReportUI : MonoBehaviour
     /// report card. Optional QR must contain the final published game URL.
     /// Unconfigured QR is omitted instead of generating a nonfunctional code.
     /// </summary>
-    private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight, float footerHeight)
+    private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight,
+        float footerHeight, float posterSideInset = 0f)
     {
         // Always reserve an actual 148×148 QR frame at lower right. Before
         // the official landing URL is deployed it is deliberately marked
@@ -707,9 +803,11 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
         rect.pivot = new Vector2(.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -bodyHeight);
-        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x, footerHeight);
+        rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x - 2f * posterSideInset, footerHeight);
+        // The illustrated export shares the same paper: do not overlay a new
+        // solid dark footer across the bottom of its decorative scroll.
         Image background = footer.AddComponent<Image>();
-        background.color = PanelColor;
+        background.color = posterSideInset > 0f ? Color.clear : PanelColor;
         background.raycastTarget = false;
 
         GameObject line = CreateUIObject("GoldRule", footer.transform);
@@ -772,7 +870,7 @@ public sealed class BattleReportUI : MonoBehaviour
         exportOverlay.AddComponent<Image>().color = new Color(.01f, .015f, .025f, .72f);
         GameObject panel = CreateUIObject("PosterExportPanel", exportOverlay.transform);
         SetAnchored(panel.GetComponent<RectTransform>(), new Vector2(.22f, .30f), new Vector2(.78f, .70f));
-        panel.AddComponent<Image>().color = PanelColor;
+        CardBackgroundSkin.Apply(panel.AddComponent<Image>(), CardBackgroundSkin.Style.DarkPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(3f, -3f);
@@ -837,6 +935,8 @@ public sealed class BattleReportUI : MonoBehaviour
         rect.anchoredPosition = new Vector2(0f, -y);
         rect.sizeDelta = new Vector2(0f, height);
         Image image = card.AddComponent<Image>();
+        // Repeatable report rows use neutral backgrounds. The large ornate
+        // artwork belongs on the report's OUTER frame, not every row.
         image.color = CardColor;
         Outline outline = card.AddComponent<Outline>();
         outline.effectColor = new Color(.45f, .36f, .20f, .65f);

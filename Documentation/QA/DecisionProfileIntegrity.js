@@ -59,8 +59,10 @@ check(analyzer.includes('report.evidenceNotes.Sort((a, b) => a.decisionSequence.
       analyzer.includes('choice.sequence > 0 ? choice.sequence : i + 1') &&
       analyzer.includes('AddNarrativeCounselEvidence'),
   'Both strategy and narrative counsel evidence follow actual decision order');
-check(/EvidenceDetailOpenButton/.test(ui)&&/item\.gameObject\.SetActive\(false\)/.test(ui),
-  'Interactive evidence control is excluded from PNG export');
+check(/EvidenceDetailOpenButton/.test(ui) &&
+  /foreach \(Button action in copy\.GetComponentsInChildren<Button>\(true\)\)/.test(ui) &&
+  /action\.gameObject\.SetActive\(false\)/.test(ui),
+  'All clickable evidence and chart-detail controls are excluded from PNG export');
 check(!/战局记录 · /.test(ui),
   'Unrelated minigame outcomes and repeated ending are absent from the report card');
 check(!ui.includes('实际资源变化与战局记录可供追溯'),

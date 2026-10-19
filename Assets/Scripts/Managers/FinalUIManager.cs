@@ -941,6 +941,24 @@ public class FinalUIManager : MonoBehaviour
         return obj;
     }
 
+    // The exit/ending modal owns its own second row of shortcuts. Hide the
+    // original background shortcuts while that modal is open.
+    public void SetEndingShortcutsVisible(bool visible)
+    {
+        if (endingReviewButton != null) endingReviewButton.SetActive(visible);
+        if (battleReportButton != null) battleReportButton.SetActive(visible);
+    }
+
+    public void OpenEndingReviewFromExit()
+    {
+        OpenEndingReview();
+    }
+
+    public void OpenBattleReportFromExit()
+    {
+        OpenBattleReport();
+    }
+
     private void OpenEndingReview()
     {
         if (endingReviewButton != null)
