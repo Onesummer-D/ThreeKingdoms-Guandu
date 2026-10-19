@@ -853,6 +853,32 @@ public sealed class CampaignMapUI : MonoBehaviour
         HistorianChatUI.Instance?.Open();
     }
 
+    // Do not unlock the gallery's outcome cards merely because a chapter has
+    // begun. A card may describe a later fact that the player has not yet seen.
+    // Unlike an explicitly asked historical question, gallery cards are
+    // unsolicited and must follow this run's actually witnessed narrative.
+    private static bool IsHistorianCardUnlocked(HistorianCard card, HashSet<int> visited, int currentNodeId)
+    {
+        if (card == null || visited == null) return false;
+
+        switch (card.title)
+        {
+            case "许攸夜访":
+            case "乌巢粮仓":
+                // These cards reveal Wu Chao; only unlock after the
+                // intelligence has been disclosed in this story branch.
+                return visited.Contains(300309) && currentNodeId != 300309;
+            case "曹操焚粮":
+                return visited.Contains(500208) && currentNodeId != 500208;
+            case "官渡的史实结局":
+            case "战后余波":
+                // Completed any one ending: unlock historical comparison.
+                return FindReachedEndingNodeId(visited) > 0;
+            default:
+                return visited.Contains(card.anchorNodeId);
+        }
+    }
+
     private void RebuildHistorianGallery()
     {
         if (historianGalleryContent == null) return;
@@ -861,10 +887,12 @@ public sealed class CampaignMapUI : MonoBehaviour
 
         HashSet<int> visited = DialogueSystem.Instance != null
             ? DialogueSystem.Instance.visitedNodeIds : null;
+        int currentNodeId = DialogueSystem.Instance != null && DialogueSystem.Instance.CurrentNode != null
+            ? DialogueSystem.Instance.CurrentNode.nodeId : 0;
         for (int i = 0; i < HistorianCards.Length; i++)
         {
             HistorianCard card = HistorianCards[i];
-            bool unlocked = visited != null && visited.Contains(card.anchorNodeId);
+            bool unlocked = IsHistorianCardUnlocked(card, visited, currentNodeId);
             GameObject entry = CreateUIObject("HistorianCard_" + i, historianGalleryContent);
             entry.AddComponent<LayoutElement>().preferredHeight = 120f;
             Image image = entry.AddComponent<Image>();
