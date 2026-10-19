@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Commander-name card shown when starting a game, never automatically on launch.
+/// Commander-name card shown after the player clicks Start Game, once per launch.
 /// This is a fresh display name for the current app session. No remote
 /// login, reused saved ID, credentials, or persistent account required.
 /// </summary>
@@ -32,9 +32,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             if (img != null) sourceButton = img.sprite;
         }
 
-        // Build the UI now, but let the normal start menu remain visible until
-        // the player explicitly chooses Start Game.
         CreateIdentityOverlay(canvasRoot);
+        // Create the panel but leave the main menu visible on app launch.
+        // FinalUIManager.StartGame opens this card after the player clicks Start.
     }
 
     public void ShowEditor(Action afterConfirmation = null)
@@ -85,11 +85,12 @@ public sealed class PlayerIdentityUI : MonoBehaviour
 
         GameObject panel = Make("CommanderRegisterPanel", overlay.transform);
         RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(.18f, .23f);
-        panelRect.anchorMax = new Vector2(.82f, .77f);
+        panelRect.anchorMin = new Vector2(.18f, .30f);
+        panelRect.anchorMax = new Vector2(.82f, .84f);
         panelRect.offsetMin = panelRect.offsetMax = Vector2.zero;
         Image paper = panel.AddComponent<Image>();
         paper.color = new Color(.075f, .105f, .14f, 1f);
+        CardBackgroundSkin.Apply(paper, CardBackgroundSkin.Style.LightPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = new Color(.80f, .62f, .35f, .9f);
         outline.effectDistance = new Vector2(2f, -2f);
@@ -97,17 +98,25 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         TMP_Text title = Text(panel.transform, "主将留名", 48f,
             TextAlignmentOptions.Center, new Color(.91f, .73f, .4f));
         Anchor(title.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .95f));
+        if (paper.sprite != null) title.color = new Color(.36f, .22f, .13f, 1f);
 
         TMP_Text intro = Text(panel.transform,
             "为这一局征程定下名号", 35f,
             TextAlignmentOptions.Center, new Color(.87f, .86f, .80f));
         Anchor(intro.rectTransform, new Vector2(.06f, .65f), new Vector2(.94f, .84f));
+        if (paper.sprite != null) intro.color = new Color(.30f, .26f, .20f, 1f);
 
         GameObject field = Make("CommanderIdInput", panel.transform);
         RectTransform fieldRect = field.GetComponent<RectTransform>();
-        Anchor(fieldRect, new Vector2(.13f, .36f), new Vector2(.87f, .56f));
+        // Center the ivory field well INSIDE the painted paper border
+        // (the original 74%-width box touched the decorative right edge).
+        Anchor(fieldRect, new Vector2(.20f, .36f), new Vector2(.80f, .56f));
         Image fieldBg = field.AddComponent<Image>();
-        fieldBg.color = new Color(.16f, .20f, .24f, 1f);
+        // The host panel is cream parchment: keep the input ivory as well.
+        fieldBg.color = new Color(.97f, .95f, .87f, .97f);
+        Outline inputBorder = field.AddComponent<Outline>();
+        inputBorder.effectColor = new Color(.54f, .39f, .23f, .8f);
+        inputBorder.effectDistance = new Vector2(2f, -2f);
         idInput = field.AddComponent<TMP_InputField>();
         idInput.targetGraphic = fieldBg;
         idInput.contentType = TMP_InputField.ContentType.Standard;
@@ -120,7 +129,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         idInput.isRichTextEditingAllowed = false;
         idInput.caretWidth = 3;
         idInput.customCaretColor = true;
-        idInput.caretColor = Color.white;
+        idInput.caretColor = new Color(.24f, .20f, .17f, 1f);
         idInput.selectionColor = new Color(.86f, .66f, .31f, .45f);
         // Do not discard Chinese/IME characters or other normal player names.
         // Validation is performed only at submission time.
@@ -130,14 +139,14 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Anchor(viewport.GetComponent<RectTransform>(), new Vector2(.035f, .09f), new Vector2(.965f, .91f));
         RectMask2D mask = viewport.AddComponent<RectMask2D>();
         TMP_Text inputText = Text(viewport.transform, "", 32f,
-            TextAlignmentOptions.MidlineLeft, Color.white);
+            TextAlignmentOptions.MidlineLeft, new Color(.22f, .20f, .19f, 1f));
         inputText.richText = true;
         inputText.enableWordWrapping = false;
         inputText.overflowMode = TextOverflowModes.Overflow;
         Stretch(inputText.rectTransform);
         inputText.raycastTarget = false;
         TMP_Text hint = Text(viewport.transform, "例如：Guandu_07", 30f,
-            TextAlignmentOptions.MidlineLeft, new Color(.62f, .66f, .68f));
+            TextAlignmentOptions.MidlineLeft, new Color(.39f, .33f, .28f, 1f));
         Stretch(hint.rectTransform);
         hint.raycastTarget = false;
         idInput.textViewport = viewport.GetComponent<RectTransform>();
@@ -154,6 +163,15 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Anchor(confirm.GetComponent<RectTransform>(),
             new Vector2(.37f, .075f), new Vector2(.63f, .225f));
         confirm.onClick.AddListener(SubmitId);
+
+        // The illustrated paper has asymmetric ribbons on its right, so the
+        // optical content center sits LEFT of its mathematical RectTransform.
+        // Shift the content, not the artwork, after establishing all anchors.
+        foreach (Transform child in panel.transform)
+        {
+            RectTransform childRect = child as RectTransform;
+            if (childRect != null) childRect.anchoredPosition += new Vector2(-22f, 0f);
+        }
 
         overlay.SetActive(false);
     }
@@ -178,11 +196,9 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         errorText.text = string.Empty;
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        // Close the registration card before revealing the existing '出征之前'
-        // brief. Consume the continuation once to prevent double-starts.
-        Action continuation = onConfirmed;
+        Action next = onConfirmed;
         onConfirmed = null;
-        continuation?.Invoke();
+        next?.Invoke();
     }
 
     private Button CreateButton(Transform parent, string label, float size)
