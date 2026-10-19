@@ -143,6 +143,16 @@ async function main() {
       answer.body.answer.includes('许攸来投曹操'),
       'HTTP answer shows clean prose while citations remain structured');
 
+    await ask({ question: '曹操兵力有多悬殊？',
+      context: '官渡第一幕', history: [
+        { role: 'user', content: '曹操为什么议退许都？' },
+        { role: 'assistant', content: '他因粮草不足而考虑撤退。' }
+      ] });
+    check(captured.messages.length === 2 &&
+      captured.messages[1].content === '曹操兵力有多悬殊？' &&
+      !captured.messages[0].content.includes('曹操为什么议退许都'),
+      'fully stated new question excludes stale history from actual model request');
+
     const rejected = await ask({ question: '帮我写一个Python排序程序', history });
     check(rejected.body.mode === 'grounded_refusal' && rejected.body.citations.length === 0, 'out-of-scope topic refuses despite history');
     check((await ask({ question: '  ' })).status === 400, 'blank question rejected');
