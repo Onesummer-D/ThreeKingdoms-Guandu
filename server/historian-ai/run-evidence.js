@@ -113,7 +113,7 @@ function answerRunQuestion(run, question) {
   return {
     answer: parts.join('\n\n'),
     mode: 'run_evidence', retrieved: ['G01'],
-    citations: [{ id: 'G01', title: '本局已发生的战况记录', source: '游戏内 RunHistoryTracker；非历史史料' }]
+    citations: [{ id: 'G01', title: '本局已发生的战况记录', source: '玩家本局的选择、资源变化及结局记录（非历史史料）' }]
   };
 }
 module.exports = { sanitizeRun, answerRunQuestion, isRunQuestion, formatResources };
