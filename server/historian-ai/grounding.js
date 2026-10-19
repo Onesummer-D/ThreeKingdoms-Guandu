@@ -182,12 +182,20 @@ function validateAnswer(answer, docs) {
   return supportedStatements > 0 ? { valid: true, reason: '' } : { valid: false, reason: 'empty_statements' };
 }
 function fallbackAnswer(question, docs) {
-  if (!docs.length) return '现有史料不足以确认这个问题。请尝试更具体的官渡人物或事件问题。';
-  // Keep excerpts attributable; don't turn unrelated cards into an essay.
-  // A concise contextual fallback, not an invented model response and not
-  // the original full Word sample. Keep every line attributed to its own card.
-  return docs.slice(0, 2).map(doc =>
-    doc.summary + '（' + (doc.kind === 'design' ? '游戏设定' : '史书记载与边界') + '）[' + doc.id + ']').join('\n');
+  if (!docs.length) return '这个问题目前没有找到对应的史料卡；可以问我官渡人物、粮草、战术或游戏与史实的区别。';
+  // Fallback is not a second essay assembled from vaguely related documents.
+  // Give the best matched card's concrete editorial fact, without empty labels.
+  const main = docs[0];
+  let answer = main.summary.trim() + '[' + main.id + ']';
+  // One optional, clearly relevant source; never append all retrieved cards
+  // merely because they shared a keyword.
+  const second = docs.find((doc, i) => i > 0 &&
+    scoreDocument(doc, question) >= Math.max(14, scoreDocument(main, question) * 0.85) &&
+    doc.id !== main.id);
+  if (second && answer.length < 130 && !answer.includes(second.summary.trim())) {
+    answer += '\n' + second.summary.trim() + '[' + second.id + ']';
+  }
+  return answer;
 }
 async function askOpenAI(prompt, question, history) {
   const key = process.env.OPENAI_API_KEY;
@@ -223,7 +231,7 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
   if (isRunQuestion(question)) return answerRunQuestion(run, question);
   const history = normalizeHistory(rawHistory);
   const query = retrievalQuery(question, history, context);
-  if (/(精确|准确|每一天|分钟|伤亡|逐日)/.test(String(question || ''))) return {
+  if (/(?:精确|准确|具体).{0,10}(?:伤亡人数|死伤人数|伤亡数字|阵亡人数|死亡人数|分钟级|逐日兵力)|(?:每一天|每分钟|逐日).{0,8}(?:伤亡|人数|损失)/.test(String(question || ''))) return {
     answer: '现有史料不足以确认精确伤亡、逐日或分钟级数据；本游戏中的资源数值也不是史书原始数据。',
     mode: 'grounded_refusal', citations: [], retrieved: []
   };
@@ -239,8 +247,28 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
     answer = await askOpenAI(prompt, question, history);
     if (answer) mode = 'grounded_model';
   } catch (_) { answer = null; }
-  const check = validateAnswer(answer, docs);
-  if (!check.valid) {
+  let check = validateAnswer(answer, docs);
+  // Grounded answers should not begin by brushing off an answerable question.
+  // A retry may fix clipped citations or an overly guarded introduction.
+  const formulaicOpening = /^(现有史料不足以|目前无法|无法证明|不能确定|尚无足够史料|没有足够证据)/.test(String(answer || '').trim());
+  if (answer && (!check.valid || formulaicOpening)) {
+    try {
+      const revised = await askOpenAI(
+        prompt + '\n\n【本次改写要求】你刚才的回答因' +
+        (formulaicOpening ? '空泛的否定式开场' : '证据标注未合格（' + check.reason + '）') +
+        '需要重写。请从当前卡片中选出一个最直接的可核实事实作第一句。' +
+        '只写能被对应卡片支持的事实，每句末尾标注[Hxx]；争议点说明对应来源，避免套话。' +
+        '不要复制前一次回答，不要先说“无法证明”，也不要固定三段结构。',
+        question, history);
+      const revisedCheck = validateAnswer(revised, docs);
+      if (revisedCheck.valid &&
+          !/^(现有史料不足以|目前无法|无法证明|不能确定|尚无足够史料)/.test(String(revised).trim())) {
+        answer = revised;
+        check = revisedCheck;
+      }
+    } catch (_) { /* Fall back to attributed card text below. */ }
+  }
+  if (!check.valid || !answer || /^(现有史料不足以|目前无法|无法证明|不能确定|尚无足够史料)/.test(String(answer).trim())) {
     answer = fallbackAnswer(question, docs);
     mode = 'grounded_fallback';
   }
