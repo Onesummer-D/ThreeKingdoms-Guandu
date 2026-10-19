@@ -81,8 +81,14 @@ function normalizeHistory(value) {
 }
 function retrievalQuery(question, history, context) {
   const text = String(question || '').trim();
-  const followUp = /^(那|那么|所以|为什么|为何|还有|然后|这|他|她|它|他们|其|能否|可以|详细|展开|再|接着|继续|说说|具体)/.test(text) ||
-    /(他|她|它|此人|这件事|刚才|上面|上述|当前|这里|这一段)/.test(text);
+  // A fully specified new question must not inherit the previous subject.
+  // "曹操兵力有多悬殊？" is independent even if the last answer discussed
+  // retiring to Xudu. "曹操为什么相信他？" is anaphoric and may need Xu You.
+  const referential = /(?:他|她|它|他们|此人|此事|这件事|刚才|上面|上述|这一段|那个决定|那次|这场)/.test(text);
+  const subject = /(?:曹操|孟德|袁绍|许攸|子远|荀彧|荀攸|贾诩|张郃|高览|淳于琼|沮授|田丰|官渡|乌巢|许都|霹雳车|发石车|粮草|粮道|兵力|弓箭|地道|土山|史官)/.test(text);
+  if (subject && !referential) return text;
+  const followUp = referential ||
+    /^(?:那|那么|所以|还有|然后|继续|接着|再说|展开|详细说|具体说|为什么|为何|怎么回事|那后来)/.test(text);
   if (!followUp) return text;
   const lastUser = [...history].reverse().find(item => item.role === 'user');
   const lastAnswer = [...history].reverse().find(item => item.role === 'assistant');
