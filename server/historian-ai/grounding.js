@@ -227,6 +227,15 @@ async function askOpenAI(prompt, question, history) {
       ? data.choices[0].message.content : null;
   } finally { clearTimeout(timeout); }
 }
+// Model citations are internal evidence metadata. Keep them through validation
+// and citation extraction; never put reference IDs into player-facing prose.
+function playerFacingAnswer(value) {
+  return String(value == null ? '' : value)
+    .replace(/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/g, '')
+    .replace(/[ \t]+(?=[。！？；，、,.!?;])/g, '')
+    .trim();
+}
+
 async function answerQuestion(question, context, rawHistory, rawRun) {
   const run = sanitizeRun(rawRun);
   if (isRunQuestion(question)) return answerRunQuestion(run, question);
@@ -275,7 +284,7 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
   }
   const cited = new Set([...answer.matchAll(/\[([A-Z]\d{2})\]/g)].map(match => match[1]));
   return {
-    answer, mode,
+    answer: playerFacingAnswer(answer), mode,
     citations: docs.filter(doc => cited.has(doc.id)).map(doc => ({ id: doc.id, title: doc.title, source: doc.source })),
     retrieved: docs.map(doc => doc.id)
   };
@@ -283,5 +292,5 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
 module.exports = {
   corpus, styleExamples, grams, scoreDocument, retrieve, selectStyleExamples, normalizeHistory, retrievalQuery,
   hasEvidence, buildGroundedPrompt, validateAnswer, explicitHistoricalContradiction, fallbackAnswer, askOpenAI,
-  answerQuestion, sanitizeRun, answerRunQuestion, isRunQuestion
+  playerFacingAnswer, answerQuestion, sanitizeRun, answerRunQuestion, isRunQuestion
 };
