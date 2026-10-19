@@ -391,10 +391,20 @@ public sealed class HistorianChatUI : MonoBehaviour
         });
     }
 
+    // Evidence references are for the validator, not part of the player's story.
+    // Also clean older server responses, offline answers and restored history.
+    private static string PlayerFacingText(string text)
+    {
+        return Regex.Replace(text ?? string.Empty,
+            @"[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]", "",
+            RegexOptions.IgnoreCase).Trim();
+    }
+
     private void CompleteAnswer(TMP_Text body, HistorianAskResponse response)
     {
-        body.text = Regex.Replace(response.answer, @"\[[HG]\d{2}\]", "").Trim();
-        history.Add(new HistorianChatMessage("assistant", response.answer));
+        string playerAnswer = PlayerFacingText(response.answer);
+        body.text = playerAnswer;
+        history.Add(new HistorianChatMessage("assistant", playerAnswer));
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
@@ -587,12 +597,18 @@ public sealed class HistorianChatUI : MonoBehaviour
     {
         if (citations == null || citations.Length == 0) return;
         bool gameRecord = citations.Length == 1 && citations[0].id == "G01";
-        string sourceLabel = gameRecord ? "查看本局记录依据" : "查看史料来源";
+        bool gameDesign = citations.Length == 1 && citations[0].id == "D01";
+        string sourceLabel = gameRecord ? "查看本局记录依据" :
+            gameDesign ? "查看游戏设定说明" : "查看史料来源";
         Button toggle = Button(bubble, sourceLabel + "（" + citations.Length + "）", 22f);
         toggle.gameObject.AddComponent<LayoutElement>().preferredHeight = 42f;
         StringBuilder lines = new StringBuilder();
         foreach (HistorianCitation citation in citations)
-            lines.Append(citation.title).Append("\n").Append(citation.source).Append("\n\n");
+        {
+            if (citation == null) continue;
+            lines.Append(PlayerFacingText(citation.title)).Append("\n")
+                .Append(PlayerFacingText(citation.source)).Append("\n\n");
+        }
         TMP_Text details = Text(bubble, lines.ToString().Trim(), 22f, Muted);
         details.enableWordWrapping = true;
         details.overflowMode = TextOverflowModes.Overflow;
