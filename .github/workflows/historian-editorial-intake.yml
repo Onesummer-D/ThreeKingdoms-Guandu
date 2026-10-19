@@ -6,6 +6,7 @@ on:
       - 'Documentation/Editorial/Historian/**'
       - 'Documentation/QA/HistorianEditorialIntakeChecks.js'
       - 'Documentation/QA/HistorianPlayerCopyChecks.js'
+      - 'Documentation/QA/HistorianAnswerVoiceChecks.js'
       - 'Assets/Scripts/UI/CampaignMapUI.cs'
       - 'Assets/Scripts/UI/InviteCoCreationUI.cs'
       - '.github/workflows/historian-editorial-intake.yml'
@@ -29,3 +30,5 @@ jobs:
         run: node Documentation/QA/HistorianEditorialIntakeChecks.js
       - name: Check gameplay copy and historian spoiler guards
         run: node Documentation/QA/HistorianPlayerCopyChecks.js
+      - name: Guard factual-first historian voice and source display
+        run: node Documentation/QA/HistorianAnswerVoiceChecks.js
