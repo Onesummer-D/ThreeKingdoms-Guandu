@@ -72,8 +72,8 @@ check(!offline.includes('当前连接旧版史官服务') &&
   !offline.includes('answerVersion = "local-offline"') &&
   !offline.includes('Debug.Log("[Historian] answerVersion="'),
   'Historian game UI no longer displays or logs deployment version diagnostics');
-check(offline.includes('依据史料回答 · Enter 发送 · Shift + Enter 换行'),
-  'Historian retains unobtrusive player-facing message status');
+check(offline.includes('status.text = response.mode == "grounded_model" ? "依据史料回答" :'),
+  'Historian retains compact source-based status without redundant keyboard hints');
 check(offline.includes('bool explicitSubject = Regex.IsMatch(query') &&
   offline.includes('!(explicitSubject && !refersBack)'),
   'Unity offline fallback keeps independent question topics separate');
