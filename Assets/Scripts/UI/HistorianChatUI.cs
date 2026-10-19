@@ -710,7 +710,7 @@ public sealed class HistorianLocalKnowledge
                 query += " " + history[history.Length - 2].content + " " + history[history.Length - 1].content;
             else query += " " + (context ?? "");
         }
-        if (Regex.IsMatch(query, @"精确|准确|每一天|分钟|伤亡|逐日"))
+        if (Regex.IsMatch(query, @"(精确|准确|具体).{0,10}(伤亡人数|死伤人数|伤亡数字|阵亡人数|死亡人数|分钟级|逐日兵力)|(每一天|每分钟|逐日).{0,8}(伤亡|人数|损失)"))
             return Refuse();
 
         List<Card> matches = new List<Card>();
@@ -728,13 +728,12 @@ public sealed class HistorianLocalKnowledge
 
         StringBuilder answer = new StringBuilder();
         List<HistorianCitation> sources = new List<HistorianCitation>();
-        int limit = Math.Min(2, matches.Count);
+        // One directly matched card is more useful than two loosely related extracts.
+        int limit = Math.Min(1, matches.Count);
         for (int i = 0; i < limit; i++)
         {
             Card card = matches[i];
-            answer.Append(card.summary).Append("（")
-                .Append(card.id == "D01" ? "游戏规则" : "史书记载与边界")
-                .Append("）[").Append(card.id).Append("]\n");
+            answer.Append(card.summary.Trim()).Append("[").Append(card.id).Append("]");
             sources.Add(new HistorianCitation { id = card.id, title = card.title, source = card.source });
         }
         return new HistorianAskResponse { ok = true, mode = "grounded_fallback",
@@ -744,7 +743,7 @@ public sealed class HistorianLocalKnowledge
     private static HistorianAskResponse Refuse()
     {
         return new HistorianAskResponse { ok = true, mode = "grounded_refusal",
-            answer = "现有史料不足以确认这个问题。可具体询问官渡人物、战术与史实改编。",
+            answer = "这道问题暂时没有匹配到可靠的史料卡。你可以问官渡的人物、粮草、战术，或者游戏改编了哪里。",
             citations = new HistorianCitation[0] };
     }
 
