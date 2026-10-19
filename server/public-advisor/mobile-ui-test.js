@@ -111,4 +111,20 @@ check(server.includes(".replace('__GAME_ENTRY_URL__', inlineJson(PUBLIC_GAME_ENT
   'Server injects optional landing URL safely');
 check(server.includes("replace(/</g, '\\\\u003c')"),
   'Inline JSON encodes HTML-breaking angle brackets');
+check(html.includes('function formatDecisionText(raw, options)') &&
+  html.includes("textContent=formatDecisionText(question,data.options)") &&
+  html.includes("value+='\\n'+choices.map"),
+  'Question prints the dilemma followed by one numbered choice per line');
+check(html.includes('grid-template-columns:minmax(0,1fr)') &&
+  html.includes('@media (max-width:480px)') &&
+  html.includes('min-height:118px'),
+  'Phone-width option buttons use their own flexible full-width row');
+check(html.includes('white-space:pre-line;overflow-wrap:anywhere') &&
+  html.includes('min-height:176px'),
+  'Decision lettering wraps inside a height-flexible painted question panel');
+check(html.includes('property="og:image" content="__SHARE_IMAGE_URL__"') &&
+  html.includes('name="twitter:image" content="__SHARE_IMAGE_URL__"') &&
+  server.includes(".replaceAll('__SHARE_IMAGE_URL__', shareImageUrl)") &&
+  server.includes("new URL('/assets/battle-hero.png', origin)"),
+  'Social sharing exposes an absolute public image without exposing invitation token');
 console.log('mobile-advisor-page: '+count+'/'+count);
