@@ -238,7 +238,10 @@ function playerFacingAnswer(value) {
 
 async function answerQuestion(question, context, rawHistory, rawRun) {
   const run = sanitizeRun(rawRun);
-  if (isRunQuestion(question)) return answerRunQuestion(run, question);
+  if (isRunQuestion(question)) {
+    const review = answerRunQuestion(run, question);
+    return { ...review, answer: playerFacingAnswer(review.answer) };
+  }
   const history = normalizeHistory(rawHistory);
   const query = retrievalQuery(question, history, context);
   if (/(?:精确|准确|具体).{0,10}(?:伤亡人数|死伤人数|伤亡数字|阵亡人数|死亡人数|分钟级|逐日兵力)|(?:每一天|每分钟|逐日).{0,8}(?:伤亡|人数|损失)/.test(String(question || ''))) return {
