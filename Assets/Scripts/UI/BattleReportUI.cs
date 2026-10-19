@@ -337,14 +337,46 @@ public sealed class BattleReportUI : MonoBehaviour
             TextAlignmentOptions.Center, AccentColor, false);
         SetAnchored(heading.rectTransform, new Vector2(.10f, .84f), new Vector2(.89f, .96f));
 
-        evidenceDetailText = CreateText(panel.transform, "", 29f,
-            TextAlignmentOptions.TopLeft, TextPrimary, true);
-        evidenceDetailText.enableAutoSizing = true;
-        evidenceDetailText.fontSizeMin = 22f;
-        evidenceDetailText.fontSizeMax = 29f;
-        SetAnchored(evidenceDetailText.rectTransform, new Vector2(.075f, .16f), new Vector2(.93f, .83f));
+        // A long run can contain many choices. Enlarging the white copy
+        // must never shrink it back to unreadable text or crop later entries.
+        GameObject viewport = CreateUIObject("EvidenceTextViewport", panel.transform);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        SetAnchored(viewportRect, new Vector2(.075f, .16f), new Vector2(.93f, .83f));
+        Image hitArea = viewport.AddComponent<Image>();
+        hitArea.color = Color.clear;
+        hitArea.raycastTarget = true;
+        viewport.AddComponent<RectMask2D>();
 
-        Button close = CreateButton(panel.transform, "关闭", 29f);
+        GameObject scrollContent = CreateUIObject("EvidenceScrollContent", viewport.transform);
+        RectTransform scrollContentRect = scrollContent.GetComponent<RectTransform>();
+        scrollContentRect.anchorMin = new Vector2(0f, 1f);
+        scrollContentRect.anchorMax = Vector2.one;
+        scrollContentRect.pivot = new Vector2(.5f, 1f);
+        scrollContentRect.anchoredPosition = Vector2.zero;
+        scrollContentRect.sizeDelta = Vector2.zero;
+        VerticalLayoutGroup layout = scrollContent.AddComponent<VerticalLayoutGroup>();
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        ContentSizeFitter fitter = scrollContent.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        evidenceDetailText = CreateText(scrollContent.transform, "", 38f,
+            TextAlignmentOptions.TopLeft, TextPrimary, true);
+        evidenceDetailText.enableAutoSizing = false;
+        evidenceDetailText.lineSpacing = 5f;
+
+        ScrollRect evidenceScroll = viewport.AddComponent<ScrollRect>();
+        evidenceScroll.viewport = viewportRect;
+        evidenceScroll.content = scrollContentRect;
+        evidenceScroll.horizontal = false;
+        evidenceScroll.vertical = true;
+        evidenceScroll.movementType = ScrollRect.MovementType.Clamped;
+        evidenceScroll.scrollSensitivity = 44f;
+
+        Button close = CreateButton(panel.transform, "关闭", 34f);
         SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.72f, .025f), new Vector2(.93f, .135f));
         close.onClick.AddListener(() => evidenceDetailOverlay.SetActive(false));
         evidenceDetailOverlay.SetActive(false);
