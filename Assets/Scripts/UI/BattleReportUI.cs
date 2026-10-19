@@ -35,9 +35,6 @@ public sealed class BattleReportUI : MonoBehaviour
     public Sprite cultureCardBadge;
     public Sprite advisorEchoCardBadge;
 
-    [Header("游戏正式上线后选填：包含最终 HTTPS 访问地址的二维码贴图")]
-    public Sprite gameEntryQrSprite;
-
     [Header("仅用于导出海报的深墨长底图（可选，Resources/CardSkins/PosterDark）")]
     public Texture2D posterBackgroundTexture;
 
@@ -73,7 +70,6 @@ public sealed class BattleReportUI : MonoBehaviour
         if (advisorEchoCardBadge == null) advisorEchoCardBadge = Resources.Load<Sprite>("BattleReport/AdvisorEcho");
         if (resourceTrendCardBadge == null) resourceTrendCardBadge = Resources.Load<Sprite>("BattleReport/ResourceTrend");
         if (cultureCardBadge == null) cultureCardBadge = Resources.Load<Sprite>("BattleReport/Culture");
-        if (gameEntryQrSprite == null) gameEntryQrSprite = Resources.Load<Sprite>("BattleReport/GameEntryQR");
         if (posterBackgroundTexture == null)
             posterBackgroundTexture = Resources.Load<Texture2D>("CardSkins/PosterDark");
         CreateOverlay(root);
@@ -666,7 +662,7 @@ public sealed class BattleReportUI : MonoBehaviour
         // separate flattened layout, never modify the in-game report cards.
         bool decoratedPoster = posterBackgroundTexture != null;
         float width = content.rect.width;
-        const float signatureHeight = 208f;
+        const float signatureHeight = 128f;
         float bodyHeight = content.rect.height;
         float height = bodyHeight + signatureHeight;
         float posterSideInset = 0f;
@@ -820,72 +816,36 @@ public sealed class BattleReportUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Render a footer only into the exported PNG; never into a scrollable
-    /// report card. Optional QR must contain the final published game URL.
-    /// Unconfigured QR is omitted instead of generating a nonfunctional code.
+    /// Add only the player's signature to the exported PNG. There is no
+    /// reserved game-entry QR frame while the game ships as desktop-first.
+    /// In-game report cards and invitation QR remain unchanged.
     /// </summary>
     private void CreatePosterSignature(RectTransform canvasRect, float bodyHeight,
         float footerHeight, float posterSideInset = 0f)
     {
-        // Always reserve an actual 148×148 QR frame at lower right. Before
-        // the official landing URL is deployed it is deliberately marked
-        // unavailable, rather than pretending a fake placeholder can scan.
         GameObject footer = CreateUIObject("PosterSignatureFooter", canvasRect);
         RectTransform rect = footer.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1f);
         rect.pivot = new Vector2(.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -bodyHeight);
         rect.sizeDelta = new Vector2(canvasRect.sizeDelta.x - 2f * posterSideInset, footerHeight);
-        // The illustrated export shares the same paper: do not overlay a new
-        // solid dark footer across the bottom of its decorative scroll.
+        // Keep the illustration uninterrupted behind the signature.
         Image background = footer.AddComponent<Image>();
         background.color = posterSideInset > 0f ? Color.clear : PanelColor;
         background.raycastTarget = false;
 
         GameObject line = CreateUIObject("GoldRule", footer.transform);
-        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .91f), new Vector2(.955f, .925f));
+        SetAnchored(line.GetComponent<RectTransform>(), new Vector2(.045f, .92f), new Vector2(.955f, .94f));
         line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
 
         string id = PlayerIdentityState.CurrentId;
         TMP_Text sign = CreateText(footer.transform,
             "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
             34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false);
-        SetAnchored(sign.rectTransform, new Vector2(.055f, .15f), new Vector2(.72f, .83f));
+        SetAnchored(sign.rectTransform, new Vector2(.055f, .12f), new Vector2(.945f, .82f));
         sign.enableAutoSizing = true;
         sign.fontSizeMin = 24f;
         sign.fontSizeMax = 34f;
-
-        GameObject frame = CreateUIObject("GameEntryQRCodeReservedArea", footer.transform);
-        RectTransform frameRect = frame.GetComponent<RectTransform>();
-        frameRect.anchorMin = frameRect.anchorMax = new Vector2(1f, .5f);
-        frameRect.pivot = new Vector2(.5f, .5f);
-        frameRect.anchoredPosition = new Vector2(-120f, -7f);
-        frameRect.sizeDelta = new Vector2(148f, 148f);
-        Image frameBackground = frame.AddComponent<Image>();
-        frameBackground.color = gameEntryQrSprite != null ? Color.white :
-            new Color(.13f, .18f, .20f, 1f);
-        frameBackground.raycastTarget = false;
-        Outline frameOutline = frame.AddComponent<Outline>();
-        frameOutline.effectColor = AccentColor;
-        frameOutline.effectDistance = new Vector2(1f, -1f);
-
-        if (gameEntryQrSprite != null)
-        {
-            GameObject imageObject = CreateUIObject("GameEntryQR", frame.transform);
-            RectTransform qrRect = imageObject.GetComponent<RectTransform>();
-            SetAnchored(qrRect, new Vector2(.065f, .065f), new Vector2(.935f, .935f));
-            Image qr = imageObject.AddComponent<Image>();
-            qr.sprite = gameEntryQrSprite;
-            qr.color = Color.white;
-            qr.preserveAspect = true;
-            qr.raycastTarget = false;
-        }
-        else
-        {
-            TMP_Text pending = CreateText(frame.transform, "扫码游玩\n上线后开放",
-                21f, TextAlignmentOptions.Center, TextMuted, true);
-            Stretch(pending.rectTransform);
-        }
     }
 
     private static string GetPosterDirectory()
