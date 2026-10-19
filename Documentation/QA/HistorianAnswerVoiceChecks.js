@@ -52,6 +52,18 @@ check(!fallback.includes('史书记载与边界') && !fallback.includes('史实�
 check(offline.includes('int limit = Math.Min(1, matches.Count)') &&
   !offline.includes('Append("（")'),
   'Unity offline historian no longer stacks generic abstracts');
+check(offline.includes('string playerAnswer = PlayerFacingText(response.answer)') &&
+  offline.includes('history.Add(new HistorianChatMessage("assistant", playerAnswer))'),
+  'Unity both renders and remembers only player-facing text');
+check(offline.includes('private static string PlayerFacingText(') &&
+  offline.includes('RegexOptions.IgnoreCase'),
+  'Unity compatibility cleanup supports legacy citation markers');
+check(offline.includes('PlayerFacingText(citation.title)') &&
+  offline.includes('PlayerFacingText(citation.source)') &&
+  offline.includes('查看史料来源'),
+  'Expandable sources show real titles and sources, never evidence IDs');
+check(offline.includes('查看游戏设定说明') && offline.includes('查看本局记录依据'),
+  'Game design and run-record evidence use natural player labels');
 check(!/精确\|准确\|每一天\|分钟\|伤亡\|逐日/.test(offline),
   'Broad keyword-based refusal no longer discards ordinary accuracy questions');
 console.log('historian-answer-voice: ' + count + '/' + count);
