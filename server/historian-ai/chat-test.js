@@ -61,13 +61,21 @@ async function main() {
 
   let captured;
   let mode = 'valid';
+  let retryCount = 0;
   const model = http.createServer(async (req, res) => {
     let raw = '';
     for await (const chunk of req) raw += chunk;
     captured = JSON.parse(raw);
     if (mode === 'http-error') { res.writeHead(503); res.end(); return; }
     res.setHeader('Content-Type', 'application/json');
-    const content = mode === 'bad-citation' ? '不存在的史料说曹操精确预知未来。[H99]' : '许攸来投曹操，提供乌巢军粮相关情报。[H06]';
+    if (mode === 'formulaic') retryCount++;
+    const content = mode === 'bad-citation'
+      ? '不存在的史料说曹操精确预知未来。[H99]'
+      : mode === 'formulaic'
+        ? (retryCount === 1
+          ? '目前无法证明许攸为何投曹。[H05]'
+          : '《武帝纪》记许攸因贪财不得满足而来投曹操。[H05]')
+        : '许攸来投曹操，提供乌巢军粮相关情报。[H06]';
     res.end(JSON.stringify({ choices: [{ message: { content } }] }));
   });
   await new Promise(resolve => model.listen(0, '127.0.0.1', resolve));
@@ -140,6 +148,12 @@ async function main() {
     check(missingRun.body.mode === 'run_unavailable', 'missing run data does not invent result');
     const historyQuestion = await ask({ question: '我为什么要听许攸的建议？' });
     check(historyQuestion.body.mode !== 'run_evidence', 'historical why-question does not become personal run review');
+    mode = 'formulaic';
+    retryCount = 0;
+    const repaired = await ask({ question: '许攸为什么投曹？' });
+    check(repaired.body.mode === 'grounded_model' && retryCount === 2 &&
+      repaired.body.answer.startsWith('《武帝纪》记许攸'),
+      'answerable question repairs a formulaic negative opening into a concrete sourced answer');
     mode = 'bad-citation';
     const bad = await ask({ question: '乌巢为什么重要？' });
     check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') &&
