@@ -16,6 +16,16 @@ async function main() {
   const query = grounding.retrievalQuery('曹操为什么相信他？', history, '');
   check(query.includes('许攸') && grounding.retrieve(query).some(doc => doc.id === 'H06'), 'pronoun follow-up retrieves previous subject');
   check(grounding.retrievalQuery('张郃和高览为何改变立场？', history, '') === '张郃和高览为何改变立场？', 'new subject does not inherit stale history');
+  const lastTopic = [
+    { role: 'user', content: '曹操为什么想退回许都？' },
+    { role: 'assistant', content: '曹操因军粮不足而议退许都。' }
+  ];
+  check(grounding.retrievalQuery('曹操兵力有多悬殊？', lastTopic, '开局') === '曹操兵力有多悬殊？',
+    'independent troop-number question does not inherit retreat-to-Xudu history');
+  check(grounding.retrievalQuery('为什么曹操兵力较少？', lastTopic, '') === '为什么曹操兵力较少？',
+    'a why-question with an explicit subject is independent');
+  check(grounding.retrievalQuery('那他为什么考虑退兵？', lastTopic, '').includes('曹操为什么想退回许都'),
+    'genuine referential follow-up still borrows previous topic');
   check(!grounding.validateAnswer('当然是真的。', grounding.retrieve('乌巢')).valid, 'short unsupported model answer rejected');
   check(grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H06'), 'focused retrieval finds Wuchao');
   check(!grounding.retrieve('乌巢为什么重要？').some(doc => doc.id === 'H10'), 'focused retrieval suppresses unrelated Xu You death spoiler');
