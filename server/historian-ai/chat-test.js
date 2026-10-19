@@ -24,6 +24,13 @@ async function main() {
   check(grounding.styleExamples.length===10 &&
     grounding.selectStyleExamples('许攸为什么会投奔曹操？', grounding.retrieve('许攸为什么会投奔曹操？')).length>0,
     'Ten submitted editorial examples inform voice, not citation IDs');
+  const citationFree = grounding.playerFacingAnswer('曹操粮尽，因此致书荀彧。[H04] 如今可查到的是劝守。[H04][D01]\n本局曾选择退兵。[G01]');
+  check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(citationFree) &&
+    citationFree.includes('曹操粮尽') && citationFree.includes('本局曾选择退兵'),
+    'All internal evidence IDs disappear from final player prose without losing history');
+  check(grounding.playerFacingAnswer('《荀彧传》记曹操议退。【H04】\n荀彧劝守。（H04）').includes('荀彧劝守。') &&
+    !grounding.playerFacingAnswer('《荀彧传》。【H04】').includes('H04'),
+    'Brackets in alternate display styles cannot leak citation IDs');
   check(grounding.corpus.some(doc=>doc.id==='D01' && doc.kind==='design') &&
     grounding.corpus.some(doc=>doc.id==='H03' && doc.originalText.includes('发石车')),
     'Source-level evidence and game design documents remain distinguishable');
@@ -122,6 +129,10 @@ async function main() {
     check(captured.messages.length === 4 && captured.messages[1].content === history[0].content && captured.messages[3].content === '曹操为什么相信他？', 'model receives history before latest question');
     check(captured.messages[0].content.includes('许攸夜访') && captured.messages[0].content.includes('[H06]'), 'model receives visible plot and relevant evidence');
     check(answer.body.citations.length === 1 && answer.body.citations[0].id === 'H06', 'UI sources include only actual cited cards');
+    check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(answer.body.answer) &&
+      answer.body.answer.includes('许攸来投曹操'),
+      'HTTP answer shows clean prose while citations remain structured');
+
     const rejected = await ask({ question: '帮我写一个Python排序程序', history });
     check(rejected.body.mode === 'grounded_refusal' && rejected.body.citations.length === 0, 'out-of-scope topic refuses despite history');
     check((await ask({ question: '  ' })).status === 400, 'blank question rejected');
@@ -141,6 +152,9 @@ async function main() {
       runAnswer.body.answer.includes('拒绝许攸情报') &&
       runAnswer.body.citations.length === 1 && runAnswer.body.citations[0].id === 'G01',
       'run review uses actual completed-run decisions and G01 game evidence');
+    check(!/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(runAnswer.body.answer),
+      'Run review never exposes internal game-history evidence markers');
+
     const inProgress = await ask({ question: '本局为什么会输？', run: { ...run, completed: false, ending: null } });
     check(inProgress.body.mode === 'run_evidence' && inProgress.body.answer.includes('尚无已记录的终局') &&
       !inProgress.body.answer.includes('错失良机'), 'unfinished game does not leak ending');
@@ -154,6 +168,8 @@ async function main() {
     check(repaired.body.mode === 'grounded_model' && retryCount === 2 &&
       repaired.body.answer.startsWith('《武帝纪》记许攸'),
       'answerable question repairs a formulaic negative opening into a concrete sourced answer');
+    check(!repaired.body.answer.includes('[H05]') && repaired.body.citations.some(c => c.id === 'H05'),
+      'Repaired model answer separates hidden evidence IDs from player prose');
     mode = 'bad-citation';
     const bad = await ask({ question: '乌巢为什么重要？' });
     check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') &&
