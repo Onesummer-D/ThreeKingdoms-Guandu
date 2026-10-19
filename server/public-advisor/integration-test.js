@@ -80,9 +80,9 @@ async function main() {
     check(answer.body.mode === 'grounded_fallback' &&
       Date.now() - started < 3000 &&
       typeof answer.body.answer === 'string' && answer.body.answer.trim().length > 0 &&
-      sources.length > 0 && sources.every(source => /^H\\d{2}$/.test(source.id) &&
+      sources.length > 0 && sources.every(source => /^H[0-9]{2}$/.test(source.id) &&
         typeof source.title === 'string' && source.title.length > 0) &&
-      !/\\[[A-Z]\\d{2}\\]/.test(answer.body.answer),
+      !/\[[A-Z][0-9]{2}\]/.test(answer.body.answer),
       'stalled model body times out with structured citations and clean player prose');
     console.log(`integration: ${count}/${count}`);
   } finally {
