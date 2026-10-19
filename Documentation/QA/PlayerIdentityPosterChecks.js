@@ -12,8 +12,9 @@ let pass=0;
 function check(ok,label){assert.ok(ok,label);console.log('PASS '+label);pass++;}
 check(/playerIdentityUI.Initialize\(gameInterfacePanel.transform.root, startMenuPanel.transform\)/.test(manager),
   'Identity gate initialized after existing menu');
-check(/public void StartGame\(\)[\s\S]{0,160}!PlayerIdentityState.HasId/.test(manager),
-  'Start Game blocked until player chooses ID');
+check(/public void StartGame\(\)[\s\S]{0,420}!PlayerIdentityState.HasId/.test(manager) &&
+  manager.includes('playerIdentityUI.ShowEditor(ContinueStartAfterIdentity)'),
+  'Start Game requests player name before the brief without a second menu click');
 check(/private void BeginNewRun\(\)[\s\S]{0,160}!PlayerIdentityState.HasId/.test(manager),
   'Replay/new run paths also require ID');
 check(/public bool LoadRunFromSlot\([\s\S]{0,180}!PlayerIdentityState.HasId/.test(manager),
