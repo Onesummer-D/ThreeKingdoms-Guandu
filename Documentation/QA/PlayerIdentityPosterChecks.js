@@ -167,11 +167,11 @@ function savePlaceholder() {
 }
 check(brief.includes('title.rectTransform.offsetMin = new Vector2(108f, -102f)'),
   '出征之前 label avoids the left decorative corner');
-check(chat.includes('new Vector2(.075f, .55f)') &&
-      chat.includes('new Vector2(196f, 196f)') &&
+check(chat.includes('new Vector2(.055f, .38f)') &&
+      chat.includes('new Vector2(170f, 170f)') &&
       chat.includes('new Vector2(.12f, .085f), new Vector2(.88f, .925f)') &&
       !chat.includes('Enter 发送 · Shift + Enter 换行'),
-  'Historian launcher grows inside left sidebar; dialogue enlarged and centered with obsolete hotkey help removed');
+  'Historian launcher aligns with the recap button; dialogue remains enlarged without obsolete hotkey help');
 check(chat.includes('GameObject actionRow = Object("SourceActionRow", bubble)') &&
       chat.includes('HorizontalLayoutGroup actionLayout') &&
       chat.includes('toggleSize.preferredWidth = gameRecord ? 268f : 210f') &&
@@ -186,4 +186,19 @@ check(exit.includes('new Vector2(.245f, .20f)') &&
       manager.includes('public void OpenBattleReportFromExit()'),
   'End-of-run exit/review/report controls share one large centered modal rather than spilling outside the frame');
 
+check(entry.includes('Text(panel.transform, "主将留名", 62f') &&
+      entry.includes('title.fontStyle = FontStyles.Bold') &&
+      entry.includes('GameObject rightEdge = Make("InputRightEdge", field.transform)') &&
+      entry.includes('rightBorder.raycastTarget = false'),
+  'Commander card heading is prominent and right input frame edge remains visible without blocking typing');
+check(report.includes('CreateUIObject("EvidenceTextViewport"') &&
+      report.includes('viewport.AddComponent<RectMask2D>()') &&
+      report.includes('CreateText(scrollContent.transform, "", 38f') &&
+      report.includes('evidenceScroll.vertical = true') &&
+      report.includes('evidenceDetailText.enableAutoSizing = false'),
+  'Decision evidence uses larger light text and scrolls rather than reducing readability');
+check(chat.includes('anchoredPosition += new Vector2(-28f, 0f)') &&
+      chat.includes('"聊聊官渡的故事", 30f') &&
+      !chat.includes('聊聊官渡的故事，分清史实与演绎'),
+  'Historian message and suggestion area shift left and subtitle uses concise player copy');
 console.log('player-id-poster-integration: '+pass+'/'+pass);

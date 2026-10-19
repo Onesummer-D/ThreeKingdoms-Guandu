@@ -53,6 +53,15 @@ async function main() {
     check(publicInvite.status === 200 && publicHtml.includes('class="scroll-paper"') &&
       publicHtml.includes('献策已呈') && !publicHtml.includes('__GAME_ENTRY_URL__'),
       'scroll H5 page served with all game config placeholders replaced');
+    const previewUrl = base + '/assets/battle-hero.png';
+    check(publicHtml.includes('property="og:image" content="' + previewUrl + '"') &&
+      publicHtml.includes('name="twitter:image" content="' + previewUrl + '"') &&
+      !publicHtml.includes('__SHARE_IMAGE_URL__') &&
+      !publicHtml.includes('og:image" content="' + previewUrl + '?token='),
+      'invite social metadata uses public image with no secret invite token');
+    const preview = await fetch(previewUrl);
+    check(preview.status === 200 && preview.headers.get('content-type') === 'image/png',
+      'social preview image is directly retrievable without authentication');
     check(!publicHtml.includes('const joinToken = __JOIN_TOKEN__'),
       'invited token is injected as a JavaScript literal');
     const maliciousToken = await fetch(base + '/join/' + encodeURIComponent(session.sessionId) +

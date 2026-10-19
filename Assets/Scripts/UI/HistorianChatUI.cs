@@ -80,10 +80,10 @@ public sealed class HistorianChatUI : MonoBehaviour
         // Align below the character portrait along the left edge rather than
         // beneath the top-right resources. Reference coordinates are relative
         // to the root Canvas and remain stable across game panels.
-        rect.anchorMin = rect.anchorMax = new Vector2(.075f, .55f);
+        rect.anchorMin = rect.anchorMax = new Vector2(.055f, .38f);
         rect.pivot = new Vector2(.5f, .5f);
         rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(196f, 196f);
+        rect.sizeDelta = new Vector2(170f, 170f);
         Image image = launcher.AddComponent<Image>();
         image.sprite = icon;
         image.preserveAspect = true;
@@ -130,7 +130,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         Anchors(portrait.rectTransform, new Vector2(.025f, .855f), new Vector2(.115f, .985f));
         TMP_Text title = Text(panel.transform, "问史官", 50f, Gold);
         Anchors(title.rectTransform, new Vector2(.13f, .92f), new Vector2(.74f, .98f));
-        TMP_Text subtitle = Text(panel.transform, "聊聊官渡的故事，分清史实与演绎", 30f, Muted);
+        TMP_Text subtitle = Text(panel.transform, "聊聊官渡的故事", 30f, Muted);
         Anchors(subtitle.rectTransform, new Vector2(.13f, .86f), new Vector2(.81f, .92f));
         Button close = Button(panel.transform, "关闭", 31f);
         Anchors(close.GetComponent<RectTransform>(), new Vector2(.87f, .9f), new Vector2(.97f, .975f));
@@ -138,6 +138,8 @@ public sealed class HistorianChatUI : MonoBehaviour
 
         GameObject scrollObject = Object("Conversation", panel.transform);
         Anchors(scrollObject.GetComponent<RectTransform>(), new Vector2(.055f, .255f), new Vector2(.945f, .84f));
+        // Painted frame is optically weighted right; align reading content left.
+        scrollObject.GetComponent<RectTransform>().anchoredPosition += new Vector2(-28f, 0f);
         scrollObject.AddComponent<Image>().color = new Color(.02f, .055f, .065f, .28f);
         GameObject viewport = Object("Viewport", scrollObject.transform);
         Anchors(viewport.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
@@ -176,6 +178,7 @@ public sealed class HistorianChatUI : MonoBehaviour
 
         GameObject choices = Object("SuggestedQuestions", panel.transform);
         Anchors(choices.GetComponent<RectTransform>(), new Vector2(.055f, .185f), new Vector2(.945f, .24f));
+        choices.GetComponent<RectTransform>().anchoredPosition += new Vector2(-28f, 0f);
         HorizontalLayoutGroup row = choices.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 12f;
         row.childControlWidth = row.childControlHeight = true;

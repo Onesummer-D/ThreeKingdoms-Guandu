@@ -4,6 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#30231b">
+  <meta name="description" content="官渡战局未定，主将邀你共议军机、择定一策。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="官渡之战 · 参谋邀约">
+  <meta property="og:description" content="官渡战局未定，主将邀你共议军机、择定一策。">
+  <meta property="og:image" content="__SHARE_IMAGE_URL__">
+  <meta property="og:image:alt" content="官渡之战战场场景">
+  <link rel="image_src" href="__SHARE_IMAGE_URL__">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="官渡之战 · 参谋邀约">
+  <meta name="twitter:description" content="主将邀你共议官渡战局。">
+  <meta name="twitter:image" content="__SHARE_IMAGE_URL__">
   <title>官渡之战 · 参谋邀约</title>
   <style>
     @font-face { font-family:Guandu; src:url('/assets/game-font.ttf') format('truetype'); font-display:swap; }
@@ -250,6 +261,28 @@
       .paper-field label,.paper-field input,.paper-field textarea {font-size:17px;}
       .option {font-size:15px;}
     }
+
+    /* Mobile reading contract: keep complete questions and choices inside
+       their painted scrolls. On a phone every choice gets its own full row. */
+    .question {display:block;height:auto;min-height:176px;margin:12px 8px 0;
+      padding:clamp(34px,9vw,48px) clamp(34px,9vw,52px);}
+    .question > div {min-width:0;max-width:100%;}
+    #decision {white-space:pre-line;overflow-wrap:anywhere;
+      font-size:clamp(17px,4.25vw,21px);line-height:1.6;}
+    .question-label {display:block;letter-spacing:.05em;margin-bottom:8px;}
+    .options {grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;padding:0 clamp(10px,3vw,18px);}
+    .option {min-height:132px;display:flex;justify-content:center;align-items:center;
+      text-align:center;padding:24px clamp(24px,7vw,48px);
+      font-size:clamp(17px,4.3vw,20px);line-height:1.5;}
+    .option-text {max-width:100%;overflow-wrap:anywhere;}
+    @media (max-width:480px) {
+      .question {padding:clamp(35px,9vw,46px) clamp(37px,10vw,52px);
+        min-height:186px;}
+      .options {grid-template-columns:minmax(0,1fr);
+        padding:0 clamp(24px,7vw,45px);gap:11px;}
+      .option {min-height:118px;padding:22px clamp(41px,13vw,62px);}
+    }
   </style>
 </head>
 <body>
@@ -349,6 +382,22 @@
     });
     root.hidden=false;
   }
+  function formatDecisionText(raw, options) {
+    // Read each numbered policy on a separate line even when the upstream
+    // dialogue serializes everything into one sentence.
+    let value=String(raw||'').trim()||'请根据当前战局，献上一策。';
+    value=value.replace(/^正在考虑\s*[:：]\s*/, '正在考虑，')
+      .replace(/([？?。！!])\s*(?=[1-9][.．、])/g,'$1\n')
+      .replace(/[ \t]+(?=[1-9][.．、]\s*)/g,'\n');
+    const choices=(Array.isArray(options)?options:[]).map(x=>String(x||'').trim())
+      .filter(Boolean);
+    // Some chapters send only the central dilemma: include the actual choices
+    // here, not invented advice. Clickable buttons below remain the real vote.
+    if(choices.length && !/(?:^|\n)[1-9][.．、]/m.test(value)) {
+      value+='\n'+choices.map((choice,i)=>(i+1)+'. '+choice).join('\n');
+    }
+    return value.replace(/\n{3,}/g,'\n\n');
+  }
   function renderOptions(values) {
     const root=$('options');root.replaceChildren();
     (Array.isArray(values)?values:[]).forEach((value,index)=>{
@@ -406,7 +455,7 @@
     const context=String(snap.context||'').split(question||'\u0000').join('').trim();
     renderRecap(context);
     renderResources(snap.resources||{});
-    $('decision').textContent=question||'请根据当前战局，献上一策。';
+    $('decision').textContent=formatDecisionText(question,data.options);
     renderOptions(data.options);
     expiresAt=Number(data.expiresAt)||0;
     if(data.state!=='awaiting_guest')setUnavailable('本局军议已有结果或已结束，无法重复献策。');
