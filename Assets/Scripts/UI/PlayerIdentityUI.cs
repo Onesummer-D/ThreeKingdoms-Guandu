@@ -95,10 +95,13 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         outline.effectColor = new Color(.80f, .62f, .35f, .9f);
         outline.effectDistance = new Vector2(2f, -2f);
 
-        TMP_Text title = Text(panel.transform, "主将留名", 48f,
+        TMP_Text title = Text(panel.transform, "主将留名", 62f,
             TextAlignmentOptions.Center, new Color(.91f, .73f, .4f));
         Anchor(title.rectTransform, new Vector2(.06f, .78f), new Vector2(.94f, .95f));
-        if (paper.sprite != null) title.color = new Color(.36f, .22f, .13f, 1f);
+        if (paper.sprite != null) title.color = new Color(.28f, .15f, .09f, 1f);
+        title.fontStyle = FontStyles.Bold;
+        title.outlineColor = new Color(.41f, .27f, .14f, .30f);
+        title.outlineWidth = .08f;
 
         TMP_Text intro = Text(panel.transform,
             "为这一局征程定下名号", 35f,
@@ -117,6 +120,18 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         Outline inputBorder = field.AddComponent<Outline>();
         inputBorder.effectColor = new Color(.54f, .39f, .23f, .8f);
         inputBorder.effectDistance = new Vector2(2f, -2f);
+        // The right edge was invisible against the painted border in play mode.
+        // Draw it as a separate, non-interactive UI stroke so the field is closed
+        // on all four sides, without covering the input or breaking Chinese IME.
+        GameObject rightEdge = Make("InputRightEdge", field.transform);
+        RectTransform rightRect = rightEdge.GetComponent<RectTransform>();
+        rightRect.anchorMin = new Vector2(1f, 0f);
+        rightRect.anchorMax = new Vector2(1f, 1f);
+        rightRect.offsetMin = new Vector2(-3f, 0f);
+        rightRect.offsetMax = Vector2.zero;
+        Image rightBorder = rightEdge.AddComponent<Image>();
+        rightBorder.color = new Color(.54f, .39f, .23f, 1f);
+        rightBorder.raycastTarget = false;
         idInput = field.AddComponent<TMP_InputField>();
         idInput.targetGraphic = fieldBg;
         idInput.contentType = TMP_InputField.ContentType.Standard;
