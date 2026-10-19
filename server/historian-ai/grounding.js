@@ -250,6 +250,9 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
   }
   const history = normalizeHistory(rawHistory);
   const query = retrievalQuery(question, history, context);
+  // Retrieval isolation must also apply to the model conversation itself:
+  // otherwise earlier "退许都" exchanges can contaminate a new troop question.
+  const conversationalHistory = query === String(question || '').trim() ? [] : history;
   if (/(?:精确|准确|具体).{0,10}(?:伤亡人数|死伤人数|伤亡数字|阵亡人数|死亡人数|分钟级|逐日兵力)|(?:每一天|每分钟|逐日).{0,8}(?:伤亡|人数|损失)/.test(String(question || ''))) return {
     answer: '现有史料不足以确认精确伤亡、逐日或分钟级数据；本游戏中的资源数值也不是史书原始数据。',
     mode: 'grounded_refusal', citations: [], retrieved: []
@@ -263,7 +266,7 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
   let answer = null;
   let mode = 'grounded_fallback';
   try {
-    answer = await askOpenAI(prompt, question, history);
+    answer = await askOpenAI(prompt, question, conversationalHistory);
     if (answer) mode = 'grounded_model';
   } catch (_) { answer = null; }
   let check = validateAnswer(answer, docs);
@@ -278,7 +281,7 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
         '需要重写。请从当前卡片中选出一个最直接的可核实事实作第一句。' +
         '只写能被对应卡片支持的事实，每句末尾标注[Hxx]；争议点说明对应来源，避免套话。' +
         '不要复制前一次回答，不要先说“无法证明”，也不要固定三段结构。',
-        question, history);
+        question, conversationalHistory);
       const revisedCheck = validateAnswer(revised, docs);
       if (revisedCheck.valid &&
           !/^(现有史料不足以|目前无法|无法证明|不能确定|尚无足够史料)/.test(String(revised).trim())) {
