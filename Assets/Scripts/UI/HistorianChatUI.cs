@@ -568,7 +568,7 @@ public sealed class HistorianChatUI : MonoBehaviour
                 new HistorianCitation
                 {
                     id = "G01", title = "本局战况记录",
-                    source = "RunHistoryTracker 游戏事件；非历史史料"
+                    source = "本局实际发生的选择、资源变化与结局记录（非历史史料）"
                 }
             }
         };
