@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -5,7 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Commander-name card shown at each fresh app launch, once per launch.
+/// Commander-name card shown when starting a game, never automatically on launch.
 /// This is a fresh display name for the current app session. No remote
 /// login, reused saved ID, credentials, or persistent account required.
 /// </summary>
@@ -17,6 +18,7 @@ public sealed class PlayerIdentityUI : MonoBehaviour
     private Sprite sourceButton;
     private Coroutine pendingFocus;
     private bool initialized;
+    private Action onConfirmed;
 
     public void Initialize(Transform canvasRoot, Transform mainMenu)
     {
@@ -30,14 +32,15 @@ public sealed class PlayerIdentityUI : MonoBehaviour
             if (img != null) sourceButton = img.sprite;
         }
 
+        // Build the UI now, but let the normal start menu remain visible until
+        // the player explicitly chooses Start Game.
         CreateIdentityOverlay(canvasRoot);
-        // Show once at every app start with an empty field.
-        ShowEditor();
     }
 
-    public void ShowEditor()
+    public void ShowEditor(Action afterConfirmation = null)
     {
         if (overlay == null) return;
+        onConfirmed = afterConfirmation;
         if (pendingFocus != null)
             StopCoroutine(pendingFocus);
         overlay.SetActive(true);
@@ -175,6 +178,11 @@ public sealed class PlayerIdentityUI : MonoBehaviour
         errorText.text = string.Empty;
         overlay.SetActive(false);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        // Close the registration card before revealing the existing '出征之前'
+        // brief. Consume the continuation once to prevent double-starts.
+        Action continuation = onConfirmed;
+        onConfirmed = null;
+        continuation?.Invoke();
     }
 
     private Button CreateButton(Transform parent, string label, float size)
