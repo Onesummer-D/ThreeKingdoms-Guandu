@@ -386,8 +386,10 @@ public sealed class HistorianChatUI : MonoBehaviour
         }, error =>
         {
             if (generation != requestGeneration || pendingText == null) return;
-            CompleteAnswer(pendingText, IsRunReviewQuestion(question)
-                ? LocalRunReview(run) : knowledge.Answer(question, previous, context));
+            HistorianAskResponse offline = IsRunReviewQuestion(question)
+                ? LocalRunReview(run) : knowledge.Answer(question, previous, context);
+            offline.answerVersion = "local-offline";
+            CompleteAnswer(pendingText, offline);
         });
     }
 
@@ -408,11 +410,27 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
-        status.text = response.mode == "grounded_model" ? "依据史料回答 · Enter 发送 · Shift + Enter 换行" :
-            response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
-            response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
-            response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
-            "当前为史料摘录，联网后可继续向史官提问";
+        // Show the actual service generation during editor play tests.
+        // A Unity git pull does not redeploy the hosted historian service.
+        string version = response.answerVersion ?? string.Empty;
+        if (version == "local-offline")
+            status.text = "离线：本地史料摘录（不是联网 AI 回答）";
+        else if (version != "grounding-v4")
+            status.text = "当前连接旧版史官服务 · 新版回答尚未部署";
+        else if (response.mode == "grounded_model")
+            status.text = "新版史官已连接 · 根据史料回答";
+        else if (response.mode == "grounded_fallback")
+            status.text = "新版服务已连接 · 本次为史料摘录（模型未生成回答）";
+        else if (response.mode == "run_evidence")
+            status.text = "新版服务已连接 · 依据本局记录复盘";
+        else if (response.mode == "run_unavailable")
+            status.text = "本局记录不足，暂不能判断";
+        else
+            status.text = "新版服务已连接 · 当前没有匹配的史料";
+#if UNITY_EDITOR
+        Debug.Log("[Historian] answerVersion=" + (version.Length > 0 ? version : "missing") +
+            ", mode=" + (response.mode ?? "unknown"));
+#endif
         RefreshControls();
         if (IsOpen) { input.Select(); input.ActivateInputField(); StartCoroutine(ScrollToLatest()); }
     }
@@ -719,7 +737,10 @@ public sealed class HistorianLocalKnowledge
     public HistorianAskResponse Answer(string question, HistorianChatMessage[] history, string context)
     {
         string query = question ?? "";
-        bool followUp = Regex.IsMatch(query, @"^(那|那么|所以|为什么|为何|还有|然后|这|他|她|它|详细|展开|再|继续)|他|她|它|刚才|当前|这一段");
+        bool refersBack = Regex.IsMatch(query, @"他|她|它|他们|此人|此事|这件事|刚才|上面|上述|这一段|那个决定|这场");
+        bool explicitSubject = Regex.IsMatch(query, @"曹操|孟德|袁绍|许攸|子远|荀彧|荀攸|贾诩|张郃|高览|官渡|乌巢|许都|粮草|粮道|兵力|发石车|霹雳车|地道");
+        bool followUp = !(explicitSubject && !refersBack) &&
+            (refersBack || Regex.IsMatch(query, @"^(那|那么|所以|还有|然后|为什么|为何|继续|展开|再说|接着)"));
         if (followUp)
         {
             if (history != null && history.Length >= 2)
