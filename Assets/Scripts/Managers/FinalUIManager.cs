@@ -378,11 +378,23 @@ public class FinalUIManager : MonoBehaviour
 
     public void StartGame()
     {
+        // Starting from the title menu is the first time we ask for a name.
+        // Previously registering a name returned to the menu and required a
+        // second click, so pass a one-shot continuation into the card.
         if (!PlayerIdentityState.HasId)
         {
-            playerIdentityUI?.ShowEditor();
+            if (playerIdentityUI != null)
+                playerIdentityUI.ShowEditor(ContinueStartAfterIdentity);
             return;
         }
+        ContinueStartAfterIdentity();
+    }
+
+    private void ContinueStartAfterIdentity()
+    {
+        // '出征之前' stays in the flow; its existing button "以曹操身份出征"
+        // is still the only action that actually begins the new run.
+        if (!PlayerIdentityState.HasId) return;
         if (inviteCoCreationUI != null && inviteCoCreationUI.ShowPlayerBrief(BeginNewRun)) return;
         BeginNewRun();
     }
