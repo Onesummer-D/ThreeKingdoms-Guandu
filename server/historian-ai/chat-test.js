@@ -173,8 +173,10 @@ async function main() {
     mode = 'bad-citation';
     const bad = await ask({ question: '乌巢为什么重要？' });
     check(bad.body.mode === 'grounded_fallback' && !bad.body.answer.includes('H99') &&
-      bad.body.citations.length > 0 && bad.body.citations.every(c => bad.body.answer.includes('[' + c.id + ']')),
-      'invented citation falls back only to actually retrieved and packaged evidence');
+      bad.body.citations.length > 0 &&
+      bad.body.citations.every(c => grounding.corpus.some(source => source.id === c.id)) &&
+      !/[\[【〔（(]\s*[A-Z]\d{2}\s*[\]】〕）)]/.test(bad.body.answer),
+      'invalid model citation falls back to real structured evidence without player-visible IDs');
     mode = 'http-error';
     const failure = await ask({ question: '乌巢为什么重要？' });
     check(failure.body.mode === 'grounded_fallback' && failure.body.citations.length > 0, 'model service failure returns usable sources');
