@@ -47,7 +47,8 @@ check(html.includes('--reading-font:') &&
       html.includes('color:#28180d') &&
       html.includes('color:#69492e;opacity:1;font-weight:400'),
   'Reference-style readable Song typography and dark input contrast are configured');
-check(html.includes('padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px)') &&
+check(html.includes('padding:clamp(48px,14vw,68px) clamp(49px,12.5vw,76px)') &&
+       html.includes('min-height:clamp(330px,85vw,405px)') &&
       html.includes('grid-template-rows:minmax(0,1fr) minmax(0,1fr)') &&
       html.includes('.paper-field:focus-within {outline:none;box-shadow:none;border:0;}') &&
       html.includes('.paper-field input:focus-visible,.paper-field textarea:focus-visible') &&
@@ -120,11 +121,30 @@ check(html.includes('grid-template-columns:minmax(0,1fr)') &&
   html.includes('min-height:118px'),
   'Phone-width option buttons use their own flexible full-width row');
 check(html.includes('white-space:pre-line;overflow-wrap:anywhere') &&
-  html.includes('min-height:176px'),
-  'Decision lettering wraps inside a height-flexible painted question panel');
+  html.includes('min-height:205px') &&
+  html.includes('function fitQuestionPanel()') &&
+  html.includes('fitQuestionPanel();') &&
+  html.includes("document.fonts.ready.then(()=>requestAnimationFrame(fitQuestionPanel))"),
+  'Decorative scroll recalculates safe padding after content and font sizing');
+{
+  const match=html.match(/  function fitQuestionPanel\(\) \{[\s\S]*?\n  \}/);
+  check(Boolean(match),'Real fitQuestionPanel function is present');
+  for(const height of [165,260,390]){
+    const panel={firstElementChild:{scrollHeight:height},style:{}};
+    vm.runInNewContext(match[0]+'\nfitQuestionPanel();',
+      {document:{querySelector:()=>panel}});
+    const top=parseFloat(panel.style.paddingTop),bottom=parseFloat(panel.style.paddingBottom);
+    const total=top+height+bottom;
+    check(Number.isFinite(total) && top>=total*.16 &&
+      bottom>=total*.235 && bottom>top,
+      'Question of '+height+'px stays in the painted frame safe area');
+  }
+}
 check(html.includes('property="og:image" content="__SHARE_IMAGE_URL__"') &&
   html.includes('name="twitter:image" content="__SHARE_IMAGE_URL__"') &&
   server.includes(".replaceAll('__SHARE_IMAGE_URL__', shareImageUrl)") &&
-  server.includes("new URL('/assets/battle-hero.png', origin)"),
+  server.includes("new URL('/assets/battle-hero.png?v=20261020-share-card-v2', origin)") &&
+  html.includes('property="og:image:type" content="image/png"') &&
+  html.includes('class="masthead-scene" src="/assets/battle-hero.png?v=20261020-share-card-v2"'),
   'Social sharing exposes an absolute public image without exposing invitation token');
 console.log('mobile-advisor-page: '+count+'/'+count);
