@@ -9,6 +9,7 @@
   <meta property="og:title" content="官渡之战 · 参谋邀约">
   <meta property="og:description" content="官渡战局未定，主将邀你共议军机、择定一策。">
   <meta property="og:image" content="__SHARE_IMAGE_URL__">
+  <meta property="og:image:type" content="image/png">
   <meta property="og:image:alt" content="官渡之战战场场景">
   <link rel="image_src" href="__SHARE_IMAGE_URL__">
   <meta name="twitter:card" content="summary_large_image">
@@ -45,6 +46,8 @@
       position:relative; height:clamp(144px,38vw,208px); overflow:hidden;
       background:linear-gradient(#2c201525,#30211620 48%,#473022),url('/assets/battle-hero.png') center 54%/cover no-repeat;
     }
+    .masthead-scene {position:absolute;inset:0;width:100%;height:100%;
+      object-fit:cover;object-position:center 54%;z-index:0;}
     .masthead::after {
       content:""; position:absolute; inset:0;
       background:linear-gradient(180deg,#25171122,#432d1950 74%,#49301db3);
@@ -226,8 +229,9 @@
        Each field occupies one half of the parchment with no overlap. */
     .form-panel {
       margin:13px 7px 0;
-      padding:clamp(41px,8.5vw,55px) clamp(46px,11vw,76px) clamp(36px,7.5vw,48px);
-      min-height:clamp(270px,68vw,320px);
+      /* The painted parchment has two wells, each needing a safe inset. */
+      padding:clamp(48px,14vw,68px) clamp(49px,12.5vw,76px) clamp(44px,12vw,65px);
+      min-height:clamp(330px,85vw,405px);
       grid-template-columns:minmax(0,1fr);
       grid-template-rows:minmax(0,1fr) minmax(0,1fr);
       gap:3px;
@@ -264,8 +268,10 @@
 
     /* Mobile reading contract: keep complete questions and choices inside
        their painted scrolls. On a phone every choice gets its own full row. */
-    .question {display:block;height:auto;min-height:176px;margin:12px 8px 0;
-      padding:clamp(34px,9vw,48px) clamp(34px,9vw,52px);}
+    .question {display:block;height:auto;min-height:205px;margin:12px 8px 0;
+      padding:clamp(44px,12vw,64px) clamp(34px,9vw,52px) clamp(72px,20vw,106px);
+      /* fitQuestionPanel reserves the outside of the painted inner frame. */
+      background-size:100% 100%;}
     .question > div {min-width:0;max-width:100%;}
     #decision {white-space:pre-line;overflow-wrap:anywhere;
       font-size:clamp(17px,4.25vw,21px);line-height:1.6;}
@@ -277,8 +283,8 @@
       font-size:clamp(17px,4.3vw,20px);line-height:1.5;}
     .option-text {max-width:100%;overflow-wrap:anywhere;}
     @media (max-width:480px) {
-      .question {padding:clamp(35px,9vw,46px) clamp(37px,10vw,52px);
-        min-height:186px;}
+      .question {padding:clamp(44px,12vw,64px) clamp(37px,10vw,52px)
+          clamp(76px,21vw,110px);min-height:205px;}
       .options {grid-template-columns:minmax(0,1fr);
         padding:0 clamp(24px,7vw,45px);gap:11px;}
       .option {min-height:118px;padding:22px clamp(41px,13vw,62px);}
@@ -288,6 +294,9 @@
 <body>
 <main class="page">
   <header class="masthead" aria-label="军帐战场背景">
+    <!-- Real PNG image element is discoverable even by crawlers that ignore CSS backgrounds. -->
+    <img class="masthead-scene" src="/assets/battle-hero.png?v=20261020-share-card-v2"
+      alt="" aria-hidden="true" fetchpriority="high">
     <div class="masthead-title">
       <img class="title-art" src="/assets/advisor-gold-title-v3.webp?v=20261018-title-layout"
         alt="" aria-hidden="true"
@@ -382,6 +391,16 @@
     });
     root.hidden=false;
   }
+  function fitQuestionPanel() {
+    const panel=document.querySelector('.question');
+    if(!panel || !panel.firstElementChild)return;
+    // Decorative inner frame spans roughly 17%-75% of the stretched artwork.
+    // Compute the safe insets from the ACTUAL text height, including wrapping.
+    const contentHeight=Math.max(1,panel.firstElementChild.scrollHeight);
+    const panelHeight=Math.max(205,Math.ceil(contentHeight/.58));
+    panel.style.paddingTop=Math.ceil(panelHeight*.17)+'px';
+    panel.style.paddingBottom=Math.ceil(panelHeight*.25)+'px';
+  }
   function formatDecisionText(raw, options) {
     // Read each numbered policy on a separate line even when the upstream
     // dialogue serializes everything into one sentence.
@@ -456,6 +475,7 @@
     renderRecap(context);
     renderResources(snap.resources||{});
     $('decision').textContent=formatDecisionText(question,data.options);
+    fitQuestionPanel();
     renderOptions(data.options);
     expiresAt=Number(data.expiresAt)||0;
     if(data.state!=='awaiting_guest')setUnavailable('本局军议已有结果或已结束，无法重复献策。');
@@ -512,6 +532,9 @@
       $('submit').disabled=false;
     }finally{inFlight=false;}
   });
+  window.addEventListener('resize',()=>requestAnimationFrame(fitQuestionPanel));
+  if(document.fonts&&document.fonts.ready)
+    document.fonts.ready.then(()=>requestAnimationFrame(fitQuestionPanel));
   load().catch(err=>setUnavailable(err.message||'加载军议失败，请检查邀约链接。'));
 </script>
 </body>
