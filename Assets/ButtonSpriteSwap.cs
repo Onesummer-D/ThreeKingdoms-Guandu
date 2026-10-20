@@ -5,41 +5,61 @@ using UnityEngine.UI;
 
 public class ButtonSpriteSwap : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [Header("图片引用")]
+    [Header("鍥剧墖寮曠敤")]
     public Image buttonImage;
-    public Sprite normalSprite;      // 未选中
-    public Sprite highlightedSprite; // 选中
+    public Sprite normalSprite;      // 鏈�変腑
+    public Sprite highlightedSprite; // 閫変腑
 
-    [Header("文字颜色（可选）")]
+    [Header("鏂囧瓧棰滆壊锛堝彲閫夛級")]
     public TMP_Text buttonText;
     public Color normalColor = Color.black;
     public Color highlightedColor = Color.white;
 
     void Start()
     {
-        // 自动获取Image
-        if (buttonImage == null)
-            buttonImage = GetComponent<Image>();
+        ResetToNormal();
+    }
 
-        // 设置初始状态
-        buttonImage.sprite = normalSprite;
+    // Choice buttons are reused across many dialogue nodes. Unity does not
+    // necessarily dispatch PointerExit when the old node hides a hovered
+    // button, so an old grey highlight could persist into the next node.
+    void OnEnable()
+    {
+        ResetToNormal();
+    }
+
+    void OnDisable()
+    {
+        ResetToNormal();
+    }
+
+    public void ResetToNormal()
+    {
+        if (buttonImage == null) buttonImage = GetComponent<Image>();
+        if (buttonImage != null && normalSprite != null)
+        {
+            buttonImage.sprite = normalSprite;
+            buttonImage.color = Color.white;
+        }
         if (buttonText != null)
             buttonText.color = normalColor;
     }
 
-    // 鼠标进入
+    // 榧犳爣杩涘叆
     public void OnPointerEnter(PointerEventData eventData)
     {
-        buttonImage.sprite = highlightedSprite;
+        if (buttonImage == null) buttonImage = GetComponent<Image>();
+        Button button = GetComponent<Button>();
+        if (button != null && !button.IsInteractable()) return;
+        if (buttonImage != null && highlightedSprite != null)
+            buttonImage.sprite = highlightedSprite;
         if (buttonText != null)
             buttonText.color = highlightedColor;
     }
 
-    // 鼠标离开
+    // 榧犳爣绂诲紑
     public void OnPointerExit(PointerEventData eventData)
     {
-        buttonImage.sprite = normalSprite;
-        if (buttonText != null)
-            buttonText.color = normalColor;
+        ResetToNormal();
     }
 }
