@@ -839,9 +839,12 @@ public sealed class BattleReportUI : MonoBehaviour
         line.AddComponent<Image>().color = new Color(.75f, .57f, .29f, .85f);
 
         string id = PlayerIdentityState.CurrentId;
+        // Place the signature against the lower-right reading edge, with a
+        // matching margin to the illustrated scroll frame. Keep the footer
+        // and divider unchanged; only the label's alignment moves.
         TMP_Text sign = CreateText(footer.transform,
             "主将 ID：" + (string.IsNullOrEmpty(id) ? "未设置" : id),
-            34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false);
+            34f, TextAlignmentOptions.MidlineRight, TextPrimary, false);
         SetAnchored(sign.rectTransform, new Vector2(.055f, .12f), new Vector2(.945f, .82f));
         sign.enableAutoSizing = true;
         sign.fontSizeMin = 24f;
