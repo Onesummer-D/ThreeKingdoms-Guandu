@@ -179,7 +179,7 @@ async function handle(req, res) {
     // Serve a full URL that a social preview crawler can request without
     // JavaScript, a login, the invitation token or a special auth header.
     const origin = PUBLIC_ORIGIN || `http://${req.headers.host || 'localhost'}`;
-    const shareImageUrl = htmlAttribute(new URL('/assets/battle-hero.png', origin).toString());
+    const shareImageUrl = htmlAttribute(new URL('/assets/battle-hero.png?v=20261020-share-card-v2', origin).toString());
     const html = fs.readFileSync(pagePath, 'utf8')
       .replaceAll('__SHARE_IMAGE_URL__', shareImageUrl)
       .replace('__SESSION_ID__', inlineJson(parts[1]))
