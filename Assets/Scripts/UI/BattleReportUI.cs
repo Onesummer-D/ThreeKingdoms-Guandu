@@ -2,6 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using System.Runtime.InteropServices;
+#endif
 using Process = System.Diagnostics.Process;
 using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 using TMPro;
@@ -53,6 +56,28 @@ public sealed class BattleReportUI : MonoBehaviour
     private ResourceTrendPlotUI trendDetailPlot;
     private readonly TMP_Text[] trendDetailSummaryValues = new TMP_Text[4];
     private string lastPosterPath;
+#if UNITY_WEBGL && !UNITY_EDITOR
+    private byte[] lastPosterPng;
+    private string lastPosterFileName;
+
+    [DllImport("__Internal")]
+    private static extern void GuanduDownloadPoster(byte[] png, int length, string fileName);
+
+    private void DownloadPosterInBrowser()
+    {
+        if (lastPosterPng == null || lastPosterPng.Length == 0) return;
+        try
+        {
+            GuanduDownloadPoster(lastPosterPng, lastPosterPng.Length, lastPosterFileName);
+            if (statusText != null) statusText.text = "已请求下载，请查看浏览器下载列表";
+        }
+        catch (Exception error)
+        {
+            Debug.LogError("浏览器下载战绩海报失败：" + error.Message);
+            if (statusText != null) statusText.text = "下载未能开始，请检查浏览器下载权限并重试";
+        }
+    }
+#endif
     private bool capturing;
 
     public event Action OnClosed;
@@ -635,18 +660,34 @@ public sealed class BattleReportUI : MonoBehaviour
         {
             image = RenderCompleteReport();
             byte[] png = image.EncodeToPNG();
+            if (png == null || png.Length == 0)
+                throw new InvalidOperationException("未能生成战绩图片数据。");
+            string fileName = "官渡战绩_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL's persistentDataPath is a browser sandbox, not a real PC
+            // folder. Hold the image for a real browser download button click.
+            lastPosterPng = png;
+            lastPosterFileName = fileName;
+            lastPosterPath = null;
+            if (statusText != null) statusText.text = "海报已生成，请点击「下载海报」";
+#else
             string folder = GetPosterDirectory();
             Directory.CreateDirectory(folder);
-            string fileName = "官渡战绩_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
             File.WriteAllBytes(Path.Combine(folder, fileName), png);
             lastPosterPath = Path.Combine(folder, fileName);
             if (statusText != null) statusText.text = "已保存：" + lastPosterPath;
+#endif
             if (exportOverlay != null) exportOverlay.SetActive(true);
         }
         catch (Exception exception)
         {
             Debug.LogError("战绩海报保存失败：" + exception.Message);
-            if (statusText != null) statusText.text = "海报保存失败，请检查磁盘权限或剩余空间。";
+            if (statusText != null) statusText.text =
+#if UNITY_WEBGL && !UNITY_EDITOR
+                "海报生成失败，请重试。";
+#else
+                "海报保存失败，请检查磁盘权限或剩余空间。";
+#endif
         }
         finally
         {
@@ -870,11 +911,25 @@ public sealed class BattleReportUI : MonoBehaviour
         outline.effectColor = AccentColor;
         outline.effectDistance = new Vector2(3f, -3f);
 
-        TMP_Text title = CreateText(panel.transform, "海报已保存", 46f, TextAlignmentOptions.Center, TextPrimary, false);
+        TMP_Text title = CreateText(panel.transform,
+#if UNITY_WEBGL && !UNITY_EDITOR
+            "海报已生成",
+#else
+            "海报已保存",
+#endif
+            46f, TextAlignmentOptions.Center, TextPrimary, false);
         SetAnchored(title.rectTransform, new Vector2(.08f, .68f), new Vector2(.92f, .92f));
         TMP_Text path = CreateText(panel.transform, "", 26f, TextAlignmentOptions.Center, TextMuted, true);
         SetAnchored(path.rectTransform, new Vector2(.06f, .47f), new Vector2(.94f, .68f));
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+        Button download = CreateButton(panel.transform, "下载海报", 30f);
+        SetAnchored(download.GetComponent<RectTransform>(), new Vector2(.18f, .20f), new Vector2(.59f, .40f));
+        // A real user click preserves browser activation for file downloading.
+        download.onClick.AddListener(DownloadPosterInBrowser);
+        Button close = CreateButton(panel.transform, "关闭", 30f);
+        SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.63f, .20f), new Vector2(.83f, .40f));
+#else
         Button openImage = CreateButton(panel.transform, "打开图片", 30f);
         SetAnchored(openImage.GetComponent<RectTransform>(), new Vector2(.06f, .20f), new Vector2(.28f, .40f));
         openImage.onClick.AddListener(() => OpenFile(lastPosterPath));
@@ -886,6 +941,7 @@ public sealed class BattleReportUI : MonoBehaviour
         copyPath.onClick.AddListener(() => GUIUtility.systemCopyBuffer = lastPosterPath ?? string.Empty);
         Button close = CreateButton(panel.transform, "关闭", 30f);
         SetAnchored(close.GetComponent<RectTransform>(), new Vector2(.82f, .20f), new Vector2(.94f, .40f));
+#endif
         close.onClick.AddListener(() => exportOverlay.SetActive(false));
         exportOverlay.SetActive(false);
         exportOverlay.GetComponent<RectTransform>().SetAsLastSibling();
@@ -899,9 +955,14 @@ public sealed class BattleReportUI : MonoBehaviour
     private void LateUpdate()
     {
         if (exportOverlay != null && exportOverlay.activeSelf && PosterPathLabel != null)
+#if UNITY_WEBGL && !UNITY_EDITOR
+            PosterPathLabel.text = "点击「下载海报」，然后在浏览器下载列表中查看 PNG 图片。";
+#else
             PosterPathLabel.text = lastPosterPath ?? string.Empty;
+#endif
     }
 
+#if !UNITY_WEBGL || UNITY_EDITOR
     private static void OpenFile(string path)
     {
         if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
@@ -914,6 +975,8 @@ public sealed class BattleReportUI : MonoBehaviour
         string argument = "/select,\"" + path + "\"";
         Process.Start(new ProcessStartInfo("explorer.exe", argument) { UseShellExecute = true });
     }
+
+#endif
 
     private GameObject CreateCard(string name, float y, float height)
     {
