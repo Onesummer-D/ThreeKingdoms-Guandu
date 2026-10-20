@@ -269,10 +269,12 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
   // generation when an actual game run or ambiguous/no-hit question exists.
   // The LLM returns only an intent and a focus; facts always come later from
   // structured G01 telemetry or separately validated Hxx/D01 cards.
-  const semantic = process.env.OPENAI_API_KEY &&
-      (run || explicitRun || !quickDocs.length || history.length)
-    ? await classifyQuestion(question, context, history, Boolean(run),
-        askOpenAI)
+  // A bare unrelated request with no game context should not incur an
+  // extra public API call merely because lexical retrieval found nothing.
+  const attemptSemantic = Boolean(process.env.OPENAI_API_KEY) &&
+    Boolean(run || explicitRun || history.length || String(context || '').trim());
+  const semantic = attemptSemantic
+    ? await classifyQuestion(question, context, history, Boolean(run), askOpenAI)
     : null;
   const intent = explicitRun ? 'run' : semantic && semantic.intent;
   if (intent === 'run')
@@ -299,8 +301,14 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
       retrieved: [...runPart.retrieved, ...historyPart.retrieved]
     };
   }
-  if (!semantic && run && !explicitRun && !quickDocs.length)
-    return clientAnswer(answerRunQuestion(run, question));
+  if (!semantic && run && !explicitRun) {
+    if (!quickDocs.length)
+      return clientAnswer(answerRunQuestion(run, question));
+    if (attemptSemantic) return {
+      answer: '你想问的是自己这一局的决定，还是史书里的人物与战局？说清其中一个，我就能根据对应记录回答。',
+      mode: 'grounded_refusal', citations: [], retrieved: []
+    };
+  }
   return answerHistoryQuestion(question, context, history, query, quickDocs);
 }
 
