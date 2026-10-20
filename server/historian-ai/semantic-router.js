@@ -8,7 +8,7 @@ function parseRoute(value) {
   if (typeof value !== 'string' || value.length > 1500) return null;
   try {
     // Some OpenAI-compatible providers wrap JSON in a Markdown fence.
-    const raw = value.trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/, '');
+    const raw = value.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data) ||
         !allowedIntents.has(data.intent)) return null;
@@ -42,7 +42,7 @@ function routePrompt(context, history, hasRun) {
 async function classifyQuestion(question, context, history, hasRun, askModel) {
   try {
     return parseRoute(await askModel(routePrompt(context, history, hasRun),
-      question, []));
+      question, [], { timeoutMs: 2200, maxTokens: 160 }));
   } catch (_) {
     // The safe local fallback will decide from explicit run terms. This is
     // not a license to invent game evidence or historical events.
