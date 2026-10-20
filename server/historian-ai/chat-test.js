@@ -167,6 +167,28 @@ async function main() {
       ],
       miniGames: []
     };
+    // A player normally asks about "这一轮", not "本局". These must never
+    // fall through to historical-Wuchao retrieval or the model.
+    for (const wording of [
+      '为什么这一轮会输？',
+      '这轮为什么输了？',
+      '这一把为什么失败？',
+      '这次游戏为什么会输？',
+      '这一场的选择让我怎么输了？'
+    ]) {
+      const review = await ask({ question: wording, run });
+      check(review.body.mode === 'run_evidence' &&
+        review.body.answer.includes('错失良机') &&
+        review.body.answer.includes('拒绝许攸情报') &&
+        review.body.citations.some(c => c.id === 'G01') &&
+        !review.body.answer.includes('曹操军击破乌巢守军'),
+        'Run phrasing "' + wording + '" answers with this player's loss rather than historical victory');
+    }
+    const missingThisRound = await ask({ question: '为什么这一轮会输？' });
+    check(missingThisRound.body.mode === 'run_unavailable' &&
+      !missingThisRound.body.answer.includes('乌巢'),
+      'Missing round evidence explicitly refuses to invent a historical reason');
+
     const runAnswer = await ask({ question: '我为什么会输？', run });
     check(runAnswer.body.mode === 'run_evidence' && runAnswer.body.answer.includes('错失良机') &&
       runAnswer.body.answer.includes('拒绝许攸情报') &&
