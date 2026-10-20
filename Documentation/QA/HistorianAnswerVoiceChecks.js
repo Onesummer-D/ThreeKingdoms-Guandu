@@ -82,4 +82,18 @@ check(offline.includes('status.text = response.mode == "grounded_model" ? "依�
 check(offline.includes('bool explicitSubject = Regex.IsMatch(query') &&
   offline.includes('!(explicitSubject && !refersBack)'),
   'Unity offline fallback keeps independent question topics separate');
+// Keep Unity's local-offline routing consistent with the server. This
+// extracts the exact C# verbatim regex so both paths are exercised.
+const clientReviewMatch = offline.match(/private static bool IsRunReviewQuestion\([^)]*\)\s*\{\s*return Regex\.IsMatch\(question \?\? string\.Empty,\s*@"([^"]+)"/);
+check(Boolean(clientReviewMatch), 'Unity local run review classifier is extractable');
+const clientReview = new RegExp(clientReviewMatch[1]);
+const serverReview = require('../../server/historian-ai/run-evidence.js').isRunQuestion;
+for (const phrase of ['为什么这一轮会输？', '这轮为什么输了？', '这一把为什么失败？', '这次游戏为什么会输？', '这一场的选择让我怎么输了？']) {
+  check(clientReview.test(phrase) && serverReview(phrase),
+    'Server and Unity both recognize actual player run question: ' + phrase);
+}
+for (const phrase of ['曹操为什么要夜袭乌巢？', '许攸为什么投奔曹操？']) {
+  check(!clientReview.test(phrase) && !serverReview(phrase),
+    'Historical question is not misclassified as current-run review: ' + phrase);
+}
 console.log('historian-answer-voice: ' + count + '/' + count);

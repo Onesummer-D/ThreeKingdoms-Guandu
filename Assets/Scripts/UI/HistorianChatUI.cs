@@ -488,6 +488,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         // Only a failed UnityWebRequest means the local offline corpus was used.
         status.text = response.mode == "grounded_model" ? "依据史料回答" :
             response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
+            response.mode == "mixed_evidence" ? "依据本局记录与史料分别对照" :
             response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
             usedLocalFallback ? "联网暂不可用，已使用本地史料" :
@@ -617,7 +618,7 @@ public sealed class HistorianChatUI : MonoBehaviour
     private static bool IsRunReviewQuestion(string question)
     {
         return Regex.IsMatch(question ?? string.Empty,
-            @"本局|这局|这一局|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|哪一步|帮我复盘|给我复盘|复盘一下|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜)");
+            @"本局|这局|这一局|这轮|这一轮|这把|这一把|这场(游戏|对局)|这一场(游戏|对局)|这次(游戏|游玩|选择|决策|输|赢|失败|获胜|结局|复盘)|这一(次游戏|次游玩|次选择|次决策)|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|(我|这局|刚才).{0,8}哪一步|帮我复盘|给我复盘|复盘一下|刚才的选择");
     }
 
     private static HistorianAskResponse LocalRunReview(HistorianRunEvidence run)
