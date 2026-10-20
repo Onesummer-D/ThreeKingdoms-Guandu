@@ -53,11 +53,13 @@ async function main() {
     check(publicInvite.status === 200 && publicHtml.includes('class="scroll-paper"') &&
       publicHtml.includes('献策已呈') && !publicHtml.includes('__GAME_ENTRY_URL__'),
       'scroll H5 page served with all game config placeholders replaced');
-    const previewUrl = base + '/assets/battle-hero.png';
+    const previewUrl = base + '/assets/battle-hero.png?v=20261020-share-card-v2';
     check(publicHtml.includes('property="og:image" content="' + previewUrl + '"') &&
       publicHtml.includes('name="twitter:image" content="' + previewUrl + '"') &&
       !publicHtml.includes('__SHARE_IMAGE_URL__') &&
-      !publicHtml.includes('og:image" content="' + previewUrl + '?token='),
+      !publicHtml.includes('og:image" content="' + previewUrl + '&token=') &&
+      publicHtml.includes('property="og:image:type" content="image/png"') &&
+      publicHtml.includes('class="masthead-scene" src="/assets/battle-hero.png?v=20261020-share-card-v2"'),
       'invite social metadata uses public image with no secret invite token');
     const preview = await fetch(previewUrl);
     check(preview.status === 200 && preview.headers.get('content-type') === 'image/png',
