@@ -94,6 +94,6 @@ for (const phrase of ['为什么这一轮会输？', '这轮为什么输了？',
 }
 for (const phrase of ['曹操为什么要夜袭乌巢？', '许攸为什么投奔曹操？']) {
   check(!clientReview.test(phrase) && !serverReview(phrase),
-    'Historical question is not misclassified as a player's run: ' + phrase);
+    'Historical question is not misclassified as current-run review: ' + phrase);
 }
 console.log('historian-answer-voice: ' + count + '/' + count);
