@@ -182,7 +182,7 @@ async function main() {
         review.body.answer.includes('拒绝许攸情报') &&
         review.body.citations.some(c => c.id === 'G01') &&
         !review.body.answer.includes('曹操军击破乌巢守军'),
-        'Run phrasing "' + wording + '" answers with this player's loss rather than historical victory');
+        'Run phrasing "' + wording + '" answers with this run loss, not historical victory');
     }
     const missingThisRound = await ask({ question: '为什么这一轮会输？' });
     check(missingThisRound.body.mode === 'run_unavailable' &&
