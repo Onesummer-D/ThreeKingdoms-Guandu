@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { sanitizeRun, answerRunQuestion, isRunQuestion } = require('./run-evidence');
+const { classifyQuestion } = require('./semantic-router');
 
 const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'corpus.json'), 'utf8'));
 // These examples are not sources. They demonstrate tone only; history facts
@@ -242,14 +243,63 @@ function playerFacingAnswer(value) {
     .trim();
 }
 
+function clientAnswer(review) {
+  return { ...review, answer: playerFacingAnswer(review.answer) };
+}
+
 async function answerQuestion(question, context, rawHistory, rawRun) {
   const run = sanitizeRun(rawRun);
-  if (isRunQuestion(question)) {
-    const review = answerRunQuestion(run, question);
-    return { ...review, answer: playerFacingAnswer(review.answer) };
-  }
   const history = normalizeHistory(rawHistory);
+  const explicitRun = isRunQuestion(question);
+  // A clearly personal question without a trustworthy record can be refused
+  // without spending a model call. Never retrieve historical battles in its place.
+  if (explicitRun && (!run || !run.integrityValid))
+    return clientAnswer(answerRunQuestion(run, question));
+
   const query = retrievalQuery(question, history, context);
+  const quickDocs = retrieve(query, 4);
+  // Semantic disambiguation happens *before* evidence retrieval/answer
+  // generation when an actual game run or ambiguous/no-hit question exists.
+  // The LLM returns only an intent and a focus; facts always come later from
+  // structured G01 telemetry or separately validated Hxx/D01 cards.
+  const semantic = process.env.OPENAI_API_KEY &&
+      (run || explicitRun || !quickDocs.length || history.length)
+    ? await classifyQuestion(question, context, history, Boolean(run),
+        askOpenAI)
+    : null;
+  const intent = explicitRun ? 'run' : semantic && semantic.intent;
+  if (intent === 'run')
+    return clientAnswer(answerRunQuestion(run, question, semantic && semantic.focus));
+  if (intent === 'unrelated')
+    return { answer: '我只能查这场官渡游戏的经历或相关史料；你可以换个与战局有关的问题。',
+      mode: 'grounded_refusal', citations: [], retrieved: [] };
+  if (intent === 'mixed') {
+    const runPart = clientAnswer(answerRunQuestion(run, question, semantic.focus));
+    if (!run || !run.integrityValid) return runPart;
+    const docs = quickDocs.filter(doc => doc.kind !== 'design');
+    // Keep game and historical evidence separate. Neither domain can claim
+    // that a speculative alternative really occurred in the player's run.
+    if (!docs.length) return {
+      ...runPart,
+      answer: runPart.answer + '\n\n相关史实还没有找到足够匹配的史料，暂不做历史对照。'
+    };
+    const historyPart = await answerHistoryQuestion(question, context, history, query, docs);
+    return {
+      answer: '这局的记录：\n' + runPart.answer +
+        '\n\n史书所载：\n' + historyPart.answer,
+      mode: 'mixed_evidence',
+      citations: [...runPart.citations, ...historyPart.citations],
+      retrieved: [...runPart.retrieved, ...historyPart.retrieved]
+    };
+  }
+  if (!semantic && run && !explicitRun && !quickDocs.length)
+    return clientAnswer(answerRunQuestion(run, question));
+  return answerHistoryQuestion(question, context, history, query, quickDocs);
+}
+
+// Historical answers retain their original historical validation and spoiler
+// gate; only the routing decision changes.
+async function answerHistoryQuestion(question, context, history, query, selectedDocs) {
   // Retrieval isolation must also apply to the model conversation itself:
   // otherwise earlier "退许都" exchanges can contaminate a new troop question.
   const conversationalHistory = query === String(question || '').trim() ? [] : history;
@@ -257,7 +307,7 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
     answer: '现有史料不足以确认精确伤亡、逐日或分钟级数据；本游戏中的资源数值也不是史书原始数据。',
     mode: 'grounded_refusal', citations: [], retrieved: []
   };
-  const docs = retrieve(query, 4);
+  const docs = selectedDocs;
   if (!docs.length) return {
     answer: '现有史料不足以确认这个问题。目前能核对的是官渡战局、有关人物、粮道和史实与演绎的边界。',
     mode: 'grounded_refusal', citations: [], retrieved: []
@@ -304,5 +354,6 @@ async function answerQuestion(question, context, rawHistory, rawRun) {
 module.exports = {
   corpus, styleExamples, grams, scoreDocument, retrieve, selectStyleExamples, normalizeHistory, retrievalQuery,
   hasEvidence, buildGroundedPrompt, validateAnswer, explicitHistoricalContradiction, fallbackAnswer, askOpenAI,
-  playerFacingAnswer, answerQuestion, sanitizeRun, answerRunQuestion, isRunQuestion
+  playerFacingAnswer, answerQuestion, answerHistoryQuestion, classifyQuestion,
+  sanitizeRun, answerRunQuestion, isRunQuestion
 };
