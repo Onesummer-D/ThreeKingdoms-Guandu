@@ -390,7 +390,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         {
             if (generation != requestGeneration || pendingText == null) return;
             CompleteAnswer(pendingText, IsRunReviewQuestion(question)
-                ? LocalRunReview(run) : knowledge.Answer(question, previous, context));
+                ? LocalRunReview(run) : knowledge.Answer(question, previous, context), true);
         });
     }
 
@@ -403,7 +403,8 @@ public sealed class HistorianChatUI : MonoBehaviour
             RegexOptions.IgnoreCase).Trim();
     }
 
-    private void CompleteAnswer(TMP_Text body, HistorianAskResponse response)
+    private void CompleteAnswer(TMP_Text body, HistorianAskResponse response,
+        bool usedLocalFallback = false)
     {
         string playerAnswer = PlayerFacingText(response.answer);
         body.text = playerAnswer;
@@ -411,11 +412,16 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (history.Count > 40) history.RemoveRange(0, history.Count - 40);
         AddSources(body.transform.parent, response.citations);
         busy = false;
+        // A successful HTTP request may still return a server-side
+        // grounded_fallback when the AI provider is slow or unavailable.
+        // Only a failed UnityWebRequest means the local offline corpus was used.
         status.text = response.mode == "grounded_model" ? "依据史料回答" :
             response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
             response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
-            "当前为史料摘录，联网后可继续向史官提问";
+            usedLocalFallback ? "联网暂不可用，已使用本地史料" :
+            response.mode == "grounded_fallback" ? "依据史料摘录回答" :
+            "依据史料回答";
         RefreshControls();
         if (IsOpen) { input.Select(); input.ActivateInputField(); StartCoroutine(ScrollToLatest()); }
     }
