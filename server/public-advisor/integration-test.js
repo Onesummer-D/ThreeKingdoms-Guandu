@@ -64,6 +64,11 @@ async function main() {
     const preview = await fetch(previewUrl);
     check(preview.status === 200 && preview.headers.get('content-type') === 'image/png',
       'social preview image is directly retrievable without authentication');
+    const imageProbe = await fetch(previewUrl, {method:'HEAD'});
+    check(imageProbe.status === 200 &&
+      imageProbe.headers.get('content-type') === 'image/png' &&
+      Number(imageProbe.headers.get('content-length')) > 10240,
+      'social crawler HEAD request sees a real PNG and its Content-Length');
     check(!publicHtml.includes('const joinToken = __JOIN_TOKEN__'),
       'invited token is injected as a JavaScript literal');
     const maliciousToken = await fetch(base + '/join/' + encodeURIComponent(session.sessionId) +
