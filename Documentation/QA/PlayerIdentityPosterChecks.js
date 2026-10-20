@@ -60,8 +60,10 @@ check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHe
   report.includes('background.color = PanelColor;') &&
   !report.includes('CardBackgroundSkin.Apply(background, CardBackgroundSkin.Style.LongPoster)'),
   'Poster uses one continuous dark background and a distinct footer without duplicated ornament');
-check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："'),
-  'Poster footer uses the same local ID');
+check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："') &&
+  report.includes('34f, TextAlignmentOptions.MidlineRight, TextPrimary, false)') &&
+  !report.includes('34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false)'),
+  'Poster displays the same local commander ID at the lower-right of the export');
 check(report.includes('Resources.Load<Texture2D>("CardSkins/PosterDark")') &&
       report.includes('bool decoratedPoster = posterBackgroundTexture != null') &&
       report.includes('background.sprite = temporaryPosterSprite') &&
