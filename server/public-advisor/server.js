@@ -213,7 +213,11 @@ async function handle(req, res) {
       res.writeHead(200, {
         'Content-Type': 'image/png',
         'Content-Length': image.length,
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        // Unlike JSON responses, this PNG is requested directly from
+        // Unity WebGL. Browsers enforce CORS on DownloadHandlerTexture.
+        'Access-Control-Allow-Origin': '*',
+        'X-Content-Type-Options': 'nosniff'
       });
       return res.end(image);
     } catch (err) {

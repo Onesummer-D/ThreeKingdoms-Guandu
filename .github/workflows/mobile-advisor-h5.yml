@@ -20,6 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install backend dependencies for real QR generation test
+        # The repository has no committed npm lockfile yet.
+        run: npm install --prefix server/public-advisor --no-audit --no-fund
       - name: Static HTML, JavaScript and API contract tests
         run: node server/public-advisor/mobile-ui-test.js
       - name: Full session and invited advisor integration

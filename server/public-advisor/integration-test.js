@@ -47,6 +47,34 @@ async function main() {
     const path = '/api/sessions/' + session.sessionId;
     const host = { 'X-Host-Token': session.hostToken };
     const guest = { 'X-Join-Token': new URL(session.joinUrl).searchParams.get('token') };
+    // Real Unity WebGL uses X-Host-Token and reads QR as a cross-origin PNG,
+    // unlike the JSON endpoints. Test preflight and the binary response.
+    const browserOrigin = 'http://127.0.0.1:8081';
+    const qrPath = path + '/qr.png';
+    const preflight = await fetch(base + qrPath, { method: 'OPTIONS', headers: {
+      Origin: browserOrigin,
+      'Access-Control-Request-Method': 'GET',
+      'Access-Control-Request-Headers': 'x-host-token'
+    } });
+    check(preflight.status === 204 &&
+      preflight.headers.get('access-control-allow-origin') === '*' &&
+      /X-Host-Token/i.test(preflight.headers.get('access-control-allow-headers') || ''),
+      'WebGL QR request preflight allows cross-origin host token');
+    const qrResponse = await fetch(base + qrPath, { headers: {
+      Origin: browserOrigin, 'X-Host-Token': session.hostToken, Accept:'image/png'
+    } });
+    const qrBytes = Buffer.from(await qrResponse.arrayBuffer());
+    check(qrResponse.status === 200 &&
+      qrResponse.headers.get('access-control-allow-origin') === '*' &&
+      qrResponse.headers.get('content-type') === 'image/png' &&
+      qrBytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+      qrBytes.length > 500,
+      'WebGL can receive a real QR PNG with CORS access');
+    const noTokenQr = await fetch(base + qrPath, { headers: { Origin: browserOrigin } });
+    check(noTokenQr.status === 403 &&
+      noTokenQr.headers.get('access-control-allow-origin') === '*',
+      'QR remains host-token-protected while browser can read error responses');
+
     const publicInvite = await fetch(base + '/join/' + encodeURIComponent(session.sessionId) +
       '?token=' + encodeURIComponent(guest['X-Join-Token']));
     const publicHtml = await publicInvite.text();
