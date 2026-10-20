@@ -166,11 +166,17 @@ async function handle(req, res) {
     'advisor-gold-title.webp':'image/webp',
     'advisor-gold-title-v2.webp':'image/webp',
     'advisor-gold-title-v3.webp':'image/webp' };
-  if (req.method === 'GET' && parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
+  if ((req.method === 'GET' || req.method === 'HEAD') &&
+      parts.length === 2 && parts[0] === 'assets' && assetTypes[parts[1]]) {
     const assetPath = path.join(publicDir, 'assets', parts[1]);
     if (!fs.existsSync(assetPath)) return error(res, 404, '资源不存在');
-    res.writeHead(200, { 'Content-Type':assetTypes[parts[1]], 'Cache-Control':'public, max-age=3600',
+    const assetSize = fs.statSync(assetPath).size;
+    res.writeHead(200, { 'Content-Type':assetTypes[parts[1]],
+      'Content-Length':assetSize, 'Cache-Control':'public, max-age=3600',
       'X-Content-Type-Options':'nosniff' });
+    // Social previews sometimes HEAD-check an image before downloading it.
+    // A 404 on HEAD can cause an empty card despite a successful image GET.
+    if (req.method === 'HEAD') return res.end();
     return fs.createReadStream(assetPath).pipe(res);
   }
 
@@ -179,7 +185,7 @@ async function handle(req, res) {
     // Serve a full URL that a social preview crawler can request without
     // JavaScript, a login, the invitation token or a special auth header.
     const origin = PUBLIC_ORIGIN || `http://${req.headers.host || 'localhost'}`;
-    const shareImageUrl = htmlAttribute(new URL('/assets/battle-hero.png', origin).toString());
+    const shareImageUrl = htmlAttribute(new URL('/assets/battle-hero.png?v=20261020-share-card-v2', origin).toString());
     const html = fs.readFileSync(pagePath, 'utf8')
       .replaceAll('__SHARE_IMAGE_URL__', shareImageUrl)
       .replace('__SESSION_ID__', inlineJson(parts[1]))
