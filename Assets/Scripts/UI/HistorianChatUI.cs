@@ -488,6 +488,7 @@ public sealed class HistorianChatUI : MonoBehaviour
         // Only a failed UnityWebRequest means the local offline corpus was used.
         status.text = response.mode == "grounded_model" ? "依据史料回答" :
             response.mode == "run_evidence" ? "依据本局实际战况记录复盘（非历史史料）" :
+            response.mode == "mixed_evidence" ? "依据本局记录与史料分别对照" :
             response.mode == "run_unavailable" ? "本局记录不足，暂不能判断" :
             response.mode == "grounded_refusal" ? "现有资料不足，你可以换个问题" :
             usedLocalFallback ? "联网暂不可用，已使用本地史料" :
