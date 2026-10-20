@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install backend dependencies for real QR generation test
+        run: npm ci --prefix server/public-advisor
       - name: Static HTML, JavaScript and API contract tests
         run: node server/public-advisor/mobile-ui-test.js
       - name: Full session and invited advisor integration
