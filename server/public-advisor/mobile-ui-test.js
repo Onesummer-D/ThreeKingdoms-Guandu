@@ -120,6 +120,11 @@ check(html.includes('grid-template-columns:minmax(0,1fr)') &&
   html.includes('@media (max-width:480px)') &&
   html.includes('min-height:118px'),
   'Phone-width option buttons use their own flexible full-width row');
+check(/\.question-label\s*\{display:block;position:relative;\s*top:clamp\(12px,3\.6vw,16px\)/.test(html) &&
+  html.includes("textContent='军议之题 · 邀约预计剩余 '") &&
+  html.includes('function fitQuestionPanel()') &&
+  html.includes('panel.style.paddingTop=Math.ceil(panelHeight*.17)'),
+  'Countdown heading stays below the ornate top border while preserving the fitted question body');
 check(html.includes('white-space:pre-line;overflow-wrap:anywhere') &&
   html.includes('min-height:205px') &&
   html.includes('function fitQuestionPanel()') &&
