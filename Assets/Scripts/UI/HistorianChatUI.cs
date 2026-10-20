@@ -56,9 +56,17 @@ public sealed class HistorianChatUI : MonoBehaviour
     [DllImport("__Internal")] private static extern void GuanduHistorianInputSetText(string value);
     [DllImport("__Internal")] private static extern void GuanduHistorianInputClose();
 
+    private bool previousWebGLKeyboardCapture;
+    private bool browserInputOpen;
+
     private void OpenBrowserInput()
     {
         if (input == null || input.textViewport == null) return;
+        // Otherwise the Unity player intercepts keystrokes even when a real
+        // browser text area owns DOM focus, breaking pinyin/IME composition.
+        previousWebGLKeyboardCapture = WebGLInput.captureAllKeyboardInput;
+        WebGLInput.captureAllKeyboardInput = false;
+        browserInputOpen = true;
         Canvas.ForceUpdateCanvases();
         Vector3[] corners = new Vector3[4];
         input.textViewport.GetWorldCorners(corners);
@@ -294,7 +302,12 @@ public sealed class HistorianChatUI : MonoBehaviour
     public void Close()
     {
 #if UNITY_WEBGL && !UNITY_EDITOR
-        GuanduHistorianInputClose();
+        if (browserInputOpen)
+        {
+            GuanduHistorianInputClose();
+            WebGLInput.captureAllKeyboardInput = previousWebGLKeyboardCapture;
+            browserInputOpen = false;
+        }
 #endif
         IsOpen = false;
         if (input != null) input.DeactivateInputField();
