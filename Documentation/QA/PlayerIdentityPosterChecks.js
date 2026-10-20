@@ -60,6 +60,23 @@ check(report.includes('CreatePosterSignature(canvasRect, bodyHeight, signatureHe
   report.includes('background.color = PanelColor;') &&
   !report.includes('CardBackgroundSkin.Apply(background, CardBackgroundSkin.Style.LongPoster)'),
   'Poster uses one continuous dark background and a distinct footer without duplicated ornament');
+const webglBridge=load('Assets/Plugins/WebGL/GuanduPosterDownload.jslib');
+check(report.includes('#if UNITY_WEBGL && !UNITY_EDITOR') &&
+      report.includes('GuanduDownloadPoster(lastPosterPng, lastPosterPng.Length, lastPosterFileName)') &&
+      report.includes('lastPosterPng = png;') &&
+      report.includes('download.onClick.AddListener(DownloadPosterInBrowser)') &&
+      report.includes('"下载海报"') &&
+      report.includes('浏览器下载列表') &&
+      report.includes('#if !UNITY_WEBGL || UNITY_EDITOR') &&
+      report.includes('File.WriteAllBytes(Path.Combine(folder, fileName), png)'),
+  'WebGL poster downloads on user click while desktop file export stays unchanged');
+check(webglBridge.includes('mergeInto(LibraryManager.library') &&
+      webglBridge.includes('GuanduDownloadPoster:') &&
+      webglBridge.includes('HEAPU8.slice(dataPointer, dataPointer + dataLength)') &&
+      webglBridge.includes("new Blob([bytes], { type: 'image/png' })") &&
+      webglBridge.includes('anchor.download = safeName') &&
+      webglBridge.includes('anchor.click()'),
+  'WebGL Unity browser bridge creates an actual downloadable PNG Blob');
 check(report.includes('PlayerIdentityState.CurrentId')&&report.includes('"主将 ID："') &&
   report.includes('34f, TextAlignmentOptions.MidlineRight, TextPrimary, false)') &&
   !report.includes('34f, TextAlignmentOptions.MidlineLeft, TextPrimary, false)'),

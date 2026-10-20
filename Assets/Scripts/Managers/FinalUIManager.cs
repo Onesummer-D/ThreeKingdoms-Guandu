@@ -1284,6 +1284,10 @@ public class FinalUIManager : MonoBehaviour
         if (optionButton2 != null) optionButton2.gameObject.SetActive(false);
         if (optionButton3 != null) optionButton3.gameObject.SetActive(false);
 
+        // Every narrative choice is fresh even if the previous node temporarily
+        // disabled the button during transition. Reset tint and grey hover
+        // images before the new text is made visible.
+        SetOptionButtonsInteractable(true);
         for (int i = 0; i < options.Count && i < 3; i++)
         {
             SetupSingleOption(i, options[i]);
@@ -1322,6 +1326,8 @@ public class FinalUIManager : MonoBehaviour
             int capturedIndex = index;
             btn.onClick.AddListener(() => OnOptionClicked(capturedIndex));
             btn.gameObject.SetActive(true);
+            ButtonSpriteSwap swap = btn.GetComponent<ButtonSpriteSwap>();
+            if (swap != null) swap.ResetToNormal();
             LayoutRebuilder.ForceRebuildLayoutImmediate(btn.GetComponent<RectTransform>());
         }
     }

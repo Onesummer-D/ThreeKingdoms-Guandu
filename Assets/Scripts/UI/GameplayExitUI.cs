@@ -49,23 +49,23 @@ public sealed class GameplayExitUI : MonoBehaviour
             if (label != null) label.text = endingMode ? "再玩一局" : "保存进度";
         }
         if (exitPanelRect == null || exitPanelArtwork == null) return;
-        // Four ending actions must live INSIDE a single large card, not float
-        // outside the small confirmation banner behind the modal.
-        SetAnchored(exitPanelRect, endingMode ? new Vector2(.245f, .20f) : new Vector2(.30f, .34f),
-            endingMode ? new Vector2(.755f, .82f) : new Vector2(.70f, .66f));
-        CardBackgroundSkin.Apply(exitPanelArtwork,
-            endingMode ? CardBackgroundSkin.Style.DarkPanel : CardBackgroundSkin.Style.SmallBanner);
+        // The old SmallBanner is too short for the confirmation title and
+        // action row. Use the same dark, fully legible painted card in both
+        // modes, with a larger safe content area for mid-run exit.
+        SetAnchored(exitPanelRect, endingMode ? new Vector2(.245f, .20f) : new Vector2(.245f, .245f),
+            endingMode ? new Vector2(.755f, .82f) : new Vector2(.755f, .755f));
+        CardBackgroundSkin.Apply(exitPanelArtwork, CardBackgroundSkin.Style.DarkPanel);
         Transform ornate = exitPanelRect.Find("OrnateFrameArt");
-        if (ornate != null) ornate.gameObject.SetActive(endingMode);
+        if (ornate != null) ornate.gameObject.SetActive(true);
         if (question != null) SetAnchored(question.rectTransform,
-            endingMode ? new Vector2(.10f, .67f) : new Vector2(.08f, .56f),
-            endingMode ? new Vector2(.90f, .91f) : new Vector2(.92f, .90f));
+            endingMode ? new Vector2(.10f, .67f) : new Vector2(.10f, .59f),
+            endingMode ? new Vector2(.90f, .91f) : new Vector2(.90f, .86f));
         if (saveButton != null) SetAnchored(saveButton.GetComponent<RectTransform>(),
-            endingMode ? new Vector2(.14f, .40f) : new Vector2(.08f, .18f),
-            endingMode ? new Vector2(.48f, .56f) : new Vector2(.47f, .45f));
+            endingMode ? new Vector2(.14f, .40f) : new Vector2(.12f, .28f),
+            endingMode ? new Vector2(.48f, .56f) : new Vector2(.47f, .47f));
         if (directButton != null) SetAnchored(directButton.GetComponent<RectTransform>(),
-            endingMode ? new Vector2(.52f, .40f) : new Vector2(.53f, .18f),
-            endingMode ? new Vector2(.86f, .56f) : new Vector2(.92f, .45f));
+            endingMode ? new Vector2(.52f, .40f) : new Vector2(.53f, .28f),
+            endingMode ? new Vector2(.86f, .56f) : new Vector2(.88f, .47f));
         if (reviewButton != null) reviewButton.gameObject.SetActive(endingMode);
         if (reportButton != null) reportButton.gameObject.SetActive(endingMode);
     }
@@ -118,24 +118,23 @@ public sealed class GameplayExitUI : MonoBehaviour
 
         GameObject panel = CreateObject("ExitConfirmPanel", overlay.transform);
         exitPanelRect = panel.GetComponent<RectTransform>();
-        SetAnchored(exitPanelRect, new Vector2(.30f, .34f), new Vector2(.70f, .66f));
+        SetAnchored(exitPanelRect, new Vector2(.245f, .245f), new Vector2(.755f, .755f));
         exitPanelArtwork = panel.AddComponent<Image>();
-        CardBackgroundSkin.Apply(exitPanelArtwork, CardBackgroundSkin.Style.SmallBanner);
+        CardBackgroundSkin.Apply(exitPanelArtwork, CardBackgroundSkin.Style.DarkPanel);
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = Accent;
         outline.effectDistance = new Vector2(3f, -3f);
 
-        question = CreateText(panel.transform, "确定要退出游戏吗？", 52f,
+        question = CreateText(panel.transform, "确定要退出游戏吗？", 45f,
             TextAlignmentOptions.Center, TextColor);
-        SetAnchored(question.rectTransform, new Vector2(.08f, .56f), new Vector2(.92f, .90f));
+        SetAnchored(question.rectTransform, new Vector2(.10f, .59f), new Vector2(.90f, .86f));
 
         saveButton = CreateButton(panel.transform, "保存进度", new Vector2(.08f, .18f), new Vector2(.47f, .45f));
         saveButton.onClick.AddListener(HandlePrimaryAction);
         directButton = CreateButton(panel.transform, "直接退出", new Vector2(.53f, .18f), new Vector2(.92f, .45f));
         directButton.onClick.AddListener(() => manager.ExitToMainMenuWithoutSaving());
-        // The acknowledgement belongs under the saved-status title, not in
-        // the right-hand action column where it obscured the message.
-        confirmButton = CreateButton(panel.transform, "确定", new Vector2(.32f, .26f), new Vector2(.68f, .49f));
+        // The saved acknowledgement uses the same safe centered action row.
+        confirmButton = CreateButton(panel.transform, "确定", new Vector2(.32f, .28f), new Vector2(.68f, .47f));
         confirmButton.onClick.AddListener(ResumeAfterSave);
         confirmButton.gameObject.SetActive(false);
 
@@ -158,8 +157,8 @@ public sealed class GameplayExitUI : MonoBehaviour
         reportButton.gameObject.SetActive(false);
 
         status = CreateText(panel.transform, "", 27f, TextAlignmentOptions.Center,
-            new Color(.78f, .79f, .75f, 1f));
-        SetAnchored(status.rectTransform, new Vector2(.06f, .02f), new Vector2(.94f, .16f));
+            new Color(.95f, .87f, .72f, 1f));
+        SetAnchored(status.rectTransform, new Vector2(.10f, .08f), new Vector2(.90f, .22f));
         overlay.SetActive(false);
     }
 

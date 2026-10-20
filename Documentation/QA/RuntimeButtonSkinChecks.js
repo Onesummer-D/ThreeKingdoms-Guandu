@@ -32,4 +32,20 @@ check(common.includes('Image.Type.Sliced')&&common.includes('border.sqrMagnitude
   'Valid 9-slice guard');
 check(common.includes('highlightedColor')&&common.includes('pressedColor')&&common.includes('Outline'),
   'Hover, press and edge emphasis enabled');
+const exit=read('Assets/Scripts/UI/GameplayExitUI.cs');
+check(exit.includes('CardBackgroundSkin.Apply(exitPanelArtwork, CardBackgroundSkin.Style.DarkPanel)') &&
+  exit.includes('new Vector2(.245f, .245f)') &&
+  exit.includes('new Vector2(.755f, .755f)') &&
+  exit.includes('new Color(.95f, .87f, .72f, 1f)') &&
+  !exit.includes('CardBackgroundSkin.Style.SmallBanner'),
+  'Mid-run exit modal uses an expanded readable dark card with safe button region');
+const swap=read('Assets/ButtonSpriteSwap.cs');
+const finalUi=read('Assets/Scripts/Managers/FinalUIManager.cs');
+check(swap.includes('public void ResetToNormal()') &&
+  swap.includes('void OnEnable()') &&
+  swap.includes('void OnDisable()') &&
+  swap.includes('if (buttonImage != null && normalSprite != null)') &&
+  finalUi.includes('if (swap != null) swap.ResetToNormal();') &&
+  /void SetupOptionButtons\([\s\S]*?SetOptionButtonsInteractable\(true\);/.test(finalUi),
+  'Reused narrative option buttons reset stale grey hover and disabled tints on every node');
 console.log('runtime-button-style-checks: '+passed+'/'+passed);
