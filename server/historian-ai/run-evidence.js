@@ -72,7 +72,7 @@ function formatEffects(item) {
 function isRunQuestion(question) {
   return /(本局|这局|这一局|这轮|这一轮|这把|这一把|这场|这一场|这次(游戏|游玩|选择|决策|输|赢|失败|获胜|结局|复盘)|这一(次游戏|次游玩|次选择|次决策)|我的(选择|决策|兵力|粮草|计策|风险|战绩|资源|结局)|我(为什么|怎么)(会)?(输|赢|失败|获胜)|我(输了|赢了|失败了|获胜了)|哪一步|帮我复盘|给我复盘|复盘一下|刚才的选择|为什么(会)?(输|赢|失败|获胜)|怎么(会)?(输|赢|失败|获胜))/.test(String(question || ''));
 }
-function answerRunQuestion(run, question) {
+function answerRunQuestion(run, question, focus = 'overview') {
   if (!run) return {
     answer: '我尚未收到这局实际发生的决策记录，不能凭历史故事推断你为什么输或赢。请在进入游戏并作出选择后再问我。',
     mode: 'run_unavailable', citations: [], retrieved: []
@@ -82,36 +82,57 @@ function answerRunQuestion(run, question) {
     mode: 'run_unavailable', citations: [], retrieved: []
   };
   const parts = [];
+  const facts = [];
+  const add = (kind, value) => { parts.push(value); facts.push({ kind, value }); };
   if (run.completed && run.ending && run.ending.name) {
-    parts.push('这局抵达了「' + run.ending.name + '」。' +
+    add('ending', '这局抵达了「' + run.ending.name + '」。' +
       (run.ending.reason ? '游戏记录的结局评价是「' + run.ending.reason + '」。' : '') + '[G01]');
   } else {
-    parts.push('这局尚无已记录的终局，因此现在不能断言输赢原因。以下只复盘已经发生的选择。[G01]');
+    add('ending', '这局尚无已记录的终局，因此现在不能断言输赢原因。以下只复盘已经发生的选择。[G01]');
   }
   const key = run.ending && run.ending.keyDecisions.length
     ? run.decisions.filter(d => run.ending.keyDecisions.includes(d.sequence))
     : run.decisions.slice(-3);
   const selected = key.length ? key.slice(-3) : run.decisions.slice(-3);
-  if (selected.length) parts.push('已记录的' + (run.completed ? '关键' : '最近') + '选择：' +
+  if (selected.length) add('choices', '已记录的' + (run.completed ? '关键' : '最近') + '选择：' +
     selected.map(d => '第' + (d.chapterIndex < 0 ? '?' : (d.chapterIndex + 1)) +
       '幕「' + (d.optionText || '未命名选项') + '」' + formatEffects(d)).join('；') + '。[G01]');
-  if (run.current) parts.push('当前' + (run.completed ? '终局' : '已发生') +
+  if (run.current) add('resources', '当前 + (run.completed ? '终局' : '已发生') +
     '资源为' + formatResources(run.current) + '。[G01]');
   if (run.start && run.current) {
     const labels = { troop: '兵力', food: '粮草', strategy: '计策', risk: '风险' };
     const deltas = Object.keys(labels).map(k => [labels[k], run.current[k] - run.start[k]])
       .filter(pair => pair[1] !== 0).map(pair =>
         pair[0] + (pair[1] > 0 ? '+' : '') + format(pair[1]));
-    if (deltas.length) parts.push('与出征时比较，资源净变化：' + deltas.join('、') + '。[G01]');
+    if (deltas.length) add('resources', '与出征时比较，资源净变化：' + deltas.join('、') + '。[G01]');
   }
   if (/(小游戏|拼图|地道|滑块)/.test(question) && run.miniGames.length) {
-    parts.push('小游戏记录：' + run.miniGames.slice(-3).map(g =>
+    add('miniGames', '小游戏记录：' + run.miniGames.slice(-3).map(g =>
       (g.gameType || '小游戏') + (g.success ? '成功' : '未成功') +
       '（失败尝试' + g.failedAttempts + '次）').join('、') + '。[G01]');
   }
-  parts.push('这是游戏事件与结局评价的回顾，不是史料中的真实战局。记录能说明你做了什么以及游戏如何评价，却不能单凭数值证明某一步是唯一原因。[G01]');
+  const boundary = '这里说的是游戏中已经发生的事和游戏自身的结局评价，不能据此断言历史战局中的必然因果。[G01]';
+  // The model can select the question's focus, never write an unverified
+  // event. Render only actual recorded facts, with a varied order and length.
+  const priorities = {
+    choices: ['choices', 'ending', 'resources', 'miniGames'],
+    ending: ['ending', 'choices', 'resources', 'miniGames'],
+    resources: ['resources', 'choices', 'ending', 'miniGames'],
+    miniGames: ['miniGames', 'choices', 'ending', 'resources']
+  };
+  const focusOrder = priorities[focus];
+  const selectedFacts = focusOrder
+    ? facts.slice().sort((a, b) =>
+        focusOrder.indexOf(a.kind) - focusOrder.indexOf(b.kind))
+        .filter((fact, index, all) =>
+          all.findIndex(previous => previous.kind === fact.kind) === index)
+    : facts;
+  // In a focused model-guided answer use no more than three verified fact
+  // blocks. The default/no-model answer preserves the existing full recap.
+  const answerParts = focusOrder ? selectedFacts.slice(0, 3).map(x => x.value) : parts;
+  answerParts.push(boundary);
   return {
-    answer: parts.join('\n\n'),
+    answer: answerParts.join('\n\n'),
     mode: 'run_evidence', retrieved: ['G01'],
     citations: [{ id: 'G01', title: '本局已发生的战况记录', source: '玩家本局的选择、资源变化及结局记录（非历史史料）' }]
   };
