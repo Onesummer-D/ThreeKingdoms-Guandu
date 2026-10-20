@@ -74,12 +74,33 @@ mergeInto(LibraryManager.library, {
     textarea.addEventListener('compositionstart', onCompositionStart);
     textarea.addEventListener('compositionend', onCompositionEnd);
     textarea.addEventListener('keydown', onKeyDown);
+    // Fullscreen roots create a browser top-layer stacking context.
+    // Attach to the fullscreen CONTAINER when possible. If Unity made
+    // the canvas itself fullscreen, browser DOM cannot cover its pixels:
+    // leave fullscreen for a native text-entry session rather than silently
+    // swallowing Chinese characters.
+    var onFullscreenChange = function () {
+      var full = document.fullscreenElement;
+      if (full === canvas && document.exitFullscreen) {
+        Promise.resolve(document.exitFullscreen()).then(function () {
+          if (window.__guanduHistorianInput === state) {
+            document.body.appendChild(textarea);
+            place();
+            textarea.focus();
+          }
+        });
+        return;
+      }
+      var host = full && full.contains && full.contains(canvas) ? full : document.body;
+      host.appendChild(textarea);
+      place();
+    };
     window.addEventListener('resize', place);
-    document.addEventListener('fullscreenchange', place);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
     document.body.appendChild(textarea);
     state.dispose = function () {
       window.removeEventListener('resize', place);
-      document.removeEventListener('fullscreenchange', place);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       textarea.removeEventListener('input', onInput);
       textarea.removeEventListener('compositionstart', onCompositionStart);
       textarea.removeEventListener('compositionend', onCompositionEnd);
@@ -88,7 +109,7 @@ mergeInto(LibraryManager.library, {
       if (window.__guanduHistorianInput === state)
         window.__guanduHistorianInput = null;
     };
-    place();
+    onFullscreenChange();
     textarea.focus();
   },
   GuanduHistorianInputChanged: function () {
