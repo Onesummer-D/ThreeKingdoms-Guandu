@@ -97,7 +97,7 @@ function answerRunQuestion(run, question, focus = 'overview') {
   if (selected.length) add('choices', '已记录的' + (run.completed ? '关键' : '最近') + '选择：' +
     selected.map(d => '第' + (d.chapterIndex < 0 ? '?' : (d.chapterIndex + 1)) +
       '幕「' + (d.optionText || '未命名选项') + '」' + formatEffects(d)).join('；') + '。[G01]');
-  if (run.current) add('resources', '当前 + (run.completed ? '终局' : '已发生') +
+  if (run.current) add('resources', '当前' + (run.completed ? '终局' : '已发生') +
     '资源为' + formatResources(run.current) + '。[G01]');
   if (run.start && run.current) {
     const labels = { troop: '兵力', food: '粮草', strategy: '计策', risk: '风险' };
