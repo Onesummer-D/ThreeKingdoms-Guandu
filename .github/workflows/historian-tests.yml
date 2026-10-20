@@ -6,6 +6,9 @@ on:
       - 'server/historian-ai/**'
       - 'server/public-advisor/server.js'
       - 'Assets/Scripts/UI/Historian*.cs'
+      - 'Assets/Scripts/Managers/FinalUIManager.cs'
+      - 'Assets/Plugins/WebGL/GuanduHistorianChineseInput.jslib'
+      - 'Documentation/QA/WebGLHistorianInputChecks.js'
       - '.github/workflows/historian-tests.yml'
   push:
     branches: [main]
@@ -29,6 +32,8 @@ jobs:
           node --check server/historian-ai/run-evidence.js
           node --check server/historian-ai/chat-test.js
           node --check server/historian-ai/run-editorial-quiz.js
+      - name: Browser IME composition and node transition contracts
+        run: node Documentation/QA/WebGLHistorianInputChecks.js
       - name: Evidence regression
         run: node server/historian-ai/run-eval.js
         env:

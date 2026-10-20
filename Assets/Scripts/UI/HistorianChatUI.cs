@@ -7,6 +7,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using System.Runtime.InteropServices;
+#endif
 
 /// <summary>Independent, run-scoped historian chat. No scene wiring or API key in the client.</summary>
 public sealed class HistorianChatUI : MonoBehaviour
@@ -41,6 +44,42 @@ public sealed class HistorianChatUI : MonoBehaviour
     private bool busy;
     private bool ownsPause;
     private bool imeWasComposing;
+#if UNITY_WEBGL && !UNITY_EDITOR
+    // Unity's TMP input cannot reliably host browser Chinese/Japanese IME.
+    // A native DOM textarea takes keyboard focus above this TMP field.
+    [DllImport("__Internal")] private static extern void GuanduHistorianInputOpen(
+        string value, float x, float y, float width, float height, float screenWidth, float screenHeight);
+    [DllImport("__Internal")] private static extern int GuanduHistorianInputChanged();
+    [DllImport("__Internal")] private static extern string GuanduHistorianInputRead();
+    [DllImport("__Internal")] private static extern int GuanduHistorianInputWasSubmitted();
+    [DllImport("__Internal")] private static extern int GuanduHistorianInputWasCancelled();
+    [DllImport("__Internal")] private static extern void GuanduHistorianInputSetText(string value);
+    [DllImport("__Internal")] private static extern void GuanduHistorianInputClose();
+
+    private bool previousWebGLKeyboardCapture;
+    private bool browserInputOpen;
+
+    private void OpenBrowserInput()
+    {
+        if (input == null || input.textViewport == null) return;
+        // Otherwise the Unity player intercepts keystrokes even when a real
+        // browser text area owns DOM focus, breaking pinyin/IME composition.
+        previousWebGLKeyboardCapture = WebGLInput.captureAllKeyboardInput;
+        WebGLInput.captureAllKeyboardInput = false;
+        browserInputOpen = true;
+        Canvas.ForceUpdateCanvases();
+        Vector3[] corners = new Vector3[4];
+        input.textViewport.GetWorldCorners(corners);
+        Canvas canvas = input.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? canvas.worldCamera : null;
+        Vector2 low = RectTransformUtility.WorldToScreenPoint(camera, corners[0]);
+        Vector2 high = RectTransformUtility.WorldToScreenPoint(camera, corners[2]);
+        GuanduHistorianInputOpen(input.text, low.x, low.y,
+            Mathf.Max(1f, high.x - low.x), Mathf.Max(1f, high.y - low.y),
+            Screen.width, Screen.height);
+    }
+#endif
     private float previousTimeScale;
     private int generation;
     private string runId = string.Empty;
@@ -224,6 +263,10 @@ public sealed class HistorianChatUI : MonoBehaviour
         input.selectionColor = new Color(.83f, .66f, .37f, .38f);
         input.lineType = TMP_InputField.LineType.MultiLineNewline;
         input.characterLimit = 800;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Prevent TMP from competing with the native DOM IME.
+        input.readOnly = true;
+#endif
         input.onValueChanged.AddListener(_ => RefreshControls());
         send = Button(panel.transform, "发送", 34f);
         Anchors(send.GetComponent<RectTransform>(), new Vector2(.82f, .055f), new Vector2(.945f, .17f));
@@ -248,12 +291,24 @@ public sealed class HistorianChatUI : MonoBehaviour
         RefreshSuggestionsForCurrentChapter();
         RefreshControls();
         StartCoroutine(ScrollToLatest());
+#if UNITY_WEBGL && !UNITY_EDITOR
+        OpenBrowserInput();
+#else
         input.Select();
         input.ActivateInputField();
+#endif
     }
 
     public void Close()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        if (browserInputOpen)
+        {
+            GuanduHistorianInputClose();
+            WebGLInput.captureAllKeyboardInput = previousWebGLKeyboardCapture;
+            browserInputOpen = false;
+        }
+#endif
         IsOpen = false;
         if (input != null) input.DeactivateInputField();
         if (surface != null) surface.SetActive(false);
@@ -319,6 +374,15 @@ public sealed class HistorianChatUI : MonoBehaviour
         if (launcher != null && !IsOpen) launcher.SetActive(ShouldShowLauncher());
         if (!IsOpen) return;
         if (!ShouldShowLauncher()) { Close(); return; }
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Poll committed text only. Enter within a Chinese IME candidate
+        // selection is consumed by the DOM control, not as chat submit.
+        if (GuanduHistorianInputChanged() != 0)
+            input.text = GuanduHistorianInputRead();
+        if (GuanduHistorianInputWasCancelled() != 0) { Close(); return; }
+        if (GuanduHistorianInputWasSubmitted() != 0)
+            SubmitQuestion(input.text);
+#else
         bool composing = !string.IsNullOrEmpty(Input.compositionString);
         if (Input.GetKeyDown(KeyCode.Escape) && !composing && !imeWasComposing) { Close(); return; }
         if (input.isFocused && !composing && !imeWasComposing &&
@@ -326,6 +390,7 @@ public sealed class HistorianChatUI : MonoBehaviour
             (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
             SubmitQuestion(input.text);
         imeWasComposing = composing;
+#endif
     }
 
     private void OnDisable() { Close(); }
@@ -356,6 +421,9 @@ public sealed class HistorianChatUI : MonoBehaviour
         for (int i = content.childCount - 1; i >= 0; i--) { content.GetChild(i).gameObject.SetActive(false); Destroy(content.GetChild(i).gameObject); }
         AddMessage("史官", "在下为你查阅官渡相关史料。你可以问战局、人物与粮道，也可以问游戏里哪些是历史、哪些是演绎。", false);
         if (input != null) input.text = string.Empty;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        GuanduHistorianInputSetText(string.Empty);
+#endif
         if (status != null) status.text = string.Empty;
         RefreshControls();
     }
@@ -378,6 +446,9 @@ public sealed class HistorianChatUI : MonoBehaviour
         AddMessage("你", question, true);
         TMP_Text pendingText = AddMessage("史官", "正在查阅史料…", false);
         input.text = string.Empty;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        GuanduHistorianInputSetText(string.Empty);
+#endif
         status.text = "史官正在查阅史料…";
         RefreshControls();
         string context = CurrentContext();
@@ -423,7 +494,14 @@ public sealed class HistorianChatUI : MonoBehaviour
             response.mode == "grounded_fallback" ? "依据史料摘录回答" :
             "依据史料回答";
         RefreshControls();
-        if (IsOpen) { input.Select(); input.ActivateInputField(); StartCoroutine(ScrollToLatest()); }
+        if (IsOpen)
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            input.Select();
+            input.ActivateInputField();
+#endif
+            StartCoroutine(ScrollToLatest());
+        }
     }
 
     private void RefreshControls()

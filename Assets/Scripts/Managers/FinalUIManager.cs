@@ -423,6 +423,10 @@ public class FinalUIManager : MonoBehaviour
         runHistoryTracker?.BeginNewRun();
         CampaignMapUI.Instance?.SetMapButtonVisible(true);
         RestoreGameplayPanelsForNewRun();
+        // The first node is loaded 0.1s later. Keep the recycled gameplay
+        // panel hidden until OnDialogueNodeShown has the new scene ready:
+        // otherwise an old node flashes while the menu is disappearing.
+        if (gameInterfacePanel != null) gameInterfacePanel.SetActive(false);
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
         gameplayExitUI?.SetEndingMode(false);
         gameplayExitUI?.SetVisible(true);
@@ -1089,19 +1093,13 @@ public class FinalUIManager : MonoBehaviour
         currentLeftChar = node.leftCharacter ?? "";
         currentRightChar = node.rightCharacter ?? "";
 
-        StartCoroutine(ShowCharactersCoroutine(node));
-    }
-
-    IEnumerator ShowCharactersCoroutine(DialogueNode node)
-    {
-        yield return null;
-
+        // Draw all portraits as part of this node switch. Deferring them by
+        // one frame made old/in-between nodes briefly visible, and a pending
+        // coroutine could paint portraits from a superseded node.
         if (!string.IsNullOrEmpty(node.avatarCharacter))
             ShowAvatar(node.avatarCharacter);
-
         if (!string.IsNullOrEmpty(node.leftCharacter))
             ShowLeftCharacter(node.leftCharacter);
-
         if (!string.IsNullOrEmpty(node.rightCharacter))
             ShowRightCharacter(node.rightCharacter);
     }
@@ -1219,9 +1217,9 @@ public class FinalUIManager : MonoBehaviour
                 backgroundRectTransform.localScale = Vector3.one;
             }
 
+            // Do not deactivate/reactivate a live background for a sprite
+            // update. Canvas will paint the new sprite on the next render.
             backgroundImage.color = Color.white;
-            backgroundImage.gameObject.SetActive(false);
-            backgroundImage.gameObject.SetActive(true);
             backgroundImage.transform.SetAsFirstSibling();
 
             Debug.Log($"<color=green>背景已更新: {bgSprite?.name}</color>");
