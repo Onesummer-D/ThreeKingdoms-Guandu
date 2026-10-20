@@ -205,13 +205,20 @@ function fallbackAnswer(question, docs) {
   }
   return answer;
 }
-async function askOpenAI(prompt, question, history) {
+async function askOpenAI(prompt, question, history, options = {}) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
   const endpoint = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
   const model = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
   const configuredTimeout = Number(process.env.OPENAI_TIMEOUT_MS || 8000);
-  const timeoutMs = Number.isFinite(configuredTimeout) ? Math.max(500, Math.min(configuredTimeout, 30000)) : 8000;
+  const defaultTimeoutMs = Number.isFinite(configuredTimeout) ? Math.max(500, Math.min(configuredTimeout, 30000)) : 8000;
+  // A router call must not eat the entire Unity request timeout before the
+  // real evidence-grounded answer even starts.
+  const timeoutMs = Number.isFinite(options.timeoutMs)
+    ? Math.max(500, Math.min(options.timeoutMs, defaultTimeoutMs))
+    : defaultTimeoutMs;
+  const maxTokens = Number.isInteger(options.maxTokens)
+    ? Math.max(64, Math.min(600, options.maxTokens)) : 600;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -224,7 +231,7 @@ async function askOpenAI(prompt, question, history) {
         // DeepSeek's OpenAI-compatible endpoint uses max_tokens.
         // OpenAI models may use max_completion_tokens instead.
         ...(String(model).toLowerCase().startsWith('deepseek-') || /deepseek\.com/i.test(endpoint)
-          ? { max_tokens: 600 } : { max_completion_tokens: 600 }),
+          ? { max_tokens: maxTokens } : { max_completion_tokens: maxTokens }),
         messages: [{ role: 'system', content: prompt }, ...history, { role: 'user', content: question }]
       })
     });
