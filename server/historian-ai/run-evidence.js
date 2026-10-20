@@ -130,7 +130,12 @@ function answerRunQuestion(run, question, focus = 'overview') {
   // In a focused model-guided answer use no more than three verified fact
   // blocks. The default/no-model answer preserves the existing full recap.
   const answerParts = focusOrder ? selectedFacts.slice(0, 3).map(x => x.value) : parts;
-  answerParts.push(boundary);
+  // Focused answers already show explicit G01 provenance in the UI and do
+  // not need an automatic defensive closing paragraph every single time.
+  // The fuller/no-model recap retains the boundary; historical comparisons
+  // still state it explicitly to avoid mistaking IF events for real history.
+  if (!focusOrder || /(史实|历史|真实发生|如果|假如)/.test(String(question || '')))
+    answerParts.push(boundary);
   return {
     answer: answerParts.join('\n\n'),
     mode: 'run_evidence', retrieved: ['G01'],
