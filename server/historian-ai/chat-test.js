@@ -86,7 +86,14 @@ async function main() {
     if (mode === 'http-error') { res.writeHead(503); res.end(); return; }
     res.setHeader('Content-Type', 'application/json');
     if (mode === 'formulaic') retryCount++;
-    const content = mode === 'bad-citation'
+    const userQuestion = captured.messages[captured.messages.length - 1].content;
+    const routingCall = captured.messages[0].content.includes('【意图判别');
+    const semanticIntent = /我在乌巢的选择和史书/.test(userQuestion) ? 'mixed' :
+      /袁绍.*(?:输|失败)|曹操为什么/.test(userQuestion) ? 'history' :
+      /帮我写一个/.test(userQuestion) ? 'unrelated' : 'run';
+    const content = mode === 'semantic' && routingCall
+      ? JSON.stringify({ intent: semanticIntent, focus: 'choices' })
+      : mode === 'bad-citation'
       ? '不存在的史料说曹操精确预知未来。[H99]'
       : mode === 'formulaic'
         ? (retryCount === 1
@@ -204,6 +211,32 @@ async function main() {
     check(missingRun.body.mode === 'run_unavailable', 'missing run data does not invent result');
     const historyQuestion = await ask({ question: '我为什么要听许攸的建议？' });
     check(historyQuestion.body.mode !== 'run_evidence', 'historical why-question does not become personal run review');
+    mode = 'semantic';
+    const implicitRun = await ask({ question: '刚刚那个决定是不是把战局搞砸了？', run,
+      history: [{ role: 'user', content: '我在乌巢时做了什么？' },
+        { role: 'assistant', content: '你的战绩记录了拒绝许攸情报。' }] });
+    check(implicitRun.body.mode === 'run_evidence' &&
+      implicitRun.body.answer.includes('拒绝许攸情报') &&
+      implicitRun.body.citations.some(c => c.id === 'G01'),
+      'DeepSeek semantic routing recognizes non-keyword personal gameplay follow-up');
+    const historyWithRun = await ask({ question: '袁绍为什么输掉官渡之战？', run });
+    check(historyWithRun.body.mode !== 'run_evidence' &&
+      !historyWithRun.body.citations.some(c => c.id === 'G01'),
+      'Real historical defeat stays in history despite an attached game run');
+    const mixed = await ask({ question: '我在乌巢的选择和史书里曹操的做法有什么不同？', run });
+    check(mixed.body.mode === 'mixed_evidence' &&
+      mixed.body.answer.includes('这局的记录') &&
+      mixed.body.answer.includes('史书所载') &&
+      mixed.body.citations.some(c => c.id === 'G01'),
+      'Mixed natural question separates historical sources from real game decisions');
+    const noEvidence = await ask({ question: '刚刚那个决定是不是把战局搞砸了？' });
+    check(noEvidence.body.mode === 'run_unavailable' &&
+      !noEvidence.body.citations.some(c => c.id && c.id[0] === 'H'),
+      'Semantic current-run question with missing telemetry cannot become fictional history');
+    mode = 'valid';
+    check(grounding.isRunQuestion('袁绍为什么输掉官渡之战？') === false,
+      'Historical question must not bypass semantic routing as a personal defeat');
+
     mode = 'formulaic';
     retryCount = 0;
     const repaired = await ask({ question: '许攸为什么投曹？' });
