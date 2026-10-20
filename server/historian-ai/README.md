@@ -18,6 +18,15 @@ Unity 的 `HistorianChatUI` 负责透明图标、半透明悬浮窗、自由输�
 
 验证命令：`node server/historian-ai/run-eval.js`（固定史料题），`node server/historian-ai/chat-test.js`（历史、真实 HTTP 合约、错误引用和模型故障），`node server/public-advisor/integration-test.js`（公网会话回归和模型超时）。
 
+## 语义意图路由（PR #25 升级）
+
+- 已有 `OPENAI_API_KEY` 和 OpenAI 兼容接口时，`semantic-router.js` 让模型按上下文理解玩家的自由问题，且**只接收严格 JSON 的 `run / history / mixed / unrelated` 意图与 `ending / choices / resources / miniGames / overview` 关注点**。这是 LLM 语义分类，不是向量检索或重新训练模型。
+- 流程：明确的本局提问先走安全快速路径；含本局数据或问题含糊时，语义分类优先于普通史料检索；`run` 仅引用 [G01] 玩家已发生记录，`history` 仅检索并校验 Hxx/D01，`mixed` 分别列出游戏与史料两类依据。不能用史书记载代替玩家的失败原因。
+- 模型判断「关注点」后由确定性代码从真实记录挑选并排列事实。**模型不得自由编造玩家行动、资源数值、IF 结局或尚未解锁事件**。因此本局回答的措辞尚不是完全自由生成，但比先前不论问题都显示完整固定复盘更聚焦。
+- 语义判断请求限定为 160 token、最多 2.2 秒，异常或模型不可用时回退到保守的本局规则/史料检索；无有效本局记录必须返回 `run_unavailable`，不会从史料猜测玩家胜败。实际模型生成历史回答依旧执行逐句引用、数字和引文检查（并非严格事实蕴含证明）。
+- 模型分类多一次接口调用，可能增加延迟和少量 token 费用；当前优先在请求包含实际游戏记录、是追问或无法检索到史料时启用，以减少普通独立史料问答的额外开销。部署需要同步 `grounding.js`、`run-evidence.js`、新文件 `semantic-router.js`（同目录）并重启 8080 后端；Unity 离线识别修复还需重新 Build WebGL。
+- 模拟 DeepSeek 由本地 HTTP 模型替身测试覆盖；**真实线上 DeepSeek 与完整 Unity WebGL 仍需单独验收**，尤其要测试「为什么这一轮会输」「刚刚那个决定是不是把战局搞砸了」「袁绍为什么输掉官渡之战」和混合问法。
+
 ## 微调边界
 
 当前先用检索增强和引用校验交付。只有在收集到足量、已审阅的问答对，有可用 GPU、模型许可证和独立评测集时，才考虑 LoRA/指令微调。训练集不能把游戏 IF 分支标成史实，也不能把模型自由生成当作史料。没有这些条件时，保持基础模型 + 本地知识包更稳。模型名通过 `OPENAI_MODEL` 配置，默认值是 `gpt-5.4-mini`，部署前应按账号可用模型和官方文档确认。
