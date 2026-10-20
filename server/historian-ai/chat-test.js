@@ -235,7 +235,8 @@ async function main() {
       mixed.body.answer.includes('史书所载') &&
       mixed.body.citations.some(c => c.id === 'G01'),
       'Mixed natural question separates historical sources from real game decisions');
-    const noEvidence = await ask({ question: '刚刚那个决定是不是把战局搞砸了？' });
+    const noEvidence = await ask({ question: '刚刚那个决定是不是把战局搞砸了？',
+      context: '玩家刚刚结束一次选择，当前没有可信战绩记录' });
     check(noEvidence.body.mode === 'run_unavailable' &&
       !noEvidence.body.citations.some(c => c.id && c.id[0] === 'H'),
       'Semantic current-run question with missing telemetry cannot become fictional history');
