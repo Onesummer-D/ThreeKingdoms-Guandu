@@ -72,7 +72,10 @@ for(const symbol of ['GuanduHistorianInputOpen','GuanduHistorianInputChanged',
  'GuanduHistorianInputSetText','GuanduHistorianInputClose'])
   assert(ui.includes(symbol), 'Unity binding missing: '+symbol);
 assert(ui.includes('input.readOnly = true')&&ui.includes('OpenBrowserInput()')&&
-  ui.includes('#if UNITY_WEBGL && !UNITY_EDITOR'),'WebGL uses native IME, editor keeps TMP');
+  ui.includes('#if UNITY_WEBGL && !UNITY_EDITOR')&&
+  ui.includes('WebGLInput.captureAllKeyboardInput = false;')&&
+  ui.includes('WebGLInput.captureAllKeyboardInput = previousWebGLKeyboardCapture;'),
+  'WebGL releases browser keyboard focus during IME and restores Unity keyboard capture on close');
 assert(ui.includes('input.text = GuanduHistorianInputRead()') &&
   ui.includes('SubmitQuestion(input.text)'), 'IME committed question reaches historian request');
 assert(agent.includes('baseUrl.TrimEnd(\'/\') + "/api/historian/ask"') &&
